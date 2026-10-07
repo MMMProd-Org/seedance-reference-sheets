@@ -64,7 +64,7 @@ function sdTip(control, text, id) {
 }
 function sdPhotoTip(t) {
   return [
-    "Pour créer un personnage d'après une photo extérieure : une vraie personne ou une image trouvée. Les planches reprennent son visage et ses cheveux, et son corps avec « Garder le corps tel quel ».",
+    "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, et son corps avec « Garder le corps tel quel ».",
     "Pas besoin pour le corps entier : ta planche tête suffit, ajoute-la comme image 1 dans le générateur.",
     "seedream" === t.model ? "Disponible avec GPT Image 2.5 uniquement." : "Ajoute la photo à chaque planche dans ta conversation GPT.",
   ].map(function (x, i) {
