@@ -1,0 +1,12 @@
+{
+"Coche-la pour créer plusieurs animaux à la suite dans une seule conversation GPT Image (animaux secondaires, figurants) : chaque prompt désigne alors le sien par son nom et interdit de reprendre les autres.": "Tick it to create several animals one after another in a single GPT Image conversation (secondary animals, extras): each prompt then names its own and forbids reusing the others.",
+"Coche-la pour créer plusieurs personnages à la suite dans une seule conversation GPT Image (personnages secondaires, figurants) : chaque prompt désigne alors le sien par son nom et interdit de reprendre les autres.": "Tick it to create several characters one after another in a single GPT Image conversation (secondary characters, extras): each prompt then names its own and forbids reusing the others.",
+"Convention de l'outil : fond gris uni, aucun texte ajouté, la même lumière et le même objet sur chaque vue, rien d'inversé.": "Tool convention: plain grey backdrop, no added text, the same light and the same object in every view, nothing mirrored.",
+"Convention de l'outil : fond gris uni, aucun texte ajouté, la même lumière et le même sujet sur chaque vue, rien d'inversé.": "Tool convention: plain grey backdrop, no added text, the same light and the same subject in every view, nothing mirrored.",
+". Ce sont des tendances de groupe, jamais une règle pour une personne.": ". These are group tendencies, never a rule for one person.",
+"Donne un nom : c'est lui qui distingue ce personnage des autres dans la conversation.": "Give a name: it is what tells this character apart from the others in the conversation.",
+"Donne un nom : c'est lui qui distingue cet animal des autres dans la conversation.": "Give a name: it is what tells this animal apart from the others in the conversation.",
+"Images à ajouter": "Images to add",
+"Pour la planche corps : un croquis ou une photo habillée qui montre la forme de poitrine voulue. Souvent plus efficace que les mots, sans garantie.": "For the body sheet: a sketch or a dressed photo showing the bust shape you want. Often works better than words, with no guarantee.",
+"Seedream : slip de bain, torse nu, pieds nus": "Seedream: swim briefs, bare chest, barefoot"
+}
