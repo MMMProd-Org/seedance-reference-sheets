@@ -83,6 +83,22 @@ with sync_playwright() as p:
     expect(change).to_have_value("")
     expect(hint).to_be_visible()
 
+    # The retouch prompt no longer asks to keep a part the change touches, in English or French.
+    show = page.get_by_role("button", name="Show the prompt")
+    for _ in range(show.count()):  # each click turns one button into "Hide the prompt"
+        show.first.click()
+    retouch = page.locator('pre[data-out="iter"]')
+    for text, kept, dropped in [
+        ("sharper biceps and triceps", "the hips and legs", "the muscles"),
+        ("élargir les hanches", "the muscles", "the hips and legs"),
+        ("make her heavier", "the hips and legs", "the body's size, weight and proportions"),
+        ("épaules plus larges", "the hips and legs", "the muscles"),
+    ]:
+        change.fill(text)
+        expect(retouch).to_contain_text(kept)
+        expect(retouch).not_to_contain_text(dropped)
+    change.fill("")
+
     found = {}
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
         page.get_by_role("radio", name=model, exact=True).click()

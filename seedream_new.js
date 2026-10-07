@@ -976,20 +976,21 @@ function sdKg() {
 }
 function sdIterText() {
   var c = String(e.sdIter || "").trim().replace(/[.\s]+$/, ""),
-    lc = c.toLowerCase(),
+    /* accents folded so the French words below match: \b only knows ASCII letters */
+    lc = c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
     w = sdWho(),
     keep = [
-      [/\b(views?|fram\w*|scale|panels?)\b/, "the four views, the framing and scale"],
-      [/\b(size|weight|proportions?|height|taller|shorter|slimmer|thinner|fatter|heavier overall|waist|narrower|wider)\b/, "the body's size, weight and proportions"],
-      [/\b(breasts?|bust|chest|nipples?)\b/, "m" === e.pres ? "the chest" : "the breasts' size, shape and hang"],
-      [/\b(glutes?|butt\w*|crease)\b/, "the glutes"],
-      [/\b(hips?|thighs?|legs?|saddlebags?|knees?|calf|calves)\b/, "the hips and legs"],
-      [/\b(arms?|shoulders?|back|muscles?|muscular|abs|abdom\w*|veins?|biceps|triceps|forearms?)\b/, "the muscles"],
-      [/\b(skin|tan|cellulite|pores?|freckles?|marks?|scars?)\b/, "the skin"],
-      [/\b(outfit|bikini|top|tanga|fabric|triangles?|swim\w*|shorts|clothing|clothes|dress\w*|t-?shirts?|shirts?|leggings?|pants|trousers|jeans|skirts?|jackets?|shoes|sneakers|boots|wear\w*|socks?)\b/, "the outfit"],
-      [/\b(light\w*|shadows?)\b/, "the light"],
-      [/\b(backdrop|background|grey|gray)\b/, "the backdrop"],
-      [nw() ? /^$/ : /\b(face|faces|hair|head|heads|eyes|nose|mouth|expression)\b/, nw() ? "" : sdPos() + " face and hair"],
+      [/\b(views?|fram\w*|scale|panels?|vues?|cadr\w*|echelle|panneaux?)\b/, "the four views, the framing and scale"],
+      [/\b(size|weight|proportions?|height|taller|shorter|slimmer|thinner|fatter|heavier|waist|narrower|wider|taille|poids|hauteur|minc\w*|aminc\w*|maigr\w*|gros|gross\w*|lourd\w*|elarg\w*|etroit\w*|affin\w*|plus larges?|plus grande?s?|plus petite?s?)\b/, "the body's size, weight and proportions"],
+      [/\b(breasts?|bust|chest|nipples?|seins?|poitrine|buste|mamelons?|tetons?)\b/, "m" === e.pres ? "the chest" : "the breasts' size, shape and hang"],
+      [/\b(glutes?|butt\w*|crease|fesses?|fessiers?|sillon)\b/, "the glutes"],
+      [/\b(hips?|thighs?|legs?|saddlebags?|knees?|calf|calves|hanches?|cuisses?|jambes?|culotte de cheval|genoux|genou|mollets?)\b/, "the hips and legs"],
+      [/\b(arms?|shoulders?|back|muscles?|muscular|abs|abdom\w*|veins?|biceps|triceps|forearms?|bras|avant-bras|epaules?|dos|muscl\w*|abdos?|abdominaux|veines?|pectoraux)\b/, "the muscles"],
+      [/\b(skin|tan|cellulite|pores?|freckles?|marks?|scars?|peau|bronz\w*|taches?|rousseur|grains? de beaute|cicatrices?|vergetures?|marques?)\b/, "the skin"],
+      [/\b(outfit|bikini|top|tanga|fabric|triangles?|swim\w*|shorts|clothing|clothes|dress\w*|t-?shirts?|shirts?|leggings?|pants|trousers|jeans|skirts?|jackets?|shoes|sneakers|boots|wear\w*|socks?|tenue|maillot|tissu|vetements?|habill\w*|robe|chemise|pantalon|jupe|veste|chaussures?|baskets?|bottes?|chaussettes?|brassiere)\b/, "the outfit"],
+      [/\b(light\w*|shadows?|lumiere|eclair\w*|ombres?)\b/, "the light"],
+      [/\b(backdrop|background|grey|gray|fond|arriere-plan|gris|grise)\b/, "the backdrop"],
+      [nw() ? /^$/ : /\b(face|faces|hair|head|heads|eyes|nose|mouth|expression|visages?|cheveux|coiffure|tetes?|yeux|nez|bouche)\b/, nw() ? "" : sdPos() + " face and hair"],
     ]
       .filter(function (k) {
         return k[1] && !k[0].test(lc);
