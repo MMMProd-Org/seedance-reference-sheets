@@ -93,6 +93,8 @@ with sync_playwright() as p:
         ("élargir les hanches", "the muscles", "the hips and legs"),
         ("make her heavier", "the hips and legs", "the body's size, weight and proportions"),
         ("épaules plus larges", "the hips and legs", "the muscles"),
+        ("musculature plus marquée", "the skin", "the muscles"),
+        ("abdos plus marqués", "the skin", "the muscles"),
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
