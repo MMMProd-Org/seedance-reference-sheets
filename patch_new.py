@@ -1,5 +1,6 @@
-import sys, os
+import sys, os, json
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+LANG='en'  # default interface language ('en' or 'fr'); visitors can switch in the header
 src=open('new/pretty.js').read()
 sd=open('seedream_new.js').read()+'\n'+open('sd_i18n.js').read()
 def rep(old,new,count=1):
@@ -8,7 +9,7 @@ def rep(old,new,count=1):
     assert n==count,(n,old[:90])
     src=src.replace(old,new)
 # P1 state defaults
-rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "fr",\n  },')
+rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n  },')
 # P17 new bust shape "Poire" (GPT + Seedream)
 rep('''      [
         "conical",
@@ -288,5 +289,11 @@ rep("""                                    B("body", "2", "Planche corps"),
 open('new/patched.js','w').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
+# P24 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)
+if LANG=='en':
+    title=json.load(open('i18n/extra.json',encoding='utf-8'))['Fiche personnage pour Seedance']
+    for a,b in [('<html lang=fr','<html lang=en'),('<title>Fiche personnage pour Seedance</title>','<title>'+title+'</title>')]:
+        assert L[0].count(a)==1,a
+        L[0]=L[0].replace(a,b)
 open('new/merged.html','w',encoding='utf-8').write('\n'.join([L[0],L[1],'    <script type="module">'+src+'</script>']+L[3:]))
 print('ok',len(src))

@@ -20,6 +20,11 @@ var SD_EN_RX = [
   [/^(.+), autre$/, function (m, a) {
     return sdTr(a) + ", other";
   }],
+  [/^(\\d+) ans$/, "$1 years"],
+  /* input hints: "[prefix, ][en anglais : ]ex. <English example>[, ou random[ (choisi selon l'âge)]]" */
+  [/^(?:(?!en anglais)(.+?)(, | : ))?(en anglais : )?ex\\. ([\\s\\S]+?)(, ou random)?( \\(choisi selon l'âge\\))?$/, function (m, pre, sep, en, ex, rnd, age) {
+    return (pre ? sdTr(pre) + (", " === sep ? ", " : ": ") : "") + (en ? "in English: " : "") + "e.g. " + ex + (rnd ? ", or random" : "") + (age ? " (picked to suit the age)" : "");
+  }],
 ];
 function sdTr(s) {
   if ("string" != typeof s || "en" !== sdLang || !s) return s;
@@ -87,6 +92,7 @@ function sdSetLang(t) {
   sdLang = "en" === t.uiLang ? "en" : "fr";
   try {
     document.documentElement.lang = sdLang;
+    document.title = sdTr("Fiche personnage pour Seedance");
   } catch (er) {}
 }
 (function () {
