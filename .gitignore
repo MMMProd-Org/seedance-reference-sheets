@@ -7,3 +7,6 @@
 # Python
 __pycache__/
 .venv/
+
+# Local agent review receipts
+/.agent-backlog/
