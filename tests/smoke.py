@@ -69,6 +69,18 @@ with sync_playwright() as p:
     prompt = page.locator("pre").first.inner_text()
     assert len(prompt) > 200 and "16:9" in prompt, f"no prompt shown: {prompt[:120]!r}"
 
+    # Deselecting a retouch preset clears its text, so the Retouch card is disabled again.
+    preset = page.get_by_role("button", name="Dress in sportswear", exact=True)
+    change = page.locator("#sd-iter")
+    hint = page.get_by_text("Write the change first.", exact=True)
+    expect(hint).to_be_visible()
+    preset.click()
+    expect(change).not_to_have_value("")
+    expect(hint).to_be_hidden()
+    preset.click()
+    expect(change).to_have_value("")
+    expect(hint).to_be_visible()
+
     found = {}
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
         page.get_by_role("radio", name=model, exact=True).click()
