@@ -116,6 +116,7 @@ with sync_playwright() as p:
         ("put her in skinny jeans", "the body's size, weight and proportions", "the outfit"),
         ("a bulky winter jacket", "the body's size, weight and proportions", "the outfit"),
         ("a curved neckline on the top", "the body's size, weight and proportions", "the outfit"),
+        ("the skinniest jeans", "the body's size, weight and proportions", "the outfit"),
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)

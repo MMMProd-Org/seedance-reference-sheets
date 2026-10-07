@@ -982,7 +982,7 @@ function sdIterText() {
     w = sdWho(),
     keep = [
       [/\b(views?|fram\w*|scale|panels?|vues?|cadr\w*|echelle|panneaux?)\b/, "the four views, the framing and scale"],
-      [/\b(size|weight|proportions?|height|taller|shorter|slimmer|thinner|fatter|heavier|waist|narrower|wider|broader|bigger|smaller|larger|fuller|rounder|curv(?:y|ier|iest|aceous)|plump(?:er|est)?|leaner|leanest|skinnier|skinniest|bulkier|bulk up|chubb(?:y|ier|iest)|taille|poids|hauteur|a?minc\w*|maigr\w*|gros|gross\w*|lourd\w*|elarg\w*|etroit\w*|affin\w*|plus larges?|plus grande?s?|plus petite?s?)\b/, "the body's size, weight and proportions"],
+      [/\b(size|weight|proportions?|height|taller|shorter|slimmer|thinner|fatter|heavier|waist|narrower|wider|broader|bigger|smaller|larger|fuller|rounder|curv(?:y|ier|aceous)|plump(?:er)?|leaner|skinnier|bulkier|bulk up|chubb(?:y|ier)|taille|poids|hauteur|a?minc\w*|maigr\w*|gros|gross\w*|lourd\w*|elarg\w*|etroit\w*|affin\w*|plus larges?|plus grande?s?|plus petite?s?)\b/, "the body's size, weight and proportions"],
       [/\b(breasts?|bust|chest|torso|nipples?|seins?|poitrine|buste|mamelons?|tetons?|torse|pectoraux)\b/, "m" === e.pres ? "the chest" : "the breasts' size, shape and hang"],
       [/\b(glutes?|butt\w*|crease|fesses?|fessiers?|sillon)\b/, "the glutes"],
       [/\b(hips?|thighs?|legs?|saddlebags?|knees?|calf|calves|hanches?|bassin|cuisses?|jambes?|culotte de cheval|genoux?|mollets?)\b/, "the hips and legs"],
