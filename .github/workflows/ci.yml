@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# One run per branch or pull request: a newer push cancels the older run, so a
+# slower build of an older commit can never deploy over a newer one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest

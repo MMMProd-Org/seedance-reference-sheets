@@ -24,7 +24,8 @@ Build, then run `tests/smoke.py` and `tests/golden_prompts.py`. Both must pass. 
 - Conventional Commits, written in English. One pull request per change.
 - Copilot (automatic, through a repository ruleset) and Sourcery review every pull request. Both skip drafts: mark the pull request Ready for review.
 - Triage every bot thread before editing (bug, nitpick, false positive, out of scope). Fix the bugs. For anything else, reply with evidence from a run, then resolve the thread. Do not change correct code just to silence a bot.
-- Do not merge with unresolved threads or a failing check. Branch protection enforces both.
+- When CI is green and no thread is unresolved, mark the pull request Ready for review yourself; do not ask the owner for it.
+- Do not merge with unresolved threads or a failing check. Branch protection enforces both. Never merge without the owner's approval.
 
 ## Never
 
