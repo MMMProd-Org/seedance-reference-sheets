@@ -27,8 +27,8 @@ var SD_EN_RX = [
     if (pre && tp === pre) return m; /* unknown prefix: leave the whole hint untranslated rather than half */
     return (pre ? tp + (", " === sep ? ", " : ": ") : "") + (en ? "in English: " : "") + "e.g. " + ex + (rnd ? ", or random" : "") + (age ? " (picked to suit the age)" : "");
   }],
-  [/^Chaque prompt désigne « ([\\s\\S]+) » et interdit de reprendre les autres\\. Change le nom pour chaque nouveau (animal|personnage)\\.$/, function (m, name, kind) {
-    return "Each prompt names “" + name + "” and forbids reusing the others. Change the name for each new " + ("animal" === kind ? "animal" : "character") + ".";
+  [/^Chaque prompt désigne « ([\\s\\S]+) » et interdit de reprendre les autres\\. Change le nom pour chaque (nouvel animal|nouveau personnage)\\.$/, function (m, name, kind) {
+    return "Each prompt names “" + name + "” and forbids reusing the others. Change the name for each new " + ("nouvel animal" === kind ? "animal" : "character") + ".";
   }],
 ];
 function sdTr(s) {

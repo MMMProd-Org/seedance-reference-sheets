@@ -286,6 +286,16 @@ rep("""                                    B("body", "2", "Planche corps"),
                                     "seedream" === t.model && !sdX && sdIterBlock(t, g, B, L),
                                   ],
                                 })),""")
+# P25 French grammar in the multi-character hints: "cet animal", "nouvel animal" (elision before a vowel)
+rep('''Change le nom pour chaque nouveau " +
+                                    (b ? "animal" : "personnage") +
+                                    "."
+                                  : "Donne un nom : c'est lui qui distingue ce " +
+                                    (b ? "animal" : "personnage") +''', '''Change le nom pour chaque " +
+                                    (b ? "nouvel animal" : "nouveau personnage") +
+                                    "."
+                                  : "Donne un nom : c'est lui qui distingue " +
+                                    (b ? "cet animal" : "ce personnage") +''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
