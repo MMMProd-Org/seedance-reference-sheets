@@ -53,6 +53,8 @@ def untranslated(page, where, found):
 with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    # Serve fonts empty so the test does not depend on Google Fonts being reachable.
+    page.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
     errors = []
     page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     page.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
@@ -81,6 +83,17 @@ with sync_playwright() as p:
                 tabs.first.click()
                 page.get_by_text("Man", exact=True).click()
                 untranslated(page, f"{model} / Person / Man", found)
+                page.get_by_text("Woman", exact=True).click()
+            if model == "GPT Image 2.5" and subject != "Object":
+                tabs.first.click()
+                several = page.get_by_text(re.compile(r"^Several (characters|animals) in the same GPT conversation"))
+                several.click()
+                untranslated(page, f"{model} / {subject} / several, no name", found)
+                name = page.get_by_label("Character name")
+                name.fill("Q7")  # one letter: never reported as untranslated
+                untranslated(page, f"{model} / {subject} / several, named", found)
+                name.fill("")
+                several.click()
             page.get_by_role("button", name=re.compile(r"^New (character|animal|object)$")).click()
             untranslated(page, f"{model} / {subject} / reset confirmation", found)
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
