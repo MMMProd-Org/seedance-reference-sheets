@@ -95,6 +95,7 @@ with sync_playwright() as p:
         ("épaules plus larges", "the hips and legs", "the muscles"),
         ("musculature plus marquée", "the skin", "the muscles"),
         ("abdos plus marqués", "the skin", "the muscles"),
+        ("effacer les marques", "the muscles", "the skin"),
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)

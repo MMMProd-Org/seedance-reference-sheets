@@ -986,7 +986,7 @@ function sdIterText() {
       [/\b(glutes?|butt\w*|crease|fesses?|fessiers?|sillon)\b/, "the glutes"],
       [/\b(hips?|thighs?|legs?|saddlebags?|knees?|calf|calves|hanches?|bassin|cuisses?|jambes?|culotte de cheval|genoux?|mollets?)\b/, "the hips and legs"],
       [/\b(arms?|shoulders?|back|abs|abdom\w*|veins?|biceps|triceps|forearms?|bras|epaules?|dos|muscu?l\w*|abdos?|ventre|veines?|pectoraux)\b/, "the muscles"],
-      [/\b(skin|tan|cellulite|pores?|freckles?|marks?|scars?|peau|bronz\w*|taches?|rousseur|grains? de beaute|cicatrices?|vergetures?|marques? (de|des|du|d))\b/, "the skin"],
+      [/\b(skin|tan|cellulite|pores?|freckles?|marks?|scars?|peau|bronz\w*|taches?|rousseur|grains? de beaute|cicatrices?|vergetures?|(les|des|ses|ces|une|la|sa) marques?|marques? (de|des|du|d))\b/, "the skin"],
       [/\b(outfit|bikini|top|tanga|fabric|triangles?|swim\w*|shorts|clothing|clothes|dress\w*|t-?shirts?|shirts?|leggings?|pants|trousers|jeans|skirts?|jackets?|shoes|sneakers|boots|wear\w*|socks?|tenues?|maillots?|tissus?|vetements?|habill\w*|robes?|chemises?|pantalons?|jupes?|vestes?|chaussures?|baskets?|bottes?|chaussettes?|brassieres?)\b/, "the outfit"],
       [/\b(light\w*|shadows?|lumieres?|eclairages?|eclairee?s?|eclairer|ombres?)\b/, "the light"],
       [/\b(backdrop|background|grey|gray|fond|arriere[- ]plan|grise?)\b/, "the backdrop"],
