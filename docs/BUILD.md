@@ -16,6 +16,7 @@ Every change since then is applied as anchored text patches on top of that build
 | `build_i18n.py`, `ui_fr2.json`, `i18n/` | Generate `sd_i18n.js`: the French-to-English interface dictionary, applied at render time. Prompts are never translated. |
 | `patch_new.py` | Applies the anchored replacements to `new/pretty.js` (each anchor must match exactly once, or the build stops), injects `seedream_new.js` and `sd_i18n.js`, and reassembles the single HTML file. |
 | `tests/smoke.py` | Renders the built page in headless Chromium and checks it opens in English, logs no JavaScript error, shows a prompt, and that no visible string stays French in the states it visits: every tab for each model and subject, the male presentation, the multi-character option and the reset confirmation. |
+| `tests/golden_prompts.py`, `tests/golden/prompts.json` | Generates the prompts for each model and subject with fixed randomness and compares them with the reference. Run it with `--update` only after an intended prompt change. |
 
 ## Build
 
@@ -33,6 +34,7 @@ Output: `new/merged.html`. Open it in a browser: that is the whole app.
 pip install -r requirements.txt
 python -m playwright install chromium
 python tests/smoke.py
+python tests/golden_prompts.py
 ```
 
 ## Continuous integration

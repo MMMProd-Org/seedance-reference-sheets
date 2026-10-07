@@ -32,6 +32,9 @@ jobs:
       - name: Smoke test
         run: python tests/smoke.py
 
+      - name: Golden prompts
+        run: python tests/golden_prompts.py
+
       - name: Prepare site
         if: github.event_name == 'push'
         run: mkdir -p _site && cp new/merged.html _site/index.html
