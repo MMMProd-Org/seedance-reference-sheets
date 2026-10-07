@@ -1,8 +1,8 @@
 import sys, os, json
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-LANG='en'  # default interface language ('en' or 'fr'); visitors can switch in the header
-src=open('new/pretty.js').read()
-sd=open('seedream_new.js').read()+'\n'+open('sd_i18n.js').read()
+LANG='en'  # default interface language ('en' or 'fr'; tests/smoke.py expects 'en'); visitors can switch in the header
+src=open('new/pretty.js',encoding='utf-8').read()
+sd=open('seedream_new.js',encoding='utf-8').read()+'\n'+open('sd_i18n.js',encoding='utf-8').read()
 def rep(old,new,count=1):
     global src
     n=src.count(old)
@@ -286,7 +286,7 @@ rep("""                                    B("body", "2", "Planche corps"),
                                     "seedream" === t.model && !sdX && sdIterBlock(t, g, B, L),
                                   ],
                                 })),""")
-open('new/patched.js','w').write(src)
+open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
 # P24 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)

@@ -1,7 +1,7 @@
 import json, sys, os
 HERE=os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0,os.path.join(HERE,'i18n'))
-ui=json.load(open(os.path.join(HERE,'ui_fr2.json')))
+ui=json.load(open(os.path.join(HERE,'ui_fr2.json'),encoding='utf-8'))
 D={}
 for mod in ('en_a','en_b','en_c'):
     m=__import__(mod)
@@ -10,7 +10,7 @@ for mod in ('en_a','en_b','en_c'):
 # Seedream variant of the bust help (prefix + original rest)
 orig=ui[487]; rest=orig[orig.index('Bonnet européen'):]
 D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup range (B to C, D to E, F and up); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
-extra=json.load(open(os.path.join(HERE,'i18n','extra.json')))
+extra=json.load(open(os.path.join(HERE,'i18n','extra.json'),encoding='utf-8'))
 D.update(extra)
 js='''/* ---- interface language (FR / EN): translation applied to rendered props, prompts untouched ---- */
 var SD_EN = '''+json.dumps(D, ensure_ascii=False, indent=0)+''';
@@ -23,7 +23,12 @@ var SD_EN_RX = [
   [/^(\\d+) ans$/, "$1 years"],
   /* input hints: "[prefix, ][en anglais : ]ex. <English example>[, ou random[ (choisi selon l'âge)]]" */
   [/^(?:(?!en anglais)(.+?)(, | : ))?(en anglais : )?ex\\. ([\\s\\S]+?)(, ou random)?( \\(choisi selon l'âge\\))?$/, function (m, pre, sep, en, ex, rnd, age) {
-    return (pre ? sdTr(pre) + (", " === sep ? ", " : ": ") : "") + (en ? "in English: " : "") + "e.g. " + ex + (rnd ? ", or random" : "") + (age ? " (picked to suit the age)" : "");
+    var tp = pre ? sdTr(pre) : "";
+    if (pre && tp === pre) return m; /* unknown prefix: leave the whole hint untranslated rather than half */
+    return (pre ? tp + (", " === sep ? ", " : ": ") : "") + (en ? "in English: " : "") + "e.g. " + ex + (rnd ? ", or random" : "") + (age ? " (picked to suit the age)" : "");
+  }],
+  [/^Chaque prompt désigne « ([\\s\\S]+) » et interdit de reprendre les autres\\. Change le nom pour chaque nouveau (animal|personnage)\\.$/, function (m, name, kind) {
+    return "Each prompt names “" + name + "” and forbids reusing the others. Change the name for each new " + ("animal" === kind ? "animal" : "character") + ".";
   }],
 ];
 function sdTr(s) {
@@ -106,5 +111,5 @@ function sdSetLang(t) {
   };
 })();
 '''
-open(os.path.join(HERE,'sd_i18n.js'),'w').write(js)
+open(os.path.join(HERE,'sd_i18n.js'),'w',encoding='utf-8').write(js)
 print('entries', len(D))
