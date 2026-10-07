@@ -12,6 +12,13 @@ orig=ui[487]; rest=orig[orig.index('Bonnet européen'):]
 D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup range (B to C, D to E, F and up); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
 extra=json.load(open(os.path.join(HERE,'i18n','extra.json'),encoding='utf-8'))
 D.update(extra)
+# A French text node can start or end with the space that separates it from the next node: the English
+# must keep it, or words run together ("Characterimportant"). A space before French punctuation or after
+# an opening « is typography, and is meant to go.
+lost=[k for k,v in D.items()
+      if (k[:1].isspace() and not v[:1].isspace() and k.lstrip()[:1] not in ':;,.)?!»')
+      or (k[-1:].isspace() and not v[-1:].isspace() and k.rstrip()[-1:]!='«')]
+if lost: sys.exit('translation drops the space that separates it from the next text: '+'; '.join(map(repr,lost)))
 js='''/* ---- interface language (FR / EN): translation applied to rendered props, prompts untouched ---- */
 var SD_EN = '''+json.dumps(D, ensure_ascii=False, indent=0)+''';
 var SD_EN_RX = [
