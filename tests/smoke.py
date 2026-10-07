@@ -75,9 +75,11 @@ with sync_playwright() as p:
     hint = page.get_by_text("Write the change first.", exact=True)
     expect(hint).to_be_visible()
     preset.click()
+    expect(preset).to_have_attribute("aria-pressed", "true")
     expect(change).not_to_have_value("")
     expect(hint).to_be_hidden()
     preset.click()
+    expect(preset).to_have_attribute("aria-pressed", "false")
     expect(change).to_have_value("")
     expect(hint).to_be_visible()
 
