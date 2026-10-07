@@ -211,7 +211,7 @@ rep('''          let a = await ad(r);
             sdMode0 = e.mode,
             sdSeed0 = e.faceSeed,
             sdMsg = "body" === t && "seedream" === sdModel ? sdBodyCopyMsg(e) : "";
-          "head" === t && (sdSeq = ++sdHeadCopySeq);
+          "head" === t && (sdSeq = sdHeadCopySeq[sdModel] = (sdHeadCopySeq[sdModel] || 0) + 1);
           if ("head" === t && "seedream" !== sdModel) {
             var o = n2();
             sdSnap = {
@@ -225,9 +225,9 @@ rep('''          let a = await ad(r);
           let a = await ad(r);
           a &&
             sdSnap &&
-            sdSeq === sdHeadCopySeq &&
+            sdSeq === sdHeadCopySeq[sdModel] &&
             n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 ? { ...e, ...sdSnap } : e));
-          a && sdHeadNow && sdSeq === sdHeadCopySeq && n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 ? { ...e, sdHeadSig: sdHeadNow } : e));''')
+          a && sdHeadNow && sdSeq === sdHeadCopySeq[sdModel] && n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 ? { ...e, sdHeadSig: sdHeadNow } : e));''')
 rep('h("Copié. Colle-le dans GPT Image 2.5.")', 'h(sdMsg || sdT("Copié. Colle-le dans ", "Copied. Paste it into ") + ("seedream" === sdModel ? "Seedream 5.0." : "GPT Image 2.5."))')
 # P12 tanga option (Seedream, women) + displayed value
 rep('''                                                    opts:

@@ -50,6 +50,17 @@ def untranslated(page, where, found):
             found.setdefault(text, where)
 
 
+def clipboard_page(browser, errors):
+    """Open a fresh page whose clipboard writes wait until the test finishes them, in the order it chooses."""
+    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+    page.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+    page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    page.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
+    page.goto(page_path.resolve().as_uri())
+    page.evaluate("() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }")
+    return page
+
+
 with sync_playwright() as p:
     browser = p.chromium.launch()
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
@@ -132,13 +143,10 @@ with sync_playwright() as p:
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
     assert not errors, errors
 
+    head_ok = re.compile(r"^Copied\. In Seedream, add the head sheet")
+
     # Two overlapping head copies: the one that finishes last must not store an older head signature.
-    race = browser.new_page(viewport={"width": 1440, "height": 1000})
-    race.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
-    race.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
-    race.goto(page_path.resolve().as_uri())
-    # Clipboard writes wait until the test finishes them, in the order it chooses.
-    race.evaluate("() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }")
+    race = clipboard_page(browser, errors)
     copy = race.get_by_role("button", name="Copy for Seedream 5.0")
     head, body = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
     head.click()
@@ -150,7 +158,23 @@ with sync_playwright() as p:
     body.click()
     race.wait_for_function("window.writes.length === 3")
     race.evaluate("() => window.writes[2]()")
-    expect(race.get_by_text(re.compile(r"^Copied\. In Seedream, add the head sheet"))).to_be_visible()
+    expect(race.get_by_text(head_ok)).to_be_visible()
+
+    # A GPT head copy started meanwhile must not cancel a pending Seedream one: each model has its own head sheet.
+    cross = clipboard_page(browser, errors)
+    seedream = cross.get_by_role("button", name="Copy for Seedream 5.0")
+    seedream.first.click()
+    cross.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    cross.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    cross.wait_for_function("window.writes.length === 2")
+    cross.evaluate("() => window.writes[0]()")
+    cross.evaluate("() => window.writes[1]()")
+    cross.get_by_role("radio", name="Seedream 5.0", exact=True).click()
+    expect(seedream).to_have_count(3)  # the "Copied" labels are back
+    seedream.nth(1).click()
+    cross.wait_for_function("window.writes.length === 3")
+    cross.evaluate("() => window.writes[2]()")
+    expect(cross.get_by_text(head_ok)).to_be_visible()
     assert not errors, errors
 
     browser.close()

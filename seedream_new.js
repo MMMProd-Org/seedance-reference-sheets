@@ -38,7 +38,8 @@ function sdList(a) {
 function sdWho() {
   return "f" === e.pres ? "woman" : "m" === e.pres ? "man" : "person";
 }
-var sdHeadCopySeq = 0;
+/* latest head copy per model: an older copy that finishes last must not overwrite a newer one */
+var sdHeadCopySeq = {};
 /* tooltip on hover / keyboard focus / tap of the "?" for a control */
 function sdTip(control, text, id) {
   return (0, l.jsxs)("span", {
