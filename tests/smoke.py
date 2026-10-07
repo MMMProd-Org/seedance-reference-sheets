@@ -132,6 +132,27 @@ with sync_playwright() as p:
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
     assert not errors, errors
 
+    # Two overlapping head copies: the one that finishes last must not store an older head signature.
+    race = browser.new_page(viewport={"width": 1440, "height": 1000})
+    race.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+    race.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    race.goto(page_path.resolve().as_uri())
+    # Clipboard writes wait until the test finishes them, in the order it chooses.
+    race.evaluate("() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }")
+    copy = race.get_by_role("button", name="Copy for Seedream 5.0")
+    head, body = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
+    head.click()
+    race.get_by_text("Man", exact=True).click()
+    head.click()
+    race.wait_for_function("window.writes.length === 2")
+    race.evaluate("() => window.writes[1]()")  # the newer copy finishes first
+    race.evaluate("() => window.writes[0]()")
+    body.click()
+    race.wait_for_function("window.writes.length === 3")
+    race.evaluate("() => window.writes[2]()")
+    expect(race.get_by_text(re.compile(r"^Copied\. In Seedream, add the head sheet"))).to_be_visible()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")
