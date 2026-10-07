@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in the app doesn't work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. If a model update changed your results, use **Model compatibility** instead.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what did you get?
+      placeholder: "I picked Animal, clicked Copy for GPT Image 2.5, and the button stayed disabled."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Image model selected in the app
+      options:
+        - GPT Image 2.5
+        - Seedream 5.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: subject
+    attributes:
+      label: Subject
+      options:
+        - Person
+        - Animal
+        - Object
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: "Chrome 141 on Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshot or copied prompt (optional)
+      description: Paste a screenshot, or the prompt the app produced.
