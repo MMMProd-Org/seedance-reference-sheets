@@ -1055,7 +1055,7 @@ function sdIterBlock(t, g, B, L) {
                 {
                   type: "button",
                   "aria-pressed": on,
-                  onClick: () => (on ? g("sdIterOp", "") : (g("sdIter", b[2]), g("sdIterOp", b[0]))),
+                  onClick: () => (g("sdIter", on ? "" : b[2]), g("sdIterOp", on ? "" : b[0])),
                   className:
                     "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
                     (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
