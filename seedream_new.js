@@ -6,7 +6,7 @@ function sdNum(n) {
   return n.toLocaleString("en" === sdLang ? "en-US" : "fr-FR");
 }
 /* ===== Seedream 5.0 : constructeurs de prompts (Personne, Photo, sans photo de départ, création) ===== */
-var SD_MSG = "Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour ce cas, passe sur GPT Image 2.5.";
+var SD_MSG = "Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour tout autre cas, passe sur GPT Image 2.5.";
 function sdMsg(t) {
   /* translated here: the message is also shown in the prompt box, which the render-time translation skips */
   return sdTr(

@@ -38,7 +38,7 @@ T = {
 }
 # strings of the Seedream layer (French source -> English)
 L = {
-"Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour ce cas, passe sur GPT Image 2.5.":"For now, Seedream handles people in Photo style, without a starting photo. For this case, switch to GPT Image 2.5.",
+"Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour tout autre cas, passe sur GPT Image 2.5.":"For now, Seedream handles people in Photo style, without a starting photo. For anything else, switch to GPT Image 2.5.",
 "Seedream ne part pas d'une photo. Pour garder un corps existant, décoche « Partir d'une photo » et passe par « Retoucher une planche validée ».":"Seedream doesn't start from a photo. To keep an existing body, turn off “Start from a photo” and use “Retouch an approved sheet”.",
 "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, et son corps avec « Garder le corps tel quel ».":"To create a character from a photo of a real person, only with their consent. The sheets take their face and hair, and their body with “Keep the body as it is”.",
 "Pas besoin pour le corps entier : ta planche tête suffit, ajoute-la comme image 1 dans le générateur.":"Not needed for the full body: your head sheet is enough, add it as image 1 in the generator.",
