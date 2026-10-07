@@ -1,0 +1,53 @@
+name: Model compatibility
+description: A model update changed the results, or a prompt is now refused
+labels: ["model-compat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Image and video models change often. When a sheet that used to work stops working, this report is the fastest way to get the prompts updated.
+
+  - type: dropdown
+    id: model
+    attributes:
+      label: Which model?
+      options:
+        - GPT Image 2.5
+        - Seedream 5.0
+        - Seedance 2.5
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Where did you run it?
+      description: App or API, and the model version if shown.
+      placeholder: "Dreamina web, Seedance 2.5"
+    validations:
+      required: true
+
+  - type: textarea
+    id: change
+    attributes:
+      label: What changed?
+      description: What you used to get, what you get now, and since when.
+      placeholder: "Since last week the side views come out mirrored."
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt used
+      description: Paste the prompt copied from the app.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Result (optional)
+      description: A screenshot of the sheet or video frame, or the exact refusal message.

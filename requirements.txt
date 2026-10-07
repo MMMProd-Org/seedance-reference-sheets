@@ -1,0 +1,2 @@
+# Test-only dependency. The build itself needs nothing beyond Python 3.
+playwright==1.63.0

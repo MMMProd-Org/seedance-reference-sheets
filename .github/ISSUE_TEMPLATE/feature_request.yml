@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an improvement or a new kind of sheet
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The shot or the workflow you have in mind.
+      placeholder: "I shoot a two-character dialogue scene and need..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      placeholder: "A sheet that shows both characters side by side at the same scale."
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How do you handle it today? (optional)
