@@ -162,6 +162,7 @@ with sync_playwright() as p:
     young = browser.new_page(viewport={"width": 1440, "height": 1000})
     young.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
     young.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    young.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
     young.add_init_script("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({age: 18, pres: 'x'}))")
     young.goto(page_path.resolve().as_uri())
     young.locator("#sd-iter").fill("sharper biceps and triceps")
