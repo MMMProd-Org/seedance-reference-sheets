@@ -158,6 +158,17 @@ with sync_playwright() as p:
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
     assert not errors, errors
 
+    # Under 21, the retouch prompt calls a neutral subject an adult, as it does a woman or a man.
+    young = browser.new_page(viewport={"width": 1440, "height": 1000})
+    young.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+    young.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    young.add_init_script("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({age: 18, pres: 'x'}))")
+    young.goto(page_path.resolve().as_uri())
+    young.locator("#sd-iter").fill("sharper biceps and triceps")
+    expect(young.locator('pre[data-out="iter"]')).to_contain_text("sheet of this adult person")
+    young.close()
+    assert not errors, errors
+
     head_ok = re.compile(r"^Copied\. In Seedream, add the head sheet")
 
     # Two overlapping head copies: the one that finishes last must not store an older head signature.
