@@ -529,6 +529,245 @@ rep('''          r(e),
               ((o.headLooks = e.looks), (o.headFat = e.fat));
           }),
           e.base && n(e.base),''')
+# P39 audit v89: the signature covers the final face, a saved GPT session keeps GPT (head references on reload: P37; Seedream copy order: P11)
+rep('''    t.modelPick || (t.model = sdOk(t) ? "seedream" : "gpt");''', '''    t.modelPick || (t.model = "gpt" === e.model || !sdOk(t) ? "gpt" : "seedream");''')
+rep('''    .filter(function (e) {
+      return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
+        e,
+      );
+    })
+    .join("\\n");
+}''', '''    .filter(function (e) {
+      return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
+        e,
+      );
+    })
+    .join("\\n") + sdSigExtra();
+}''')
+# P40 audit v90: signatures saved before v90 are judged on what they hold (no false "face changed"); GPT says when only the build class is unknown
+rep('''      : { sameFace: as() === e.headSig && "updated" !== e.headKind };''', '''      : { sameFace: "changed" !== sdSigState(e.headSig) && "updated" !== e.headKind };''')
+rep('''        $ = "seedream" !== t.model && !y && !!t.headSig && t.headSig !== as(),''', '''        $ = "seedream" !== t.model && !y && !!t.headSig && "changed" === sdSigState(t.headSig),
+        sdLegacyHead = "seedream" !== t.model && !y && !!t.headSig && "legacy" === sdSigState(t.headSig),''')
+rep('''                                          " (origine, traits, yeux, cheveux, âge, beauté ou maquillage). Recopie d'abord la planche tête : la planche corps reprend toujours le visage de la dernière planche tête.",
+                                        ],
+                                      }),''', '''                                          " (origine, traits, yeux, cheveux, âge, beauté ou maquillage). Recopie d'abord la planche tête : la planche corps reprend toujours le visage de la dernière planche tête.",
+                                        ],
+                                      }),
+                                    sdLegacyHead &&
+                                      (0, l.jsx)("p", {
+                                        className: "rounded-xl border p-3 text-sm text-muted-foreground",
+                                        children: sdT(
+                                          "Ta dernière planche tête a été copiée avec une version précédente de l'outil. Recopie-la seulement si tu as changé la corpulence depuis.",
+                                          "Your last head sheet was copied with an earlier version of the tool. Copy it again only if you changed the build since.",
+                                        ),
+                                      }),''')
+# P41 objects: one image per view (cards, rows, mobile bar, layout preview); Auto chip for materials and dominant colors
+rep('''                                ? sdUnsup(t, n)
+                                : B("obj", "1", "Planche objet")''', '''                                ? sdUnsup(t, n)
+                                : sdObjCards(B)''')
+rep('''          obj: [
+            ["Joins", t.photo ? "Ta photo" : "Rien"],
+            ["Format", I],
+            ["Nomme-la", R(rU("planche"))],
+          ],''', '''          obj: sdObjRow(0, t, R, I),
+          obj2: sdObjRow(1, t, R, I),
+          obj3: sdObjRow(2, t, R, I),
+          obj4: sdObjRow(3, t, R, I),''')
+rep('''          editObj: [
+            ["Joins", D(rU("planche"))],
+            ["Format", I],
+            ["Nomme-la", F("planche", N || C.length > 0)],
+          ],''', '''          editObj: [
+            ["Joins", sdT("La vue à retoucher. Refais la même retouche sur chaque vue, une image à la fois.", "The view to retouch. Repeat the same retouch on each view, one image at a time.")],
+            ["Format", sdT("Identique à la vue retouchée", "Same as the retouched view")],
+            ["Nomme-la", F("vue", N || C.length > 0)],
+          ],''')
+rep('''              ? [["obj", "Copier la planche", !1]]''', '''              ? sdObjBar()''')
+rep('''                  (0, l.jsx)(av, {
+                    label: o,
+                    opts: tZ[i],
+                    values: t[a],
+                    swatch: !!r.swatch,
+                    onChange: (e) => g(a, e),
+                  }),''', '''                  (0, l.jsx)(
+                    av,
+                    sdMultiAuto(a, r, t, n, {
+                      label: o,
+                      opts: tZ[i],
+                      values: t[a],
+                      swatch: !!r.swatch,
+                      onChange: (e) => g(a, e),
+                    }),
+                  ),''')
+# P42 one image per view for every object category and place: the six-square layout preview goes, texts say views, not a sheet
+for _call in ('''                  y &&
+                    (0, l.jsx)(aS, { cat: t.objCat, className: "lg:hidden" }),
+''', '''                  y &&
+                    (0, l.jsx)(aS, {
+                      cat: t.objCat,
+                      className: "hidden lg:block",
+                    }),
+'''):
+    rep(_call, '')
+_a = src.index('function aS({ cat: e, className: t }) {'); _b = src.index('\nfunction ', _a + 10)
+src = src[:_a] + src[_b + 1:]
+rep('''          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent une planche de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",''', '''          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent des vues de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",''')
+rep('''          hint: "« Jour et nuit » : rangée du haut de jour, rangée du bas de nuit, mêmes points de vue. C'est ce qui fixe la lumière pour Seedance.",''', '''          hint: "« Jour et nuit » : les vues de jour, puis une carte « De nuit » à faire depuis la vue de jour choisie, même point de vue. C'est ce qui fixe la lumière pour Seedance.",''')
+rep('''                              y
+                                ? "six vues"
+                                : "tête et corps en quatre vues",''', '''                              y
+                                ? "une image par vue"
+                                : "tête et corps en quatre vues",''')
+rep('''          "Limite documentée de Seedance 2.5 (BytePlus, relayée par Civitai et Atlas Cloud) : 300 à 6000 px de côté, ratio 0,4 à 2,5. Le 16:9 passe.",''', '''          "Limite documentée de Seedance 2.5 (BytePlus, relayée par Civitai et Atlas Cloud) : 300 à 6000 px de côté, ratio 0,4 à 2,5. Le 16:9, le 3:2 et le 2:3 passent.",''')
+# P43 animals: body sheet first and self-sufficient, head close-ups optional and made from it; head-tracking notices are for people only
+rep('''            ["Joins", t.photo ? "Ta photo" : "Rien"],
+            ["Format", I],
+            ["Nomme-la", R(rU("tete"))],''', '''            ["Joins", "animal" === t.mode ? sdAnimalHeadJoin(t, R) : t.photo ? "Ta photo" : "Rien"],
+            ["Format", I],
+            ["Nomme-la", R(rU("tete"))],''')
+rep('''            [
+              "Joins",
+              (0, l.jsxs)(
+                "span",
+                {
+                  children: [
+                    t.photo ? "Ta photo. " : "",
+                    "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",
+                    R(rU("tete")),
+                  ],
+                },
+                "joins",
+              ),
+            ],''', '''            [
+              "Joins",
+              "animal" === t.mode
+                ? t.photo
+                  ? "Ta photo"
+                  : "Rien"
+                : (0, l.jsxs)(
+                    "span",
+                    {
+                      children: [
+                        t.photo ? "Ta photo. " : "",
+                        "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",
+                        R(rU("tete")),
+                      ],
+                    },
+                    "joins",
+                  ),
+            ],''')
+rep('''                : [
+                    ["head", "Copier tête", !1],
+                    ["body", "Copier corps", !1],
+                  ]
+            : y''', '''                : "animal" === t.mode
+                  ? [
+                      ["body", "Copier corps", !1],
+                      ["head", "Copier tête", !1],
+                    ]
+                  : [
+                      ["head", "Copier tête", !1],
+                      ["body", "Copier corps", !1],
+                    ]
+            : y''')
+rep('''        $ = "seedream" !== t.model && !y && !!t.headSig && "changed" === sdSigState(t.headSig),
+        sdLegacyHead = "seedream" !== t.model && !y && !!t.headSig && "legacy" === sdSigState(t.headSig),
+        H = "seedream" !== t.model && !y && !!n2(),''', '''        $ = "seedream" !== t.model && !y && "animal" !== t.mode && !!t.headSig && "changed" === sdSigState(t.headSig),
+        sdLegacyHead = "seedream" !== t.model && !y && "animal" !== t.mode && !!t.headSig && "legacy" === sdSigState(t.headSig),
+        H = "seedream" !== t.model && !y && "animal" !== t.mode && !!n2(),''')
+rep('''                                    "seedream" === t.model && sdX ? sdUnsup(t, n) : B("head", "1", "Planche tête"),''', '''                                    "seedream" === t.model && sdX ? sdUnsup(t, n) : b ? B("body", "1", "Planche corps") : B("head", "1", "Planche tête"),''')
+rep('''                                    !("seedream" === t.model && sdX) && B("body", "2", "Planche corps"),''', '''                                    !("seedream" === t.model && sdX) &&
+                                      (b
+                                        ? B("head", "2", sdT("Gros plans de tête (facultatif)", "Head close-ups (optional)"))
+                                        : B("body", "2", "Planche corps")),''')
+rep('''                              y
+                                ? "une image par vue"
+                                : "tête et corps en quatre vues",''', '''                              y
+                                ? "une image par vue"
+                                : "animal" === t.mode
+                                  ? "corps en quatre vues, gros plans de tête en option"
+                                  : "tête et corps en quatre vues",''')
+# P44 animals: the whole-animal sheet is named as such; "Copier tête" / "Copier corps" are for people only
+rep('''            ["Format", I],
+            ["Nomme-la", R(rU("corps"))],''', '''            ["Format", I],
+            ["Nomme-la", R(rU("animal" === t.mode ? "animal" : "corps"))],''')
+rep('''                : "animal" === t.mode
+                  ? [
+                      ["body", "Copier corps", !1],
+                      ["head", "Copier tête", !1],
+                    ]''', '''                : "animal" === t.mode
+                  ? [["body", sdT("Copier l'animal", "Copy the animal"), !1]]''')
+rep('''              : [
+                  ["editHead", "Copier tête", !P],
+                  ["editBody", "Copier corps", !T],
+                ],''', '''              : "animal" === t.mode
+                ? [
+                    ["editBody", sdT("Copier l'animal", "Copy the animal"), !T],
+                    ["editHead", sdT("Copier gros plans", "Copy close-ups"), !P],
+                  ]
+                : [
+                    ["editHead", "Copier tête", !P],
+                    ["editBody", "Copier corps", !T],
+                  ],''')
+rep('''b ? B("body", "1", "Planche corps") : B("head", "1", "Planche tête"),''', '''b ? B("body", "1", sdT("Planche de l'animal", "Animal sheet")) : B("head", "1", "Planche tête"),''')
+rep('''                                    B(
+                                      "editHead",
+                                      "1",
+                                      "Tête retouchée",
+                                      !P,
+                                      T
+                                        ? "Rien ne change sur la tête : seule la planche corps est à refaire."
+                                        : W,
+                                    ),
+                                    B(
+                                      "editBody",
+                                      "2",
+                                      "Corps retouché",
+                                      !T,
+                                      !T || N || C.length || "body" === t.fixImg
+                                        ? W
+                                        : "Rien ne change sur le corps : seule la planche tête est à refaire.",
+                                    ),''', '''                                    "animal" === t.mode
+                                      ? B(
+                                          "editBody",
+                                          "1",
+                                          sdT("Animal retouché", "Retouched animal"),
+                                          !T,
+                                          !T || N || C.length || "body" === t.fixImg
+                                            ? W
+                                            : sdT("Rien ne change sur l'animal : seuls les gros plans sont à refaire.", "Nothing changes on the animal: only the close-ups need redoing."),
+                                        )
+                                      : B(
+                                          "editHead",
+                                          "1",
+                                          "Tête retouchée",
+                                          !P,
+                                          T
+                                            ? "Rien ne change sur la tête : seule la planche corps est à refaire."
+                                            : W,
+                                        ),
+                                    "animal" === t.mode
+                                      ? B(
+                                          "editHead",
+                                          "2",
+                                          sdT("Gros plans retouchés (facultatif)", "Retouched close-ups (optional)"),
+                                          !P,
+                                          T
+                                            ? sdT("Rien ne change sur les gros plans : seule la planche de l'animal est à refaire.", "Nothing changes on the close-ups: only the animal sheet needs redoing.")
+                                            : W,
+                                        )
+                                      : B(
+                                          "editBody",
+                                          "2",
+                                          "Corps retouché",
+                                          !T,
+                                          !T || N || C.length || "body" === t.fixImg
+                                            ? W
+                                            : "Rien ne change sur le corps : seule la planche tête est à refaire.",
+                                        ),''')
+rep('''                                : "animal" === t.mode
+                                  ? "corps en quatre vues, gros plans de tête en option"''', '''                                : "animal" === t.mode
+                                  ? "l'animal entier en quatre vues, gros plans de tête en option"''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
