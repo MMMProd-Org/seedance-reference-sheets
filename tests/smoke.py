@@ -175,6 +175,20 @@ with sync_playwright() as p:
     cross.wait_for_function("window.writes.length === 3")
     cross.evaluate("() => window.writes[2]()")
     expect(cross.get_by_text(head_ok)).to_be_visible()
+
+    # A head copy for another subject must not cancel a pending one: each subject keeps its own head sheet.
+    subject = clipboard_page(browser, errors)
+    subject.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    gpt = subject.get_by_role("button", name="Copy for GPT Image 2.5")
+    gpt.first.click()
+    subject.get_by_role("radio", name="Animal", exact=True).click()
+    gpt.first.click()
+    subject.get_by_role("radio", name="Person", exact=True).click()
+    subject.wait_for_function("window.writes.length === 2")
+    subject.evaluate("() => window.writes[0]()")  # the Person copy finishes once back on Person
+    subject.evaluate("() => window.writes[1]()")
+    subject.get_by_text("Man", exact=True).click()  # after a head change, the prompts build on the copied head sheet
+    expect(subject.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
     assert not errors, errors
 
     browser.close()
