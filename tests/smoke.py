@@ -388,6 +388,7 @@ with sync_playwright() as p:
             ani.get_by_text("Long coat", exact=True).click()  # a person would now get the "Variant" notice
             text = ani.locator("body").inner_text()
             assert "The face has changed" not in text and "Variant: the prompts reuse" not in text
+            assert "head sheet" not in prompts(ani)[0]  # the same animal, changed: its sheet still stands on its own
             ani.get_by_role("button", name="Random animal").click()
         body, head = prompts(ani)[:2]
         cards = ani.locator("h3").all_inner_texts()[:2]

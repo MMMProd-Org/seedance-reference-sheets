@@ -768,6 +768,12 @@ rep('''                                    B(
 rep('''                                : "animal" === t.mode
                                   ? "corps en quatre vues, gros plans de tête en option"''', '''                                : "animal" === t.mode
                                   ? "l'animal entier en quatre vues, gros plans de tête en option"''')
+# P45 animals: no head-sheet tracking line in their prompts; the animal sheet carries the identity and the close-ups are made from it
+rep('''    n = "animal" === e.mode,
+    r = n4
+      ? ""''', '''    n = "animal" === e.mode,
+    r = n4 || n
+      ? ""''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
