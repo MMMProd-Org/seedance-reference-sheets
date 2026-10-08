@@ -85,18 +85,47 @@ function sdTrProps(type, p) {
 }
 function sdSetLang(t) {
   sdLang = "en" === t.uiLang ? "en" : "fr";
+  sdModelNow = t.model || "";
   try {
     document.documentElement.lang = sdLang;
   } catch (er) {}
+}
+/* long help texts: first sentence visible, the rest behind "Plus" */
+function SdMore(props) {
+  var st = (0, s.useState)(!1),
+    open = st[0],
+    set = st[1],
+    m = String(props.text).match(/^([\\s\\S]{20,}?[.!?»)])\\s+([\\s\\S]+)$/);
+  if (!m) return props.text;
+  return (0, l.jsxs)("span", {
+    children: [
+      m[1],
+      open ? " " + m[2] : "",
+      " ",
+      (0, l.jsx)("button", {
+        type: "button",
+        className: "font-semibold text-foreground underline",
+        style: { textUnderlineOffset: "2px" },
+        "aria-expanded": open,
+        onClick: (ev) => (ev.preventDefault(), ev.stopPropagation(), set(!open)),
+        children: open ? sdT("Moins", "Less") : sdT("Plus", "More"),
+      }),
+    ],
+  });
+}
+function sdHintProps(p) {
+  return p && "string" == typeof p.hint && p.hint.length > 110 && /[.!?»)]\\s+\\S/.test(p.hint.slice(20))
+    ? Object.assign({}, p, { hint: (0, l.jsx)(SdMore, { text: p.hint }) })
+    : p;
 }
 (function () {
   var j0 = l.jsx,
     j1 = l.jsxs;
   l.jsx = function (a, p, k) {
-    return j0(a, sdTrProps(a, p), k);
+    return j0(a, sdHintProps(sdTrProps(a, p)), k);
   };
   l.jsxs = function (a, p, k) {
-    return j1(a, sdTrProps(a, p), k);
+    return j1(a, sdHintProps(sdTrProps(a, p)), k);
   };
 })();
 '''
