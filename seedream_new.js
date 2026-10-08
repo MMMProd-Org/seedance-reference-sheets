@@ -1590,8 +1590,8 @@ function sdAdult(s) {
   return (+e.age || 30) >= 21
     ? s
     : s
-        .replace(/\b(\d+)-year-old (woman|man)\b/g, "$1-year-old adult $2")
-        .replace(/sheet of this (woman|man)\b/, "sheet of this adult $1");
+        .replace(/\b(\d+)-year-old (woman|man|person)\b/g, "$1-year-old adult $2")
+        .replace(/sheet of this (woman|man|person)\b/, "sheet of this adult $1");
 }
 /* eye size and nose width as ordered scales, so a chosen trait can no longer block the level (Auto stays with the draw).
    Eyes: one step smaller with "Quelconque", two with "Ingrat". Nose (the largest measured gap with the reference photos):
