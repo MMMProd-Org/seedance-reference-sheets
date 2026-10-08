@@ -37,7 +37,7 @@ with sync_playwright() as p:
     page.add_init_script(SEED)
     page.goto(page_path.resolve().as_uri())
 
-    prompts = {}
+    prompts, unsupported = {}, set()
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
         page.get_by_role("radio", name=model, exact=True).click()
         for subject in ["Person", "Animal", "Object"]:
@@ -47,10 +47,14 @@ with sync_playwright() as p:
             show = page.get_by_role("button", name="Show the prompt")
             for _ in range(show.count()):  # each click turns one button into "Hide the prompt"
                 show.first.click()
-            prompts[f"{model} / {subject}"] = page.locator("pre").all_inner_texts()
+            texts = page.locator("pre").all_inner_texts()
+            if not texts:  # a case Seedream cannot do yet shows one card that says so, and no prompt
+                expect(page.get_by_text("Not available with Seedream yet", exact=True)).to_be_visible()
+                unsupported.add(f"{model} / {subject}")
+            prompts[f"{model} / {subject}"] = texts
     browser.close()
 
-empty = [state for state, texts in prompts.items() if not texts]
+empty = [state for state, texts in prompts.items() if not texts and state not in unsupported]
 assert not empty, f"no prompt collected for: {empty}"
 
 if update:
