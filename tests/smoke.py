@@ -234,6 +234,23 @@ with sync_playwright() as p:
     expect(variant).to_be_hidden()
     assert not errors, errors
 
+    # Its corpulence survives a switch to another subject and back: changing it afterwards makes a new face.
+    fat = clipboard_page(browser, errors)
+    fat.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    fat.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    fat.wait_for_function("window.writes.length === 1")
+    fat.evaluate("() => window.writes[0]()")
+    fat.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').headSig")
+    fat.get_by_role("radio", name="Animal", exact=True).click()
+    fat.get_by_role("radio", name="Person", exact=True).click()
+    variant = fat.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+    fat.get_by_text("Man", exact=True).click()
+    expect(variant).to_be_visible()
+    fat.get_by_role("tab", name=re.compile(r"^Body")).click()
+    fat.get_by_role("slider", name="Build", exact=True).press("ArrowRight")
+    expect(variant).to_be_hidden()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")
