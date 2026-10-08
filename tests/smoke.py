@@ -107,6 +107,16 @@ with sync_playwright() as p:
         ("musculature plus marquée", "the skin", "the muscles"),
         ("abdos plus marqués", "the skin", "the muscles"),
         ("effacer les marques", "the muscles", "the skin"),
+        ("a bigger belly", "the hips and legs", "the muscles"),
+        ("a flatter tummy", "the skin", "the muscles"),
+        ("bigger breasts", "the glutes", "the body's size, weight and proportions"),
+        ("make her curvier", "the muscles", "the body's size, weight and proportions"),
+        ("a broader torso", "the glutes", "the breasts' size, shape and hang"),
+        # clothing words that share a stem with a body word must keep the body
+        ("put her in skinny jeans", "the body's size, weight and proportions", "the outfit"),
+        ("a bulky winter jacket", "the body's size, weight and proportions", "the outfit"),
+        ("a curved neckline on the top", "the body's size, weight and proportions", "the outfit"),
+        ("the skinniest jeans", "the body's size, weight and proportions", "the outfit"),
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
