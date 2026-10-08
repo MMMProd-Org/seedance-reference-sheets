@@ -351,6 +351,9 @@ with sync_playwright() as p:
             same = [bool(re.search(r"The same (single object|place)", t)) for t in texts]
             assert len(texts) == len(cards) >= 2 and not same[0] and all(same[1:]), (cat, light, cards, same)
             assert not [t for t in texts if leftover.search(t)], (cat, light)
+            if cat == "Clothing":  # views 1 and 2 on the invisible mannequin, view 3 laid flat without it
+                assert all("invisible mannequin" in t for t in texts[:2]), cat
+                assert "laid flat" in texts[2] and "invisible mannequin" not in texts[2], texts[2]
     assert not errors, errors
 
     # Animals: the whole-animal sheet comes first and carries the identity; head close-ups are optional and made

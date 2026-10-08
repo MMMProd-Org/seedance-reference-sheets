@@ -1791,6 +1791,12 @@ function sdObjOne(s, i) {
     .replace("the same light in all six panels", "the same light in every view of this object")
     .replace(", camera perpendicular to the object for the front, back and side views and directly above it for the top view, deep focus", ", deep focus")
     .replace(" Panels whose widths differ by more than about 10% are a missed requirement.", "");
+  /* the garment's view 3 is laid flat: the mannequin of views 1 and 2 would contradict it */
+  if ("plat" === v[0])
+    s = s.replace(
+      "The garment is shown on an invisible mannequin (ghost mannequin), with its natural shape, volume and drape; no person and no visible mannequin.",
+      "The garment is laid flat on the seamless grey backdrop, smoothed out, with its natural shape; no person and no mannequin.",
+    );
   if (i > 0)
     s = /\nOBJECT:\n/.test(s)
       ? s.replace(/\nOBJECT:\n(This is a new object: do not reuse any object from earlier images in this conversation\.\n)?/, "\nOBJECT:\n" + same)
