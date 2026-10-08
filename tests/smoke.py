@@ -246,7 +246,7 @@ with sync_playwright() as p:
     gpt = subject.get_by_role("button", name="Copy for GPT Image 2.5")
     gpt.first.click()
     subject.get_by_role("radio", name="Animal", exact=True).click()
-    gpt.nth(1).click()  # the head close-ups: an animal's first card is the whole-animal sheet
+    gpt.first.click()  # the animal sheet: the copy an animal's prompts build on
     subject.get_by_role("radio", name="Person", exact=True).click()
     subject.wait_for_function("window.writes.length === 2")
     subject.evaluate("() => window.writes[0]()")  # the Person copy finishes once back on Person
@@ -316,11 +316,11 @@ with sync_playwright() as p:
         old.close()
     assert not errors, errors
 
-    # A person's beauty level does not make a new face of an animal's copied GPT head.
+    # A person's beauty level does not make a new animal of an animal's copied GPT sheet.
     pet = clipboard_page(browser, errors)
     pet.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
     pet.get_by_role("radio", name="Animal", exact=True).click()
-    pet.get_by_role("button", name="Copy for GPT Image 2.5").nth(1).click()  # the head close-ups
+    pet.get_by_role("button", name="Copy for GPT Image 2.5").first.click()  # the animal sheet
     pet.wait_for_function("window.writes.length === 1")
     pet.evaluate("() => window.writes[0]()")
     pet.wait_for_function(f"{SAVED}.headSig")
@@ -332,6 +332,20 @@ with sync_playwright() as p:
     pet.get_by_role("slider", name="Beauty").press("ArrowRight")
     pet.get_by_role("radio", name="Animal", exact=True).click()
     assert prompts(pet) == before
+    assert not errors, errors
+
+    # Copying only the head close-ups tracks nothing: the animal sheet never builds on them.
+    close = clipboard_page(browser, errors)
+    close.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    close.get_by_role("radio", name="Animal", exact=True).click()
+    close.get_by_role("button", name="Copy for GPT Image 2.5").nth(1).click()  # the head close-ups
+    close.wait_for_function("window.writes.length === 1")
+    close.evaluate("() => window.writes[0]()")
+    expect(close.get_by_role("button", name="Copy for GPT Image 2.5")).to_have_count(1)  # "Copied": the copy is done
+    close.get_by_role("tab", name="Coat").click()
+    close.get_by_text("Long coat", exact=True).click()
+    assert "most recent" not in prompts(close)[0]
+    close.close()
     assert not errors, errors
 
     # Objects and places: one image per view, views 2 and up made from view 1, nothing left of the six-view sheet.
@@ -380,7 +394,7 @@ with sync_playwright() as p:
     ani.get_by_role("radio", name="Animal", exact=True).click()
     for step in ("default", "after a head copy and another animal"):
         if step != "default":
-            ani.get_by_role("button", name="Copy for GPT Image 2.5").nth(1).click()
+            ani.get_by_role("button", name="Copy for GPT Image 2.5").first.click()  # the animal sheet
             ani.wait_for_function("window.writes.length === 1")
             ani.evaluate("() => window.writes[0]()")
             ani.wait_for_function(f"{SAVED}.headSig")
@@ -388,6 +402,8 @@ with sync_playwright() as p:
             ani.get_by_text("Long coat", exact=True).click()  # a person would now get the "Variant" notice
             text = ani.locator("body").inner_text()
             assert "The face has changed" not in text and "Variant: the prompts reuse" not in text
+            changed = prompts(ani)[0]  # the same animal, changed: its sheet builds on the copied animal sheet
+            assert "the most recent animal sheet" in changed and "head sheet" not in changed
             ani.get_by_role("button", name="Random animal").click()
         body, head = prompts(ani)[:2]
         cards = ani.locator("h3").all_inner_texts()[:2]

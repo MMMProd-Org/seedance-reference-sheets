@@ -1763,6 +1763,10 @@ function sdObjViewsSpec() {
           ];
 }
 /* "Sheet layout only" keeps the photo's own light and has no light section to turn to night */
+/* the copy later prompts build on: a person's head sheet; an animal's whole-animal sheet, which carries its identity */
+function sdTracked(t, mode) {
+  return ("animal" === mode ? "body" : "head") === t;
+}
 function sdObjNight() {
   return sdObjPlace() && "both" === e.objTime && !(e.photo && e.photoOnly);
 }

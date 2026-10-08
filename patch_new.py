@@ -271,6 +271,7 @@ rep('''                  f &&
                       className:
                         "rounded-xl border border-[hsl(var(--tape))] p-3 text-sm",''')
 # P11 copy handler: snapshot taken at click time (before the clipboard await), newest head copy wins
+# (the tracked copy, sdTracked: a person's head sheet, an animal's whole-animal sheet)
 rep('''          let a = await ad(r);
           if (a && "head" === t) {
             var o;
@@ -292,8 +293,8 @@ rep('''          let a = await ad(r);
             sdSeed0 = e.faceSeed,
             sdKey = sdModel + ":" + e.mode,
             sdMsg = "seedream" !== sdModel ? "" : "body" === t ? sdBodyCopyMsg(e) : "iter" === t ? sdIterCopyMsg(e) : "";
-          "head" === t && (sdSeq = sdHeadCopySeq[sdKey] = (sdHeadCopySeq[sdKey] || 0) + 1);
-          if ("head" === t && "seedream" !== sdModel) {
+          sdTracked(t, e.mode) && (sdSeq = sdHeadCopySeq[sdKey] = (sdHeadCopySeq[sdKey] || 0) + 1);
+          if (sdTracked(t, e.mode) && "seedream" !== sdModel) {
             var o = n2();
             sdSnap = {
               headSig: as(),
@@ -768,6 +769,10 @@ rep('''                                    B(
 rep('''                                : "animal" === t.mode
                                   ? "corps en quatre vues, gros plans de tête en option"''', '''                                : "animal" === t.mode
                                   ? "l'animal entier en quatre vues, gros plans de tête en option"''')
+# P45 animals: the tracking line names the animal sheet, the copy their prompts build on (sdTracked), never the head close-ups
+rep('''            "the most recent head sheet" +''', '''            (t ? "the most recent animal sheet" : "the most recent head sheet") +''')
+for a in ['''" described below. If this conversation has no such head sheet, this is a new, original " +''', '''" only where the description below differs from that sheet. If this conversation has no such head sheet, this is a new, original " +''']:
+    rep(a, a.replace('no such head sheet, this is a new, original " +', 'no such " +\n                (t ? "animal" : "head") +\n                " sheet, this is a new, original " +'))
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
