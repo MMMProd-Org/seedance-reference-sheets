@@ -354,6 +354,18 @@ with sync_playwright() as p:
             if cat == "Clothing":  # views 1 and 2 on the invisible mannequin, view 3 laid flat without it
                 assert all("invisible mannequin" in t for t in texts[:2]), cat
                 assert "laid flat" in texts[2] and "invisible mannequin" not in texts[2], texts[2]
+    # With a source photo, "Day and night" still adds the night card; like views 2 and 3, it asks for the photo too.
+    for place in ("house", "interior"):
+        lit = clipboard_page(browser, errors)
+        lit.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
+            mode: 'object', objCat: '{place}', objTime: 'both', photo: true}}))""")
+        lit.reload()
+        texts = prompts(lit)
+        cards = [h for h in lit.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+        assert len(texts) == len(cards) == 4 and cards[3].startswith("At night"), (place, cards)
+        assert "\nNight: " in texts[3] and "Daytime" not in texts[3], place
+        assert "Your photo. The day view to redo at night" in lit.locator("body").inner_text(), place
+        lit.close()
     assert not errors, errors
 
     # Animals: the whole-animal sheet comes first and carries the identity; head close-ups are optional and made
