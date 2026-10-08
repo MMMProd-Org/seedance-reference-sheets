@@ -57,8 +57,34 @@ def clipboard_page(browser, errors):
     page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     page.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
     page.goto(page_path.resolve().as_uri())
-    page.evaluate("() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }")
+    page.evaluate(HOLD_CLIPBOARD)
     return page
+
+
+HOLD_CLIPBOARD = "() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }"
+SAVED = "JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}')"
+
+
+def open_folds(page):
+    page.evaluate("document.querySelectorAll('details').forEach((d) => (d.open = true))")
+
+
+def prompts(page):
+    """Open every fold and every prompt, then return the text of each prompt box."""
+    open_folds(page)
+    for _ in range(8):
+        show = page.get_by_text("Show the prompt", exact=True)
+        if not show.count():
+            break
+        show.first.click()
+    return page.locator("pre").all_text_contents()
+
+
+def set_slider(page, name, value):
+    slider = page.get_by_role("slider", name=name, exact=True)
+    slider.press("Home")
+    for _ in range(value):
+        slider.press("ArrowRight")
 
 
 with sync_playwright() as p:
@@ -220,7 +246,7 @@ with sync_playwright() as p:
     gpt = subject.get_by_role("button", name="Copy for GPT Image 2.5")
     gpt.first.click()
     subject.get_by_role("radio", name="Animal", exact=True).click()
-    gpt.first.click()
+    gpt.nth(1).click()  # the head close-ups: an animal's first card is the whole-animal sheet
     subject.get_by_role("radio", name="Person", exact=True).click()
     subject.wait_for_function("window.writes.length === 2")
     subject.evaluate("() => window.writes[0]()")  # the Person copy finishes once back on Person
@@ -294,17 +320,190 @@ with sync_playwright() as p:
     pet = clipboard_page(browser, errors)
     pet.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
     pet.get_by_role("radio", name="Animal", exact=True).click()
-    pet.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    pet.get_by_role("button", name="Copy for GPT Image 2.5").nth(1).click()  # the head close-ups
     pet.wait_for_function("window.writes.length === 1")
     pet.evaluate("() => window.writes[0]()")
-    pet.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').headSig")
+    pet.wait_for_function(f"{SAVED}.headSig")
+    pet.get_by_role("tab", name="Coat").click()
+    pet.get_by_text("Long coat", exact=True).click()  # the same animal, changed after its head copy
+    before = prompts(pet)
     pet.get_by_role("radio", name="Person", exact=True).click()
     pet.get_by_role("tab", name="Face").click()
     pet.get_by_role("slider", name="Beauty").press("ArrowRight")
     pet.get_by_role("radio", name="Animal", exact=True).click()
-    pet.get_by_role("tab", name="Coat").click()
-    pet.get_by_text("Long coat", exact=True).click()  # a head change builds on the copied head sheet
-    expect(pet.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
+    assert prompts(pet) == before
+    assert not errors, errors
+
+    # Objects and places: one image per view, views 2 and up made from view 1, nothing left of the six-view sheet.
+    leftover = re.compile(r"\bsix\b|six-view|panels?\b|3 by 2|top row|bottom row|aerial view|high-angle view from a top corner")
+    obj = clipboard_page(browser, errors)
+    obj.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    obj.get_by_role("radio", name="Object", exact=True).click()
+    for cat in ("Vehicle", "Weapon (film prop)", "Clothing", "Accessory", "Object", "House (exterior)", "Interior"):
+        obj.get_by_role("tab", name="Object", exact=True).click()
+        obj.get_by_role("tabpanel").get_by_text(cat, exact=True).click()
+        for light in ("Day", "Night", "Day and night") if cat in ("House (exterior)", "Interior") else ("",):
+            if light:
+                obj.get_by_role("tab", name="Light and mood", exact=True).click()
+                obj.get_by_role("tabpanel").get_by_text(light, exact=True).click()
+            texts = prompts(obj)
+            cards = [h for h in obj.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            same = [bool(re.search(r"The same (single object|place)", t)) for t in texts]
+            assert len(texts) == len(cards) >= 2 and not same[0] and all(same[1:]), (cat, light, cards, same)
+            assert not [t for t in texts if leftover.search(t)], (cat, light)
+    assert not errors, errors
+
+    # Animals: the whole-animal sheet comes first and carries the identity; head close-ups are optional and made
+    # from it; no head-tracking notice; each subject's mobile bar copies its own cards.
+    ani = clipboard_page(browser, errors)
+    ani.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    ani.get_by_role("radio", name="Animal", exact=True).click()
+    for step in ("default", "after a head copy and another animal"):
+        if step != "default":
+            ani.get_by_role("button", name="Copy for GPT Image 2.5").nth(1).click()
+            ani.wait_for_function("window.writes.length === 1")
+            ani.evaluate("() => window.writes[0]()")
+            ani.wait_for_function(f"{SAVED}.headSig")
+            ani.get_by_role("tab", name="Coat").click()
+            ani.get_by_text("Long coat", exact=True).click()  # a person would now get the "Variant" notice
+            text = ani.locator("body").inner_text()
+            assert "The face has changed" not in text and "Variant: the prompts reuse" not in text
+            ani.get_by_role("button", name="Random animal").click()
+        body, head = prompts(ani)[:2]
+        cards = ani.locator("h3").all_inner_texts()[:2]
+        assert cards == ["Animal sheet", "Head close-ups (optional)"], (step, cards)
+        assert "head sheet" not in body and "identity reference" in body and "SUBJECT:" in body, step
+        assert "The same animal as on its four-view sheet" in head and "of your own choice" not in head, step
+    assert "The animal sheet: nothing if it is just above" in " ".join(ani.locator("aside").all_inner_texts())
+    bar = browser.new_page(viewport={"width": 390, "height": 844})
+    bar.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+    bar.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    bar.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
+    bar.goto(page_path.resolve().as_uri())
+    bar.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    for mode, want in (("Person", ["Copy head", "Copy body"]), ("Animal", ["Copy the animal"]), ("Object", ["Copy view 1", "Copy view 2"])):
+        bar.get_by_role("radio", name=mode, exact=True).click()
+        expect(bar.locator("div.fixed button")).to_have_text(want)
+    assert not errors, errors
+
+    # Seedream: the head signature covers the build, so a build change after the head copy is reported.
+    sig = clipboard_page(browser, errors)
+    copy = sig.get_by_role("button", name="Copy for Seedream 5.0")
+    head, body = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
+    sig.get_by_role("tab", name="Face").click()
+    set_slider(sig, "Beauty", 2)
+    sig.get_by_role("tab", name=re.compile(r"^Body")).click()
+    set_slider(sig, "Build", 0)
+    head.click()
+    sig.wait_for_function("window.writes.length === 1")
+    sig.evaluate("() => window.writes[0]()")
+    sig.wait_for_function(f"{SAVED}.sdHeadSig")
+    set_slider(sig, "Build", 4)
+    body.click()
+    sig.wait_for_function("window.writes.length === 2")
+    sig.evaluate("() => window.writes[1]()")
+    expect(sig.get_by_text(re.compile(r"^Copied\. Your head sheet is out of date"))).to_be_visible()
+    assert not errors, errors
+
+    # A head copy saved before the signature covered the build is not reported as changed, only as older; a real
+    # change after loading still is.
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        old = clipboard_page(browser, errors)
+        old.get_by_role("radio", name=model, exact=True).click()
+        copy = old.get_by_role("button", name=f"Copy for {model}")
+        old.get_by_role("tab", name="Face").click()
+        set_slider(old, "Beauty", 2)
+        copy.first.click()
+        old.wait_for_function("window.writes.length === 1")
+        old.evaluate("() => window.writes[0]()")
+        key = "headSig" if model.startswith("GPT") else "sdHeadSig"
+        old.wait_for_function(f"{SAVED}.{key}.includes('#face-fat:')")
+        old.evaluate(f"""() => {{ const s = {SAVED}; s.{key} = s.{key}.split('\\n#face-fat:')[0];
+          localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(s)); }}""")
+        old.reload()
+        old.evaluate(HOLD_CLIPBOARD)
+        if model.startswith("GPT"):
+            changed = old.get_by_text(re.compile(r"^The face has changed"))
+            expect(old.get_by_text(re.compile(r"copied with an earlier version of the tool"))).to_be_visible()
+            expect(changed).to_be_hidden()
+            old.get_by_role("tab", name="Face").click()
+            set_slider(old, "Beauty", 3)
+            expect(changed).to_be_visible()
+        else:
+            copy.nth(1).click()
+            old.wait_for_function("window.writes.length === 1")
+            old.evaluate("() => window.writes[0]()")
+            expect(old.get_by_text(re.compile(r"^Copied\. Your head sheet comes from an earlier version"))).to_be_visible()
+        old.close()
+    assert not errors, errors
+
+    # GPT, start from a photo: the hidden Beauty slider no longer changes the head prompt.
+    heads = []
+    for level in (0, 4):
+        photo = clipboard_page(browser, errors)
+        photo.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+        photo.get_by_role("tab", name="Face").click()
+        set_slider(photo, "Beauty", level)
+        photo.get_by_text("Start from a photo", exact=True).click()
+        layout = photo.get_by_text("Sheet layout only", exact=True)
+        if layout.count():
+            layout.first.click()
+        heads.append(prompts(photo)[0])
+        photo.close()
+    assert heads[0] == heads[1]
+    assert not errors, errors
+
+    # Seedream retouch: the operation is explicit. A join rewritten without image 2 is flagged and "Free retouch"
+    # leaves it; a precision added to "Add the heads" keeps its two images.
+    op = clipboard_page(browser, errors)
+    open_folds(op)
+    op.get_by_role("button", name="Combine head and body", exact=True).click()
+    open_folds(op)  # picking a preset folds "Other retouches"
+    change = op.locator("#sd-iter")
+    change.fill("make the backdrop darker")
+    expect(op.get_by_text(re.compile(r"^Your text no longer mentions image 2"))).to_be_visible()
+    op.get_by_role("button", name="Free retouch", exact=True).click()
+    retouch = [t for t in prompts(op) if "make the backdrop darker" in t]
+    assert retouch and retouch[0].startswith("Edit image 1"), retouch
+    assert "1: the sheet to retouch" in op.locator("body").inner_text()
+    op.get_by_role("button", name="Add the heads (extended canvas)", exact=True).click()
+    open_folds(op)
+    change.fill(change.input_value().replace("copied from the head reference sheet", "copied from the approved head reference sheet") + ", the hair a little longer")
+    prompts(op)
+    text = op.locator("body").inner_text()
+    assert "2. the head sheet" in text and "no longer mentions image 2" not in text
+    assert not errors, errors
+
+    # "Ordinaire" face: very angular features are not denied, nor a marked jaw on a heavy build.
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        face = clipboard_page(browser, errors)
+        face.get_by_role("radio", name=model, exact=True).click()
+        face.get_by_role("tab", name="Face").click()
+        set_slider(face, "Beauty", 2)
+        set_slider(face, "Angularity", 4)
+        head = prompts(face)[0]
+        assert not ("sculpted" in head and re.search(r"nothing chiselled|no sculpted cheekbones", head)), model
+        face.close()
+        jaw = clipboard_page(browser, errors)
+        jaw.get_by_role("radio", name=model, exact=True).click()
+        jaw.get_by_role("tab", name=re.compile(r"^Body")).click()
+        set_slider(jaw, "Build", 4)
+        jaw.get_by_role("tab", name="Face").click()
+        set_slider(jaw, "Beauty", 2)
+        jaw.get_by_text("Marked", exact=True).first.click()
+        head = prompts(jaw)[0]
+        assert "strong, defined jawline" in head and not re.search(r"no sculpted cheekbones or jawline|nothing chiselled", head), model
+        jaw.close()
+    assert not errors, errors
+
+    # A saved GPT session from before the model choice was recorded keeps GPT; a first visit opens on Seedream.
+    kept = clipboard_page(browser, errors)
+    kept.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, model: 'gpt'}))")
+    kept.reload()
+    expect(kept.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
+    kept.evaluate("localStorage.clear()")
+    kept.reload()
+    expect(kept.get_by_role("radio", name="Seedream 5.0", exact=True)).to_be_checked()
     assert not errors, errors
 
     browser.close()
