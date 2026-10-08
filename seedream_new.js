@@ -1762,8 +1762,9 @@ function sdObjViewsSpec() {
             ["dessus", ["Vue 3 : dessus (facultatif)", "View 3: top (optional)"], "", "Top view, seen from directly above."],
           ];
 }
+/* "Sheet layout only" keeps the photo's own light and has no light section to turn to night */
 function sdObjNight() {
-  return sdObjPlace() && "both" === e.objTime && !e.photo;
+  return sdObjPlace() && "both" === e.objTime && !(e.photo && e.photoOnly);
 }
 function sdObjOne(s, i) {
   var V = sdObjViewsSpec(),
@@ -1875,7 +1876,11 @@ function sdObjRow(i, t, R, I) {
       : sdT("3:2 (2:3 si l'objet est plus haut que large), demandé dans le prompt : vérifie l'image obtenue", "3:2 (2:3 if the object is taller than wide), asked in the prompt: check the image you get");
   if (3 === i)
     return [
-      ["Joins", sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it")],
+      [
+        "Joins",
+        (t.photo ? sdT("Ta photo. ", "Your photo. ") : "") +
+          sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
+      ],
       ["Format", F],
       ["Nomme-la", R(rU("nuit"))],
     ];
