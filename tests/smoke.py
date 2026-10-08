@@ -385,6 +385,19 @@ with sync_playwright() as p:
                 assert "\nNight: " in texts[3] and "Daytime" not in texts[3], place
                 assert "Your photo. The day view to redo at night" in lit.locator("body").inner_text(), place
             lit.close()
+    # With a source photo, views 2 and up (and the night card) are made from an earlier image of the same subject:
+    # the photo's "never ... from earlier images" lets that image through instead of forbidding it.
+    for cat, only in (("object", False), ("object", True), ("house", False), ("house", True)):
+        src = clipboard_page(browser, errors)
+        src.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
+            mode: 'object', objCat: '{cat}', objTime: 'both', photo: true, photoOnly: {str(only).lower()}}}))""")
+        src.reload()
+        texts = prompts(src)
+        assert re.search(r"never an? (object|place) from earlier images", texts[0]), (cat, only)
+        for t in texts[1:]:
+            assert not re.search(r"never an? (object|place) from earlier images", t), (cat, only, t[:300])
+            assert re.search(r"and (view 1|the day view)\b", t), (cat, only)
+        src.close()
     assert not errors, errors
 
     # Animals: the whole-animal sheet comes first and carries the identity; head close-ups are optional and made
