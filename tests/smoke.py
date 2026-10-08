@@ -290,6 +290,23 @@ with sync_playwright() as p:
         old.close()
     assert not errors, errors
 
+    # A person's beauty level does not make a new face of an animal's copied GPT head.
+    pet = clipboard_page(browser, errors)
+    pet.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    pet.get_by_role("radio", name="Animal", exact=True).click()
+    pet.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    pet.wait_for_function("window.writes.length === 1")
+    pet.evaluate("() => window.writes[0]()")
+    pet.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').headSig")
+    pet.get_by_role("radio", name="Person", exact=True).click()
+    pet.get_by_role("tab", name="Face").click()
+    pet.get_by_role("slider", name="Beauty").press("ArrowRight")
+    pet.get_by_role("radio", name="Animal", exact=True).click()
+    pet.get_by_role("tab", name="Coat").click()
+    pet.get_by_text("Long coat", exact=True).click()  # a head change builds on the copied head sheet
+    expect(pet.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")

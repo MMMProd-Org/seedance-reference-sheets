@@ -601,9 +601,10 @@ function sdLeanText() {
       : "a lean face with no puffiness, no fullness under the chin and a clear angle between jaw and neck; the breadth comes from the bones, not from fat")
   );
 }
-/* GPT: a new beauty level or corpulence is a new face, not an update of the last head sheet (the update kept a fat face) */
+/* GPT: a new beauty level or corpulence is a new face, not an update of the last head sheet (the update kept a fat face).
+   Both belong to the person: an animal head copy records them too, but they say nothing about the animal */
 function sdFaceReset() {
-  return null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +e.headFat !== +e.fat);
+  return "person" === e.mode && null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +e.headFat !== +e.fat);
 }
 function sdLooksText(lv) {
   var p = sdPos(),
