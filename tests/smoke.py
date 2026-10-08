@@ -494,6 +494,16 @@ with sync_playwright() as p:
         head = prompts(jaw)[0]
         assert "strong, defined jawline" in head and not re.search(r"no sculpted cheekbones or jawline|nothing chiselled", head), model
         jaw.close()
+        # Beauty 3 with both opening traits dropped (angular face on a slim build, delicate features, nose on Auto):
+        # no empty item before "rather small eyes".
+        bare = clipboard_page(browser, errors)
+        bare.evaluate("""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo',
+            photo: false, looks: 3, fat: 0, faceAngle: 4, featFine: 4, noseW: 'auto', noseP: 'auto', eyeSize: 'auto'}))""")
+        bare.reload()
+        bare.get_by_role("radio", name=model, exact=True).click()
+        plain = [t for t in prompts(bare) if re.search(r"(?i)plain, everyday face", t)]
+        assert plain and not any(re.search(r":\s*,", t) for t in plain), (model, [t[:200] for t in plain])
+        bare.close()
     assert not errors, errors
 
     # A saved GPT session from before the model choice was recorded keeps GPT; a first visit opens on Seedream.
