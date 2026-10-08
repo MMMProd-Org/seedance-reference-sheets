@@ -94,17 +94,22 @@ function sdBodyCopyMsg(t) {
     return t.sdShapeRef
       ? sdT("Copié. Dans Seedream, ajoute ton image guide comme image 1.", "Copied. In Seedream, add your shape guide as image 1.")
       : "";
-  var cur = "object" === t.mode ? "" : as(),
-    f = rU("tete");
+  var f = rU("tete");
   if (!t.sdHeadSig)
     return sdT(
       "Copié. Il manque la planche tête : crée-la d'abord, puis ajoute-la comme image 1 dans Seedream.",
       "Copied. The head sheet is missing: create it first, then add it as image 1 in Seedream.",
     );
-  if (t.sdHeadSig !== cur)
+  var st = sdSigState(t.sdHeadSig);
+  if ("changed" === st)
     return sdT(
       "Copié. Ta planche tête n'est plus à jour : refais-la, puis ajoute-la comme image 1.",
       "Copied. Your head sheet is out of date: make it again, then add it as image 1.",
+    );
+  if ("legacy" === st)
+    return sdT(
+      "Copié. Ta planche tête vient d'une version précédente de l'outil : refais-la seulement si tu as changé la corpulence depuis, sinon ajoute-la comme image 1.",
+      "Copied. Your head sheet comes from an earlier version of the tool: make it again only if you changed the build since, otherwise add it as image 1.",
     );
   return sdUseBodyImg()
     ? sdT(
@@ -585,6 +590,19 @@ function sdLean() {
 function sdSlim() {
   return +e.fat <= 1;
 }
+/* "same", "changed", or "legacy": a signature saved before v90 has no corpulence class; when everything it does hold
+   still matches, only that class is unknown, so the tool says so instead of announcing a changed face */
+function sdSigState(saved) {
+  if (!saved) return "none";
+  var cur = as();
+  if (saved === cur) return "same";
+  var x = sdSigExtra();
+  return x && -1 === saved.indexOf("\n#face-fat:") && saved === cur.slice(0, cur.length - x.length) ? "legacy" : "changed";
+}
+/* appended to the head signature: from "Ordinaire" up the final face text also depends on the corpulence class */
+function sdSigExtra() {
+  return "person" === e.mode && !e.photo && e.looks >= 2 ? "\n#face-fat:" + (sdSlim() ? "slim" : sdLean() ? "lean" : "full") : "";
+}
 function sdLeanText() {
   return (
     "facial fat in line with " +
@@ -604,11 +622,15 @@ function sdFaceReset() {
 function sdLooksText(lv) {
   var p = sdPos(),
     lean = sdLean(),
+    ang = +e.faceAngle > 2,
+    fine = +e.featFine > 2,
+    jaw = "strong" === e.jaw,
+    feat = ang || fine || jaw ? "plain, unremarkable features" : "",
     lip = "f" === e.pres && !("none" !== r8() && r9()) ? "lips barely darker than the skin around them, " : "";
   if (2 === lv)
     return (
       "A plain, forgettable face, the kind nobody notices in a crowd: " +
-      (lean ? "plain, unremarkable features, nothing chiselled" : "soft, slightly heavy features with little definition, no sculpted cheekbones or jawline") +
+      (feat || (lean ? "plain, unremarkable features, nothing chiselled" : "soft, slightly heavy features with little definition, no sculpted cheekbones or jawline")) +
       ", features slightly out of proportion with each other, " +
       lip +
       "hair without shine, no striking feature, with the asymmetry of a real face" +
@@ -620,11 +642,16 @@ function sdLooksText(lv) {
   if (3 === lv)
     return (
       "A plain, everyday face, the kind nobody notices in a crowd: " +
-      (sdSlim() ? "a flat mid-face" : lean ? "a broad face from its bone structure, with a flat mid-face" : "a broad face with full cheeks and a flat mid-face") +
-      ", a broad nose, clearly wider than the gap between the eyes, " +
+      [
+        ang ? (sdSlim() ? "" : "a broad face") : sdSlim() ? "a flat mid-face" : lean ? "a broad face from its bone structure, with a flat mid-face" : "a broad face with full cheeks and a flat mid-face",
+        fine && "auto" === e.noseW && "auto" === e.noseP ? "" : "a broad nose, clearly wider than the gap between the eyes",
+      ]
+        .filter(Boolean)
+        .join(", ") +
+      ", " +
       ("auto" === e.eyeSize ? "rather small eyes, each about a fifth of the face width, " : "") +
       (sdSlim() ? "" : "a wide jaw, nearly as wide as the cheekbones, ") +
-      (lean ? "plain, unremarkable features, nothing chiselled, " : "soft features with no definition, no sculpted cheekbones or jawline, ") +
+      (feat ? feat + ", " : lean ? "plain, unremarkable features, nothing chiselled, " : "soft features with no definition, no sculpted cheekbones or jawline, ") +
       lip +
       "hair without shine; " +
       (lean ? sdLeanText() + "; " : "") +
@@ -640,7 +667,7 @@ function sdLooksText(lv) {
       "A homely face that nobody looks at twice: " +
       ("auto" === e.eyeSize ? "small, deep-set eyes under heavy lids" : "deep-set eyes under heavy lids") +
       ", low, heavy brows, " +
-      (lean ? "a long lower face, a big, plain jaw and chin" : "a long, heavy lower face, a fleshy jaw and chin with no shape") +
+      (jaw ? "a long lower face, a big jaw and chin" : lean ? "a long lower face, a big, plain jaw and chin" : "a long, heavy lower face, a fleshy jaw and chin with no shape") +
       ", features that do not fit together, " +
       lip +
       "dull hair; " +
@@ -1115,8 +1142,17 @@ function sdKg() {
     h = (e.height || 170) / 100;
   return Math.round(bmi * h * h);
 }
+/* the operation is explicit data: editing the text never changes it (a precision keeps the two images);
+   leaving a preset is the "Retouche libre" chip; a two-image preset whose text no longer names image 2 gets a warning */
+function sdIterOpEff(t) {
+  return String(t.sdIter || "").trim() ? t.sdIterOp || "" : "";
+}
+function sdIterMismatch(t) {
+  var op = sdIterOpEff(t);
+  return ("join" === op || "heads" === op) && !/image 2/i.test(String(t.sdIter || ""));
+}
 function sdIterText() {
-  if ("join" === e.sdIterOp) return String(e.sdIter || "").trim();
+  if ("join" === sdIterOpEff(e)) return String(e.sdIter || "").trim();
   var c = String(e.sdIter || "").trim().replace(/[.\s]+$/, ""),
     lc = c.toLowerCase(),
     w = sdWho(),
@@ -1150,7 +1186,7 @@ function sdIterText() {
   );
 }
 function sdOp(t) {
-  return String(t.sdIter || "").trim() ? t.sdIterOp || "" : nw() ? "join" : "";
+  return String(t.sdIter || "").trim() ? sdIterOpEff(t) : nw() ? "join" : "";
 }
 function sdIterBlock(t, g, B, L) {
   sdCur = { t: t, g: g, L: L };
@@ -1176,7 +1212,7 @@ function sdUnsup(t, n) {
   });
 }
 function sdBarItems(t) {
-  var op = String(t.sdIter || "").trim() ? t.sdIterOp || "" : "join";
+  var op = String(t.sdIter || "").trim() ? sdIterOpEff(t) : "join";
   return [
     ["head", "Tête", !1],
     ["body", "Corps", !1],
@@ -1264,6 +1300,7 @@ function sdCardExtra(k) {
                     ["join", "Assembler tête et corps", sdPresetJoin()],
                     ["dress", "Habiller", sdPresetDress()],
                     ["heads", "Ajouter les têtes (canevas agrandi)", sdPresetHeads()],
+                    ["", "Retouche libre", null],
                   ].map(function (b) {
                     var on = op === b[0];
                     return (0, l.jsxs)(
@@ -1271,7 +1308,7 @@ function sdCardExtra(k) {
                       {
                         type: "button",
                         "aria-pressed": on,
-                        onClick: () => (g("sdIter", b[2]), g("sdIterOp", b[0])),
+                        onClick: () => (null === b[2] ? g("sdIterOp", "") : (g("sdIter", b[2]), g("sdIterOp", b[0]))),
                         className:
                           "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
                           (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
@@ -1287,8 +1324,12 @@ function sdCardExtra(k) {
                 "p",
                 {
                   className: "text-muted-foreground",
-                  children:
-                    "dress" === op
+                  children: sdIterMismatch(t)
+                    ? sdT(
+                        "Ton texte ne mentionne plus l'image 2 : si tu ne fais plus cette opération, choisis « Retouche libre ».",
+                        "Your text no longer mentions image 2: if you are no longer doing this operation, choose “Free retouch”.",
+                      )
+                    : "dress" === op
                       ? "Même corps, avec un haut court et un legging."
                       : "heads" === op
                         ? "Agrandis d'abord ta planche habillée de 25 % vers le haut, fond gris."
@@ -1675,6 +1716,234 @@ function sdScaleCtl(t, g, k) {
     k,
   );
 }
+/* objects and places: one image per view instead of one six-view sheet. A view keeps the whole frame, so its details
+   get every pixel; views 2 and 3 are made from view 1 in the same conversation, so the subject stays identical.
+   Two opposite views cover the sides a shot is likely to see (fiche 04: a reference still carries proportions and colors
+   under angles it does not show; fiche 05: a face, a reverse angle or a place shown nowhere is invented). View 3 is optional.
+   Places stay 16:9 (a set plate is used for framing, fiche 04); "Jour et nuit" adds a night card made from the chosen day view. */
+function sdObjPlace() {
+  return "house" === e.objCat || "interior" === e.objCat;
+}
+function sdObjViewsSpec() {
+  var c = e.objCat,
+    noWin = "interior" === c && 0 > nh("objLightSel", "objLightOpts", "objLight").indexOf("daylight through the windows");
+  return "house" === c
+    ? [
+        ["facade", ["Vue 1 : façade", "View 1: front"], "the front view", "front view of the house, straight on"],
+        ["34", ["Vue 2 : trois-quarts", "View 2: three-quarter"], "", "three-quarter view from the front left"],
+        ["arriere", ["Vue 3 : arrière (facultatif)", "View 3: rear (optional)"], "", "rear view"],
+      ]
+    : "interior" === c
+      ? [
+          ["entree", ["Vue 1 : depuis l'entrée", "View 1: from the entrance"], "the view from the entrance door", "wide view from the entrance door"],
+          ["contrechamp", ["Vue 2 : contrechamp", "View 2: reverse angle"], "", "wide view from the opposite corner, looking back toward the entrance"],
+          ["lumiere", ["Vue 3 : vers la lumière (facultatif)", "View 3: toward the light (optional)"], "", noWin ? "view toward the main light source" : "view toward the main windows"],
+        ]
+      : "clothing" === c
+        ? [
+            ["face", ["Vue 1 : face", "View 1: front"], "the front view", "Front view, straight on."],
+            ["dos", ["Vue 2 : dos", "View 2: back"], "", "Back view, straight on."],
+            ["plat", ["Vue 3 : à plat (facultatif)", "View 3: laid flat (optional)"], "", "The garment laid flat, seen from directly above."],
+          ]
+        : [
+            ["34av", ["Vue 1 : trois-quarts avant", "View 1: three-quarter front"], "the three-quarter front view", "Three-quarter front view: turned about 45 degrees so its front and one side both show, camera slightly above it."],
+            ["34ar", ["Vue 2 : trois-quarts arrière", "View 2: three-quarter rear"], "", "Three-quarter rear view from the opposite corner: its back and its other side both show, camera slightly above it."],
+            ["dessus", ["Vue 3 : dessus (facultatif)", "View 3: top (optional)"], "", "Top view, seen from directly above."],
+          ];
+}
+function sdObjNight() {
+  return sdObjPlace() && "both" === e.objTime && !e.photo;
+}
+function sdObjOne(s, i) {
+  var V = sdObjViewsSpec(),
+    v = V[i],
+    same =
+      "The same single object as in view 1 (" +
+      V[0][2] +
+      ": the image just above in this conversation, or attached): identical shape, proportions, colors, materials, markings and wear; only the viewpoint changes.\n";
+  s = String(s || "")
+    .replace(
+      / to be used as a multi-angle reference for AI video: a six-view studio turnaround of one single (.+?) in one image, as for a product or prop reference\./,
+      " to be used as an identity reference for AI video: one view of one single $1, as for a product or prop reference.",
+    )
+    .replace(
+      / to be used as an object reference for AI video: a six-view studio turnaround of the (.+?) in the attached photo\(s\), in one image\./,
+      " to be used as an object reference for AI video: one view of the $1 in the attached photo(s).",
+    )
+    .replace("\nIt is the same single object in all six views: identical shape, proportions, colors, materials, markings and wear. ", "\n")
+    .replace(
+      /LAYOUT:\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid, separated by narrow gaps of the same grey as the backdrop\. [^\n]*\nThe whole ([^\n]*?) is visible in every panel, centered, at the same scale in the front, back and side views, filling about 80% of the panel\./,
+      "LAYOUT:\nA 3:2 landscape image, or 2:3 portrait if the $1 is clearly taller than wide, showing the whole $1 once, centered, filling about 80% of the frame. " + v[3],
+    )
+    .replace(", horizontal in the side views,", ",")
+    .replace(", identical in all panels. ", ". ")
+    .replace("the same light in all six panels", "the same light in every view of this object")
+    .replace(", camera perpendicular to the object for the front, back and side views and directly above it for the top view, deep focus", ", deep focus")
+    .replace(" Panels whose widths differ by more than about 10% are a missed requirement.", "");
+  if (i > 0)
+    s = /\nOBJECT:\n/.test(s)
+      ? s.replace(/\nOBJECT:\n(This is a new object: do not reuse any object from earlier images in this conversation\.\n)?/, "\nOBJECT:\n" + same)
+      : s.replace(/\nSOURCE:\n/, "\nSOURCE:\n" + same.replace("\n", " "));
+  return s;
+}
+/* i: view index; night: the night card, made from the day view just above */
+function sdPlaceOne(s, i, night) {
+  var V = sdObjViewsSpec(),
+    v = V[i];
+  s = String(s || "")
+    .replace(
+      / to be used as a location reference for AI video: a six-view reference sheet of one single (.+?),? in one image, as for a film location scout\./,
+      " to be used as a location reference for AI video: one view of one single $1, as for a film location scout.",
+    )
+    .replace(
+      / to be used as a location reference for AI video: a six-view reference sheet of the (house|interior) in the attached photo\(s\), in one image\./,
+      " to be used as a location reference for AI video: one view of the $1 in the attached photo(s).",
+    )
+    .replace(/It is the same single place in all six views: identical (.+?), materials, colors and wear(; only the light changes between day and night)?\. /, function (m0, what) {
+      return night
+        ? "The same place and the same viewpoint as the image just above in this conversation (or attached): identical " + what + ", materials, colors and wear; only the light changes, to night. "
+        : i > 0
+          ? "The same place as in view 1 (" + V[0][2] + ": the image just above in this conversation, or attached): identical " + what + ", materials, colors and wear; only the viewpoint changes. "
+          : "";
+    })
+    .replace(
+      /LAYOUT:\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid, separated by narrow gaps of neutral grey\. [^\n]*/,
+      "LAYOUT:\nA 16:9 landscape image showing one single view: " + (night ? "exactly the viewpoint of the image just above" : v[3] + (/attached photo/.test(s) && "lumiere" === v[0] ? ", or toward the main light source if the photos show no window" : "")) + ".",
+    )
+    .replace(/(LIGHT AND TIME OF DAY:\n)(.*?) \(top row\)\. (.*?) \(bottom row\)\./, function (m0, h, day, nig) {
+      return h + (night ? nig : day) + ".";
+    })
+    .replace("; the aerial view from about 15 m high", "")
+    .replace("; the high-angle view from a top corner of the room", "")
+    .replace("No captions, labels, panel numbers or watermarks", "No captions, labels, numbers or watermarks")
+    .replace(" Panels whose widths differ by more than about 10% are a missed requirement.", "");
+  return s;
+}
+function sdObjSplit(t, m) {
+  if ("object" !== t.mode) return m;
+  var o = Object.assign({}, m),
+    place = sdObjPlace();
+  if ("string" == typeof m.obj) {
+    o.obj = place ? sdPlaceOne(m.obj, 0) : sdObjOne(m.obj, 0);
+    o.obj2 = place ? sdPlaceOne(m.obj, 1) : sdObjOne(m.obj, 1);
+    o.obj3 = place ? sdPlaceOne(m.obj, 2) : sdObjOne(m.obj, 2);
+    sdObjNight() && (o.obj4 = sdPlaceOne(m.obj, 0, !0));
+  }
+  "string" == typeof m.editObj &&
+    (o.editObj = m.editObj.replace(
+      "Edit the object reference sheet attached to this message, or if none is attached, the latest object reference sheet in this conversation. It shows one single object from six viewpoints, in separate panels on a grey backdrop.",
+      place
+        ? "Edit the location reference image attached to this message, or if none is attached, the latest location reference image in this conversation. It shows one single place from one viewpoint."
+        : "Edit the object reference image attached to this message, or if none is attached, the latest object reference image in this conversation. It shows one single object from one viewpoint on a grey backdrop.",
+    ));
+  return o;
+}
+function sdObjCards(B) {
+  var V = sdObjViewsSpec(),
+    c = [B("obj", "1", sdT(V[0][1][0], V[0][1][1])), B("obj2", "2", sdT(V[1][1][0], V[1][1][1])), B("obj3", "3", sdT(V[2][1][0], V[2][1][1]))];
+  sdObjNight() && c.push(B("obj4", "4", sdT("De nuit : même point de vue que la vue de jour choisie", "At night: same viewpoint as the chosen day view")));
+  return c;
+}
+function sdObjBar() {
+  return [
+    ["obj", sdT("Copier vue 1", "Copy view 1"), !1],
+    ["obj2", sdT("Copier vue 2", "Copy view 2"), !1],
+  ];
+}
+function sdObjRow(i, t, R, I) {
+  var V = sdObjViewsSpec(),
+    place = sdObjPlace(),
+    F = place
+      ? sdT("16:9, demandé dans le prompt : vérifie l'image obtenue", "16:9, asked in the prompt: check the image you get")
+      : sdT("3:2 (2:3 si l'objet est plus haut que large), demandé dans le prompt : vérifie l'image obtenue", "3:2 (2:3 if the object is taller than wide), asked in the prompt: check the image you get");
+  if (3 === i)
+    return [
+      ["Joins", sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it")],
+      ["Format", F],
+      ["Nomme-la", R(rU("nuit"))],
+    ];
+  return [
+    [
+      "Joins",
+      0 === i
+        ? t.photo
+          ? "Ta photo"
+          : "Rien"
+        : (0, l.jsxs)("span", {
+            children: [
+              t.photo ? sdT("Ta photo. ", "Your photo. ") : "",
+              sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
+              R(rU(V[0][0])),
+            ],
+          }),
+    ],
+    ["Format", F],
+    ["Nomme-la", R(rU(V[i][0]))],
+  ];
+}
+/* animals: the body sheet is the identity reference on its own (its four views show the head, coat and markings);
+   head close-ups are optional, only for shots that see the head close, and are made from the body sheet.
+   Two independent sheets of the same animal would be two references competing for the head (fiche 04). */
+function sdAnimalSplit(t, m) {
+  if ("animal" !== t.mode || "string" != typeof m.head || "string" != typeof m.body) return m;
+  var h = m.head,
+    b = m.body,
+    subj = (h.match(/\nSUBJECT:\n([\s\S]*?)\n\n/) || [])[1],
+    o = Object.assign({}, m);
+  if (!subj || !/\nREFERENCE:\n[\s\S]*?\n\n/.test(b)) return m;
+  o.body = b
+    .replace(
+      /\nREFERENCE:\n[\s\S]*?\n\n/,
+      "\nSUBJECT:\n" +
+        subj.replace(", the same in every panel)", ", the same in every view)") +
+        "\nThe head is clearly visible in every view, with its eyes, ears and markings readable: this sheet is the animal's identity reference.\n\n",
+    )
+    .replace(/ \(the same breed or type as on the head sheet\)/g, " (the breed or type described above)")
+    .replace(" Every new attempt keeps the face and identity exactly as in the head sheet: only fix what was missed.", " Every new attempt keeps the animal's identity: only fix what was missed.");
+  /* with a source photo, the close-ups keep the photo as their source (the body sheet comes from it too) */
+  o.head = /\nSUBJECT:\nUse only the attached photo/.test(h)
+    ? h
+    : h
+    .replace(
+      /\nSUBJECT:\n[^\n]*\n/,
+      "\nSUBJECT:\nThe same animal as on its four-view sheet (the image just above in this conversation, or attached): identical breed, head, eyes, coat, markings and accessories; only the framing changes, to close-ups of the head.\n",
+    )
+    .replace("a specific breed or regional type of your own choice, not the most common default, the same in every panel", "the breed or type of its four-view sheet");
+  return o;
+}
+function sdAnimalHeadJoin(t, R) {
+  return (0, l.jsxs)("span", {
+    children: [
+      t.photo ? sdT("Ta photo. ", "Your photo. ") : "",
+      sdT("La planche de l'animal : rien si elle est juste au-dessus dans la conversation, sinon ", "The animal sheet: nothing if it is just above in the conversation, otherwise "),
+      R(rU("animal")),
+    ],
+  });
+}
+/* "Matières" and "Couleurs dominantes": an explicit Auto chip, pressed while nothing is chosen (the prompt then names none) */
+function sdMultiAuto(a, r, t, n, p) {
+  if ("objMatSel" !== a && "objColSel" !== a) return p;
+  var vals = Array.isArray(t[a]) ? t[a] : [],
+    auto = !vals.length && !String(t[r.custom] || "").trim();
+  return Object.assign({}, p, {
+    opts: [["auto", "Auto", "", ""]].concat(p.opts),
+    values: auto ? ["auto"] : vals,
+    onChange: function (v) {
+      var x = {};
+      x[a] = [];
+      r.custom && (x[r.custom] = "");
+      !auto && v.indexOf("auto") >= 0
+        ? n(function (s) {
+            return Object.assign({}, s, x);
+          })
+        : p.onChange(
+            v.filter(function (k) {
+              return "auto" !== k;
+            }),
+          );
+    },
+  });
+}
 /* "plain" / "homely": the traits drawn at random (features left on Auto) are swapped for their unglamorous counterparts.
    Only the "Face structure" line is touched: it holds the random traits only, never the features the user set. */
 var SD_PLAIN = [
@@ -1709,14 +1978,19 @@ function sdPlainFace(txt, looks) {
   var L = looks >= 2 ? SD_PLAIN : null;
   if (!L || "string" != typeof txt) return txt;
   var out = txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
+    var ang = +e.faceAngle > 2,
+      fine = +e.featFine > 2 && "auto" === e.noseW && "auto" === e.noseP;
     L.forEach(function (p) {
-      (sdSlim() && ("a narrow face" === p[0] || "an oval face" === p[0])) || (line = line.split(p[0]).join("\u0000" + p[1] + "\u0000"));
+      (sdSlim() && ("a narrow face" === p[0] || "an oval face" === p[0])) ||
+        (ang && /cheek|jaw/.test(p[0])) ||
+        (fine && /nose/.test(p[0])) ||
+        (line = line.split(p[0]).join("\u0000" + p[1] + "\u0000"));
     });
     /* 3+: the looks line asks for small eyes, a broad nose and a broad face, the drawn traits must not say otherwise */
     looks >= 3 &&
       (line = line
         .replace(/(^|[^\u0000])medium-sized eyes/, "$1small eyes")
-        .replace(/(^|[^\u0000])a nose of medium width/, "$1a broad nose")
+        .replace(/(^|[^\u0000])a nose of medium width/, +e.featFine > 2 && "auto" === e.noseW && "auto" === e.noseP ? "$1a nose of medium width" : "$1a broad nose")
         .replace(/(^|[^\u0000])a face of medium width/, sdSlim() ? "$1a face of medium width" : "$1a broad face"));
     line = line.replace(/\u0000/g, "");
     /* slim body: the drawn face width and jaw follow the corpulence, the shapes stay */
@@ -1770,7 +2044,7 @@ var SD_GPT_LOOKS_OLD = {
   4: "a homely, unconventional face: clearly irregular, uneven features that do not fit together harmoniously, nothing striking or glamorous",
 };
 function sdGptPost(t, m) {
-  if (!(t.looks >= 2) || "person" !== t.mode) return m;
+  if (!(t.looks >= 2) || "person" !== t.mode || t.photo) return m;
   var lv = Math.min(4, +t.looks),
     newL = sdLooksText(lv).replace(/^A /, "a ").replace(/\.$/, ""),
     clin = "photo" === t.style && !t.photo,
@@ -1813,7 +2087,7 @@ function sdGptPost(t, m) {
   return o;
 }
 function sdWrap(t, m) {
-  if ("seedream" !== t.model) return sdGptPost(t, m);
+  if ("seedream" !== t.model) return sdAnimalSplit(t, sdObjSplit(t, sdGptPost(t, m)));
   var o = {},
     k;
   if (!sdOk(t)) {
@@ -1895,9 +2169,9 @@ function sdRows(t, m, R, q) {
       J,
       "join" === sdOp(e)
         ? "1 : ta planche corps sans tête validée. 2 : la planche tête."
-        : "heads" === e.sdIterOp
+        : "heads" === sdIterOpEff(e)
         ? "1 : ta planche habillée, agrandie de 25 % vers le haut. 2 : la planche tête."
-        : "dress" === e.sdIterOp
+        : "dress" === sdIterOpEff(e)
           ? "1 : ta planche corps sans tête validée"
           : "1 : la planche à retoucher",
     ],
