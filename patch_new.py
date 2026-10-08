@@ -519,6 +519,16 @@ for i in (34, 36):
     pad = ' ' * i
     a = pad + 'headKind: "",\n' + pad + 'headRemovals: "",\n'
     rep(a, a + pad + 'headLooks: "",\n' + pad + 'headFat: "",\n')
+# P38 a head copy saved before P37 has no headLooks or headFat: take the current ones on load, as the loader does for headOwner
+rep('''          r(e),
+          e.base && n(e.base),''', '''          r(e),
+          [e].concat(Object.values(e.modeCfg || {})).forEach(function (o) {
+            o &&
+              o.headSig &&
+              (null == o.headLooks || "" === o.headLooks) &&
+              ((o.headLooks = e.looks), (o.headFat = e.fat));
+          }),
+          e.base && n(e.base),''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src

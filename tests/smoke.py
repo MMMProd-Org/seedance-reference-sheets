@@ -251,6 +251,33 @@ with sync_playwright() as p:
     expect(variant).to_be_hidden()
     assert not errors, errors
 
+    # A head copy saved before its beauty level and corpulence were recorded takes the current ones on load,
+    # whether it belongs to the current subject or is kept for another one.
+    for away in (False, True):
+        old = clipboard_page(browser, errors)
+        old.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+        old.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+        old.wait_for_function("window.writes.length === 1")
+        old.evaluate("() => window.writes[0]()")
+        old.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').headSig")
+        if away:
+            old.get_by_role("radio", name="Animal", exact=True).click()
+            old.wait_for_function("(JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).modeCfg || {}).person")
+        old.evaluate("""() => { const s = JSON.parse(localStorage.getItem('fiche-perso-seedance-v1'));
+          [s, (s.modeCfg || {}).person].forEach((o) => o && (delete o.headLooks, delete o.headFat));
+          localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(s)); }""")
+        old.reload()
+        if away:
+            old.get_by_role("radio", name="Person", exact=True).click()
+        variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+        old.get_by_text("Man", exact=True).click()
+        expect(variant).to_be_visible()
+        old.get_by_role("tab", name="Face").click()
+        old.get_by_role("slider", name="Beauty").press("ArrowRight")
+        expect(variant).to_be_hidden()
+        old.close()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")
