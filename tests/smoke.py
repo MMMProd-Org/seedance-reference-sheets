@@ -217,6 +217,23 @@ with sync_playwright() as p:
     expect(subject.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
     assert not errors, errors
 
+    # The beauty level of the last copied GPT head survives a reload: changing it afterwards makes a new face.
+    looks = clipboard_page(browser, errors)
+    looks.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    looks.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    looks.wait_for_function("window.writes.length === 1")
+    looks.evaluate("() => window.writes[0]()")
+    looks.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').headSig")
+    looks.reload()
+    expect(looks.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
+    variant = looks.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+    looks.get_by_text("Man", exact=True).click()
+    expect(variant).to_be_visible()  # a head change alone still builds on the copied head sheet
+    looks.get_by_role("tab", name="Face").click()
+    looks.get_by_role("slider", name="Beauty").press("ArrowRight")
+    expect(variant).to_be_hidden()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")
