@@ -652,8 +652,10 @@ function sdLooksText(lv) {
         fine && "auto" === e.noseW && "auto" === e.noseP ? "" : "a broad nose, clearly wider than the gap between the eyes",
       ]
         .filter(Boolean)
-        .join(", ") +
-      ", " +
+        .map(function (s) {
+          return s + ", ";
+        })
+        .join("") +
       ("auto" === e.eyeSize ? "rather small eyes, each about a fifth of the face width, " : "") +
       (sdSlim() ? "" : "a wide jaw, nearly as wide as the cheekbones, ") +
       (feat ? feat + ", " : lean ? "plain, unremarkable features, nothing chiselled, " : "soft features with no definition, no sculpted cheekbones or jawline, ") +
