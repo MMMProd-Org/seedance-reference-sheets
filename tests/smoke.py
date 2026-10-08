@@ -76,28 +76,33 @@ with sync_playwright() as p:
     assert page.evaluate("document.documentElement.lang") == "en", "page must open in English"
     assert page.title() == "Seedance Reference Sheets", page.title()
 
-    page.get_by_role("button", name="Show the prompt").first.click()
+    page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()
     assert len(prompt) > 200 and "16:9" in prompt, f"no prompt shown: {prompt[:120]!r}"
 
     # Deselecting a retouch preset clears its text, so the Retouch card is disabled again.
-    preset = page.get_by_role("button", name="Dress in sportswear", exact=True)
+    preset = page.get_by_role("button", name="Dress", exact=True)
     change = page.locator("#sd-iter")
-    hint = page.get_by_text("Write the change first.", exact=True)
+    hint = page.get_by_text("Open “Other retouches” and pick or write a retouch.", exact=True)
+
+    def open_retouches():  # picking a preset folds "Other retouches"
+        if not page.locator("#sd-iter").is_visible():
+            page.get_by_text("Other retouches", exact=True).click()
+
+    open_retouches()
     expect(hint).to_be_visible()
     preset.click()
-    expect(preset).to_have_attribute("aria-pressed", "true")
     expect(change).not_to_have_value("")
     expect(hint).to_be_hidden()
+    open_retouches()
+    expect(preset).to_have_attribute("aria-pressed", "true")
     preset.click()
-    expect(preset).to_have_attribute("aria-pressed", "false")
     expect(change).to_have_value("")
     expect(hint).to_be_visible()
+    open_retouches()
+    expect(preset).to_have_attribute("aria-pressed", "false")
 
     # The retouch prompt no longer asks to keep a part the change touches, in English or French.
-    show = page.get_by_role("button", name="Show the prompt")
-    for _ in range(show.count()):  # each click turns one button into "Hide the prompt"
-        show.first.click()
     retouch = page.locator('pre[data-out="iter"]')
     for text, kept, dropped in [
         ("sharper biceps and triceps", "the hips and legs", "the muscles"),
@@ -111,7 +116,7 @@ with sync_playwright() as p:
         ("a flatter tummy", "the skin", "the muscles"),
         ("bigger breasts", "the glutes", "the body's size, weight and proportions"),
         ("make her curvier", "the muscles", "the body's size, weight and proportions"),
-        ("a broader torso", "the glutes", "the breasts' size, shape and hang"),
+        ("a broader torso", "the glutes", "the bust's size, shape and hang"),
         # clothing words that share a stem with a body word must keep the body
         ("put her in skinny jeans", "the body's size, weight and proportions", "the outfit"),
         ("a bulky winter jacket", "the body's size, weight and proportions", "the outfit"),
@@ -185,6 +190,17 @@ with sync_playwright() as p:
     cross.wait_for_function("window.writes.length === 3")
     cross.evaluate("() => window.writes[2]()")
     expect(cross.get_by_text(head_ok)).to_be_visible()
+
+    # For a headless body, "Combine head and body" is the default while the change is empty: a click fills it in.
+    headless = clipboard_page(browser, errors)
+    headless.get_by_role("tab", name=re.compile(r"^Body")).click()
+    headless.get_by_text(re.compile(r"^Headless body sheet")).first.click()
+    join = headless.get_by_role("button", name="Combine head and body", exact=True)
+    if not headless.locator("#sd-iter").is_visible():  # a default preset folds "Other retouches"
+        headless.get_by_text("Other retouches", exact=True).click()
+    expect(join).to_have_attribute("aria-pressed", "true")
+    join.click()
+    expect(headless.locator("#sd-iter")).not_to_have_value("")
 
     # A head copy for another subject must not cancel a pending one: each subject keeps its own head sheet.
     subject = clipboard_page(browser, errors)
