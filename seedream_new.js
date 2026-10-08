@@ -1762,8 +1762,9 @@ function sdObjViewsSpec() {
             ["dessus", ["Vue 3 : dessus (facultatif)", "View 3: top (optional)"], "", "Top view, seen from directly above."],
           ];
 }
+/* "Sheet layout only" keeps the photo's own light and has no light section to turn to night */
 function sdObjNight() {
-  return sdObjPlace() && "both" === e.objTime;
+  return sdObjPlace() && "both" === e.objTime && !(e.photo && e.photoOnly);
 }
 function sdObjOne(s, i) {
   var V = sdObjViewsSpec(),
