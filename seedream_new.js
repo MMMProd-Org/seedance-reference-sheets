@@ -1806,7 +1806,15 @@ function sdObjOne(s, i) {
     s = /\nOBJECT:\n/.test(s)
       ? s.replace(/\nOBJECT:\n(This is a new object: do not reuse any object from earlier images in this conversation\.\n)?/, "\nOBJECT:\n" + same)
       : s.replace(/\nSOURCE:\n/, "\nSOURCE:\n" + same.replace("\n", " "));
+  if (i > 0) s = sdPhotoAlso(s, "object", "view 1");
   return s;
+}
+/* with a source photo, views 2 and up and the night card are made from an earlier image of the same subject (view 1,
+   or the day view): the photo's "never ... from earlier images" lets that one image through */
+function sdPhotoAlso(s, what, ref) {
+  return s.replace(new RegExp("Use only the attached photo(\\(s\\)| for this " + what + "), never an? " + what + " from earlier images"), function (m0, tail) {
+    return "Use only the attached photo" + ("(s)" === tail ? "(s) and " + ref : " and " + ref + tail) + ", never any other " + what + " from earlier images";
+  });
 }
 /* i: view index; night: the night card, made from the day view just above */
 function sdPlaceOne(s, i, night) {
@@ -1839,6 +1847,7 @@ function sdPlaceOne(s, i, night) {
     .replace("; the high-angle view from a top corner of the room", "")
     .replace("No captions, labels, panel numbers or watermarks", "No captions, labels, numbers or watermarks")
     .replace(" Panels whose widths differ by more than about 10% are a missed requirement.", "");
+  if (i > 0 || night) s = sdPhotoAlso(s, "place", night ? "the day view" : "view 1");
   return s;
 }
 function sdObjSplit(t, m) {
