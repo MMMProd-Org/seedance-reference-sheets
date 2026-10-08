@@ -9,7 +9,7 @@ def rep(old,new,count=1):
     assert n==count,(n,old[:90])
     src=src.replace(old,new)
 # P1 state defaults
-rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n  },')
+rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n    sdBodyImg: !0,\n  },')
 # P17 new bust shape "Poire" (GPT + Seedream)
 rep('''      [
         "conical",
@@ -85,6 +85,86 @@ rep('''                  "bust" === i
                         ? "Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "
                         : "Repère pour toi, jamais envoyé au modèle : le prompt décrit le volume par sa projection de profil, sans taille de bonnet. ") + "''')
 rep(''' Bonnet européen = tour de poitrine moins dessous de poitrine''', '''Bonnet européen = tour de poitrine moins dessous de poitrine''')
+# P24 GPT body, men in the reference outfit: natural front fill (same wording as Seedream), no "flat front panel"
+rep('''        ("m" === e.pres
+          ? "shirtless, fitted competition swim shorts ending at the upper thigh"
+          : "a swim set: a " +
+            ny() +
+            ", and fitted swim shorts ending at the upper thigh") +
+        t +
+        "; fully opaque in all four views,''', '''        ("m" === e.pres
+          ? "shirtless, square-cut swim trunks ending at the upper thigh"
+          : "a swim set: a " +
+            ny() +
+            ", and fitted swim shorts ending at the upper thigh") +
+        t +
+        ("m" === e.pres ? "; the front naturally filled, in proportion to his adult build, neither flattened nor padded nor exaggerated" : "") +
+        "; fully opaque in all four views,''')
+rep('''      ("m" === e.pres
+        ? "shirtless, " +
+          n +
+          ", in plain cobalt blue, plain unbranded white training shoes"''', '''      ("m" === e.pres
+        ? "shirtless, " +
+          n.replace(" with a flat front panel", "") +
+          ", in plain cobalt blue; the front naturally filled, in proportion to his adult build, neither flattened nor padded nor exaggerated; plain unbranded white training shoes"''')
+# P25 Seedream recommendation shown with the "Planche corps sans tête" toggle (Corps tab)
+rep('''                  (0, l.jsx)(ax, {
+                    checked: !!t[a],
+                    onChange: (e) => g(a, e),
+                    children: o,
+                  }),
+                  r.hint &&''', '''                  (0, l.jsx)(ax, {
+                    checked: !!t[a],
+                    onChange: (e) => g(a, e),
+                    children: o,
+                  }),
+                  "headless" === a &&
+                    "seedream" === t.model &&
+                    (0, l.jsx)("p", {
+                      className: "mt-1 text-sm font-semibold",
+                      children:
+                        "Conseillé : sans visage dans l'image, Seedream respecte mieux la poitrine, les fessiers et les proportions. La tête s'ajoute ensuite avec la carte 3 (« Assembler tête et corps »).",
+                    }),
+                  r.hint &&''')
+# P26 Seedream: dedicated card component + column title
+rep('''        B = (e, t, n, r, a) =>
+          (0, l.jsx)(
+            aj,''', '''        B = (e, t, n, r, a) =>
+          (0, l.jsx)(
+            "seedream" === sdModelNow && !sdX ? sdCard : aj,''')
+rep('''            ? y
+              ? "Ta planche"
+              : "Tes deux images"
+            : "Ta retouche",
+        W =''', '''            ? y
+              ? "Ta planche"
+              : "seedream" === t.model
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes deux images"
+            : "Ta retouche",
+        W =''')
+# P29 GPT head sheet: four views (back of the head added) for people; looks and imperfection texts; flat light for plain faces
+rep('''      " to be used as an identity reference for AI video: three " +
+      (n ? "" : "close-up ") +
+      "studio portraits of the same " +''', '''      " to be used as an identity reference for AI video: " +
+      (n ? "three studio portraits" : "four close-up studio views") +
+      " of the same " +''')
+rep('''                    "Create a real photograph to be used as an identity reference for AI video: three " +
+                    ((t = "animal" === e.mode) ? "" : "close-up ") +
+                    "studio portraits of the " +''', '''                    "Create a real photograph to be used as an identity reference for AI video: " +
+                    ((t = "animal" === e.mode) ? "three studio portraits" : "four close-up studio views") +
+                    " of the " +''')
+rep('''    : "A 16:9 landscape image split into three equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop.\\nEach panel is a tight close-up of the head and neck, framed from just above the top of the hair down to the base of the neck and cropped at the collarbones, so the head, from the top of the hair to the chin, fills about two thirds of the panel height. Nothing below the collarbones is visible: no chest and no torso.\\nLeft panel: front view, facing the camera, eyes looking into the lens.\\nCenter panel: three-quarter view, head turned 45 degrees toward the subject's left.\\nRight panel: exact profile of the subject's left side, the face pointing toward the left edge of the panel.\\nThe head is the same size and at the same height in all three panels. Long hair may be cropped by the panel edges.";''', '''    : "A 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop.\\nEach panel is a tight close-up of the head and neck, framed from just above the top of the hair down to the base of the neck and cropped at the collarbones, so the head, from the top of the hair to the chin, fills about two thirds of the panel height. Nothing below the collarbones is visible: no chest and no torso.\\nFirst panel (left): front view, facing the camera, eyes looking into the lens.\\nSecond panel: three-quarter view, head turned 45 degrees toward the subject's left.\\nThird panel: exact profile of the subject's left side, the face pointing toward the left edge of the panel.\\nFourth panel (right): back view, the back of the head seen straight from behind, no face visible" + sdBackHair() + ".\\nThe head is the same size and at the same height in all four panels. Long hair may be cropped by the panel edges.";''')
+rep('''the same light in all three panels. 85mm lens''', '''the same light in every panel. 85mm lens''')
+rep('''    ["p3", "Profil", "the right panel (left profile)"],
+  ],''', '''    ["p3", "Profil", "the third panel (left profile)"],
+    ["p4", "Dos", "the fourth panel (back view)"],
+  ],''')
+rep('''                                : "tête en trois vues, corps en quatre vues",''', '''                                : "tête et corps en quatre vues",''')
+rep('''        "plain, unremarkable looks with slightly irregular features, clearly not a model",''', '''        "a plain, forgettable face, the kind nobody notices in a crowd: features slightly out of proportion with each other, a little heavy or a little bland in places, no striking feature",''')
+rep('''        "unconventional, homely looks with irregular, uneven features, clearly not conventionally attractive",''', '''        "a homely, unconventional face: clearly irregular, uneven features that do not fit together harmoniously, nothing striking or glamorous",''')
+rep('''        "clearly imperfect skin: visible pores, blemishes, redness, under-eye shadows, uneven tone, noticeable facial asymmetry",''', '''        "clearly imperfect skin: enlarged pores on the nose and cheeks, several small spots and blemishes, redness around the nose and chin, dark under-eye circles, an oily shine on the forehead and nose, an uneven, slightly blotchy tone, noticeable facial asymmetry",''')
+rep('''        "rough skin texture: acne scars, broken capillaries, under-eye bags, blotchy tone, strong facial asymmetry",''', '''        "rough skin texture: acne scars, a few active spots, broken capillaries, under-eye bags, an oily shine, a blotchy tone, strong facial asymmetry",''')
 # P2 Seedream module (module scope, before the root render)
 rep('let aE = [],\n  aT = { person: "corps", animal: "espece", object: "objet" };', sd+'\nlet aE = [],\n  aT = { person: "corps", animal: "espece", object: "objet" };')
 # P3 GPT state view (tanga -> swim in GPT) + Seedream wrap of the prompt object
@@ -211,7 +291,7 @@ rep('''          let a = await ad(r);
             sdMode0 = e.mode,
             sdSeed0 = e.faceSeed,
             sdKey = sdModel + ":" + e.mode,
-            sdMsg = "body" === t && "seedream" === sdModel ? sdBodyCopyMsg(e) : "";
+            sdMsg = "seedream" !== sdModel ? "" : "body" === t ? sdBodyCopyMsg(e) : "iter" === t ? sdIterCopyMsg(e) : "";
           "head" === t && (sdSeq = sdHeadCopySeq[sdKey] = (sdHeadCopySeq[sdKey] || 0) + 1);
           if ("head" === t && "seedream" !== sdModel) {
             var o = n2();
@@ -239,16 +319,18 @@ rep('''                                                    opts:
                                                         ? "swim"
                                                         : t.refCover,''','''                                                    opts:
                                                       "m" === t.pres
-                                                        ? "seedream" === t.model
+                                                        ? "seedream" === t.model && sdRevealOk(t)
                                                           ? am.concat([["brief", "Seedream : slip de bain, torse nu, pieds nus"]])
                                                           : am
                                                         : "seedream" === t.model
-                                                          ? ap.concat([
-                                                              [
-                                                                "tanga",
-                                                                "Seedream : haut triangle et tanga coupe brésilienne, pieds nus",
-                                                              ],
-                                                            ])
+                                                          ? [["sport", "Haut ajusté et cycliste, pieds nus"]].concat(
+                                                              ap.filter(function (o) {
+                                                                return "onepiece" === o[0];
+                                                              }),
+                                                              sdRevealOk(t)
+                                                                ? [["tanga", "Seedream : haut triangle et tanga coupe brésilienne, pieds nus"]]
+                                                                : [],
+                                                            )
                                                           : ap,
                                                     value: sdShownCover(t),''')
 # P13 multiChar toggle is GPT-only
@@ -287,7 +369,7 @@ rep("""                                    B("body", "2", "Planche corps"),
                                     "seedream" === t.model && !sdX && sdIterBlock(t, g, B, L),
                                   ],
                                 })),""")
-# P25 French grammar in the multi-character hints: "cet animal", "nouvel animal" (elision before a vowel)
+# P35 French grammar in the multi-character hints: "cet animal", "nouvel animal" (elision before a vowel)
 rep('''Change le nom pour chaque nouveau " +
                                     (b ? "animal" : "personnage") +
                                     "."
@@ -297,10 +379,131 @@ rep('''Change le nom pour chaque nouveau " +
                                     "."
                                   : "Donne un nom : c'est lui qui distingue " +
                                     (b ? "cet animal" : "ce personnage") +''')
+# P28 Seedream: unsupported case -> one actionable card; column title by workflow; mobile bar with step 3
+rep('''                                    B("head", "1", "Planche tête"),''', '''                                    "seedream" === t.model && sdX ? sdUnsup(t, n) : B("head", "1", "Planche tête"),''')
+rep('''                                    B("body", "2", "Planche corps"),''', '''                                    !("seedream" === t.model && sdX) && B("body", "2", "Planche corps"),''')
+rep('''              : "seedream" === t.model
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes deux images"''', '''              : "seedream" === t.model && t.headless && !sdOff(t)
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes images"''')
+rep('''              ? [["obj", "Copier la planche", !1]]
+              : [
+                  ["head", "Copier tête", !1],
+                  ["body", "Copier corps", !1],
+                ]''', '''              ? [["obj", "Copier la planche", !1]]
+              : "seedream" === t.model && t.headless && !sdOff(t)
+                ? sdBarItems(t)
+                : [
+                    ["head", "Copier tête", !1],
+                    ["body", "Copier corps", !1],
+                  ]''')
+# P30 "Beauté" slider: warn when chosen features contradict a plain face
+rep('''                    : r.hint,
+                badge: "bust" === i ? af[t[a]] : void 0,''', '''                    : "looks" === a && sdLooksConflict(t)
+                      ? sdLooksConflict(t)
+                      : r.hint,
+                badge: "bust" === i ? af[t[a]] : void 0,''')
+# P27 Seedream: rules panel folded
+rep('''function aN({ obj: e, sd: sdM }) {
+  return (0, l.jsxs)("div", {
+    className: "rounded-2xl border border-dashed p-4",
+    children: [
+      (0, l.jsx)("h3", {
+        className: "font-bold",
+        children: "Règles de tes planches",''', '''function aN({ obj: e, sd: sdM }) {
+  return (0, l.jsxs)(sdM ? "details" : "div", {
+    className: "rounded-2xl border border-dashed p-4",
+    children: [
+      (0, l.jsx)(sdM ? "summary" : "h3", {
+        className: "font-bold" + (sdM ? " cursor-pointer" : ""),
+        children: "Règles de tes planches",''')
+# P31 audit v76: four-panel person head sheet described as such; three-quarter view named by frame side; noise removed; Seedream object card
+rep("""Second panel: three-quarter view, head turned 45 degrees toward the subject's left.""", """Second panel: three-quarter view, head turned 45 degrees toward the right edge of the panel, showing more of the right side of the face.""")
+rep('''    ["p2", "Trois quarts", "the center panel (three-quarter view)"],''', '''    ["p2", "Trois quarts", "the second panel (three-quarter view)"],''')
+rep('''      (u ? " (three head close-ups)" : " (four full-body views)") +''', '''      (u
+        ? s
+          ? " (three head close-ups)"
+          : " (four head close-ups: front, three-quarter, profile and back of the head)"
+        : " (four full-body views)") +''')
+rep('''The head sheet (three head close-ups on a grey backdrop)''', '''The head sheet (" +
+                          (o ? "three head close-ups" : "four head close-ups: front, three-quarter, profile and back of the head") +
+                          " on a grey backdrop)''', 2)
+rep('''        })(r),
+      ) +
+      (0 === r.indexOf("edit")''', '''        })(r),
+      ).replace(
+        " A percentage within one point of its range counts as correct (not the body-to-head ratio).",
+        "body" !== r || "person" !== e.mode || (e.photo && e.bodyAsIs) || an()
+          ? ""
+          : " A percentage within one point of its range counts as correct (not the body-to-head ratio).",
+      ) +
+      (0 === r.indexOf("edit")''')
+rep('''            "Real photograph with natural skin, hair, fur and fabric texture, natural color, no retouching." +''', '''            "Real photograph with natural " +
+            ("person" === e.mode ? "skin, hair and fabric" : "skin, hair, fur and fabric") +
+            " texture, natural color, no retouching." +''')
+rep('''                              ? B("obj", "1", "Planche objet")''', '''                              ? "seedream" === t.model && sdX
+                                ? sdUnsup(t, n)
+                                : B("obj", "1", "Planche objet")''')
+# P32 GPT parity with Seedream (v77/v78): "Ordinaire" worded without "average" or "model"; skin micro-detail and film grain that Seedream renders
+rep('''      [2, "Ordinaire", "an ordinary, average-looking person, not a model"],''', '''      [2, "Ordinaire", "an ordinary face you would pass in the street without noticing: no feature stands out, the proportions are a little uneven and not quite harmonious"],''')
+rep('''function ru() {
+  return rs(
+    0 === e.looks && 2 === e.imperf
+      ? "real, unretouched skin with visible pores and a natural, healthy texture"
+      : t1("imperf", e.imperf),
+  );
+}''', '''function ru() {
+  return (
+    rs(
+      0 === e.looks && 2 === e.imperf
+        ? "real, unretouched skin with visible pores and a natural, healthy texture"
+        : t1("imperf", e.imperf),
+    ) +
+    ("photo" === e.style && "person" === e.mode && !e.photo && e.imperf >= 1
+      ? ", fine peach fuzz catching the light on the cheeks and jaw, natural lip texture with fine lines" +
+        ("bald" === e.hairStyleSel || "shaved" === e.hairLen ? "" : ", a few flyaway hairs")
+      : "")
+  );
+}''')
+rep('''            " texture, natural color, no retouching." +''', '''            " texture, natural color, " +
+            ("person" === e.mode ? "fine film grain, " : "") +
+            "no retouching." +''')
+# P33 eye size and nose width as sliders (Seedream module sdScaleCtl); new end values described in the prompt
+rep('''        { t: "chips", k: "eyeSize", l: "Taille des yeux" },''', '''        { t: "sdscale", k: "eyeSize", l: "Taille des yeux" },''')
+rep('''        { t: "chips", k: "noseW", l: "Nez, largeur" },''', '''        { t: "sdscale", k: "noseW", l: "Nez, largeur" },''')
+rep('''          if ("sdrnd" === r.t) return sdRndBtn(t, g);''', '''          if ("sdrnd" === r.t) return sdRndBtn(t, g);
+          if ("sdscale" === r.t) return sdScaleCtl(t, g, a);''')
+rep('''      { small: "small", large: "large", xlarge: "very large, wide-open" }[
+        e.eyeSize
+      ] || "",''', '''      {
+        xsmall: "very small",
+        small: "small",
+        medium: "medium-sized",
+        large: "large",
+        xlarge: "very large, wide-open",
+      }[e.eyeSize] || "",''')
+rep('''    a = [t1("noseW", e.noseW), t1("noseP", e.noseP)].filter(Boolean).join(", "),''', '''    a = [
+      { xnarrow: "very narrow", xwide: "very wide" }[e.noseW] || t1("noseW", e.noseW),
+      t1("noseP", e.noseP),
+    ]
+      .filter(Boolean)
+      .join(", "),''')
+# P34 GPT: a change of beauty level or corpulence since the last copied head sheet makes a new face, not an update of it
+rep('''function n2() {
+  return e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name)
+    ? null''', '''function n2() {
+  return e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name) || sdFaceReset()
+    ? null''')
+rep('''              headKind: o ? (o.sameFace ? "same" : "updated") : "new",
+              headOwner: n1(e.name),''', '''              headKind: o ? (o.sameFace ? "same" : "updated") : "new",
+              headOwner: n1(e.name),
+              headLooks: e.looks,
+              headFat: e.fat,''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
-# P24 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)
+# P36 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)
 if LANG=='en':
     title=json.load(open('i18n/extra.json',encoding='utf-8'))['Fiche personnage pour Seedance']
     for a,b in [('<html lang=fr','<html lang=en'),('<title>Fiche personnage pour Seedance</title>','<title>'+title+'</title>')]:
