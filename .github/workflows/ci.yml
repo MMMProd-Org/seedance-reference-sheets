@@ -17,8 +17,9 @@ concurrency:
 
 jobs:
   build-and-test:
-    # Pinned, not ubuntu-latest: `playwright install --with-deps` installs Ubuntu packages,
-    # so the image changes only on purpose, with a green run.
+    # Ubuntu 24.04, not ubuntu-latest: `playwright install --with-deps` installs Ubuntu packages,
+    # so moving to a new Ubuntu release happens only on purpose, with a green run. GitHub still
+    # updates the 24.04 image weekly, as it did under ubuntu-latest.
     runs-on: ubuntu-24.04
     # Usually about 1 minute; installing the test dependencies once took 13.
     timeout-minutes: 30
