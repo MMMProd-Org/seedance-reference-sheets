@@ -591,6 +591,84 @@ with sync_playwright() as p:
     expect(kept.get_by_role("radio", name="Seedream 5.0", exact=True)).to_be_checked()
     assert not errors, errors
 
+    # Seedream makes objects, places and animals from their GPT prompts, minus what only ChatGPT acts on: an earlier
+    # image of the conversation, the regenerate loop, "several in the same GPT conversation" left on. Each card names
+    # the file to attach, and no help text speaks of GPT or of a conversation.
+    chat_only = re.compile(r"conversation|just above|earlier image|GENERATION LIMIT|regenerate|attempt")
+    for state, tab in (
+        ("mode: 'object', objCat: 'object'", "Look"),
+        ("mode: 'object', objCat: 'clothing', photo: true", None),
+        ("mode: 'object', objCat: 'vehicle', photo: true, photoOnly: true", None),
+        ("mode: 'object', objCat: 'house', objTime: 'both'", None),
+        ("mode: 'object', objCat: 'interior', objTime: 'both', photo: true", None),
+        ("mode: 'animal', style: '3d'", "Marks"),
+        ("mode: 'animal', photo: true", None),
+        ("mode: 'animal', multiChar: true, name: 'Rex'", None),
+        ("mode: 'person', style: 'photo', photo: false", "Marks"),
+    ):
+        sd = clipboard_page(browser, errors)
+        sd.evaluate(f"localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1, {state}}}))")
+        sd.reload()
+        texts = prompts(sd)
+        if "person" not in state:
+            assert len(texts) >= 2 and not any(chat_only.search(t) for t in texts), (state, [chat_only.search(t) for t in texts])
+            body = sd.locator("body").inner_text()
+            assert not re.search(r"(?i)conversation|GPT picks", body), (state, re.search(r"(?i).{60}(conversation|GPT picks).{20}", body))
+            assert not sd.locator("[placeholder*='GPT']").count(), state
+            if "photo: true" not in state and "objCat: 'object'" in state:
+                assert "View 1: obj_" in body, state
+        if tab:
+            sd.get_by_role("tab", name=tab, exact=True).click()
+            assert "conversation" not in sd.locator("body").inner_text().lower(), (state, tab)
+        sd.close()
+    # A GPT copy of the same animal, changed since, makes GPT build on it; Seedream names no earlier sheet.
+    seen = clipboard_page(browser, errors)
+    seen.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
+    seen.get_by_role("radio", name="Animal", exact=True).click()
+    seen.get_by_role("button", name="Copy for GPT Image 2.5").first.click()  # the animal sheet
+    seen.wait_for_function("window.writes.length === 1")
+    seen.evaluate("() => window.writes[0]()")
+    seen.wait_for_function(f"{SAVED}.headSig")
+    seen.get_by_role("tab", name="Coat").click()
+    seen.get_by_text("Long coat", exact=True).click()
+    assert "the most recent animal sheet" in prompts(seen)[0]
+    seen.get_by_role("radio", name="Seedream 5.0", exact=True).click()
+    texts = prompts(seen)
+    assert len(texts) == 2 and not any(chat_only.search(t) or "most recent" in t for t in texts), [t[:300] for t in texts]
+    # A person's parts stay a person's, even after a person with a headless body and a shape guide: no retouch card, no
+    # shape option, no three-step layout; copying the animal sheet names no head sheet, and its close-ups mark none as copied.
+    pet = clipboard_page(browser, errors)
+    pet.evaluate("""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1,
+        mode: 'person', headless: true, sdShapeRef: true}))""")
+    pet.reload()
+    pet.evaluate(HOLD_CLIPBOARD)  # the reload dropped it
+    expect(pet.get_by_text("Other retouches", exact=True)).to_be_attached()  # the person's cards were drawn
+    pet.get_by_role("radio", name="Animal", exact=True).click()
+    open_folds(pet)
+    text = pet.locator("body").inner_text()
+    assert pet.locator("h3").all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator("h3").all_inner_texts()
+    for word in ("Other retouches", "shape guide", "bust shape", "Your three steps", "Combine head and body"):
+        assert word not in text, word
+    assert "The animal sheet: char_" in text
+    copy = pet.get_by_role("button", name="Copy for Seedream 5.0")
+    sheet, close = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
+    sheet.click()
+    pet.wait_for_function("window.writes.length === 1")
+    pet.evaluate("() => window.writes[0]()")
+    expect(pet.get_by_text("Copied. Paste it into Seedream 5.0.")).to_be_visible()
+    close.click()
+    pet.wait_for_function("window.writes.length === 2")
+    pet.evaluate("() => window.writes[1]()")
+    pet.wait_for_function("(b) => b.innerText.startsWith('Copied')", arg=close)  # the copy has been handled
+    assert not pet.evaluate(f"{SAVED}.sdHeadSig"), pet.evaluate(f"{SAVED}.sdHeadSig")
+    # People in 3D or 2D are still for GPT only.
+    flat = clipboard_page(browser, errors)
+    flat.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1, mode: 'person', style: '3d'}))")
+    flat.reload()
+    expect(flat.get_by_text("Not available with Seedream yet", exact=True)).to_be_visible()
+    expect(flat.get_by_text("Seedream does not do people in 3D or 2D yet. For this style, switch to GPT Image 2.5.").first).to_be_visible()
+    assert not errors, errors
+
     browser.close()
 
 print("smoke test passed")

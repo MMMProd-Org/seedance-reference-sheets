@@ -38,7 +38,7 @@ T = {
 }
 # strings of the Seedream layer (French source -> English)
 L = {
-"Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour tout autre cas, passe sur GPT Image 2.5.":"For now, Seedream handles people in Photo style, without a starting photo. For anything else, switch to GPT Image 2.5.",
+"Seedream ne fait pas encore les personnes en 3D ou en 2D. Pour ce style, passe sur GPT Image 2.5.":"Seedream does not do people in 3D or 2D yet. For this style, switch to GPT Image 2.5.",
 "Seedream ne part pas d'une photo. Pour garder un corps existant, décoche « Partir d'une photo » et passe par la carte 3 (Retouche).":"Seedream doesn't start from a photo. To keep an existing body, turn off “Start from a photo” and use card 3 (Retouch).",
 "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, et son corps avec « Garder le corps tel quel ».":"To create a character from a photo of a real person, only with their consent. The sheets take their face and hair, and their body with “Keep the body as it is”.",
 "Pas besoin pour le corps entier : ta planche tête suffit, ajoute-la comme image 1 dans le générateur.":"Not needed for the full body: your head sheet is enough, add it as image 1 in the generator.",
@@ -81,7 +81,7 @@ L = {
 "Aide":"Help",
 "Modèle de génération":"Image model",
 "Langue de l'interface":"Interface language",
-"Seedream ne se souvient de rien d'une génération à l'autre : chaque prompt se suffit à lui-même. Choisis le format 16:9 dans Seedream et ajoute les images indiquées sur chaque carte.":"Seedream remembers nothing between generations: each prompt stands on its own. Set the 16:9 format in Seedream and add the images listed on each card.",
+"Seedream ne se souvient de rien d'une génération à l'autre : chaque prompt se suffit à lui-même. Choisis dans Seedream le format indiqué sur chaque carte et ajoute les images qu'elle demande.":"Seedream remembers nothing between generations: each prompt stands on its own. In Seedream, set the format shown on each card and add the images it asks for.",
 "Seedream ne vérifie pas son image : c'est toi qui juges et relances. Vise moins de 600 mots (conseil de BytePlus) ; le compteur t'alerte au-delà. Si ta plateforme propose d'optimiser le prompt automatiquement, désactive cette option.":"Seedream doesn't check its own image: you judge and rerun. Aim for under 600 words (BytePlus advice); the counter warns you above that. If your platform offers automatic prompt optimisation, turn it off.",
 "Seedream : haut triangle et tanga coupe brésilienne, pieds nus":"Seedream: triangle top and Brazilian-cut bottoms, barefoot",
 "Copier pour Seedream 5.0":"Copy for Seedream 5.0",

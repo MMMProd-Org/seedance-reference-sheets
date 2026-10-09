@@ -13,7 +13,7 @@ function sdNum(n) {
   return n.toLocaleString("en" === sdLang ? "en-US" : "fr-FR");
 }
 /* ===== Seedream 5.0 : constructeurs de prompts (Personne, Photo, sans photo de départ, création) ===== */
-var SD_MSG = "Seedream gère pour l'instant les personnes, en style Photo, sans photo de départ. Pour tout autre cas, passe sur GPT Image 2.5.";
+var SD_MSG = "Seedream ne fait pas encore les personnes en 3D ou en 2D. Pour ce style, passe sur GPT Image 2.5.";
 function sdMsg(t) {
   /* translated here: the message is also shown in the prompt box, which the render-time translation skips */
   return sdTr(
@@ -22,12 +22,11 @@ function sdMsg(t) {
       : SD_MSG,
   );
 }
+/* people: Seedream's own prompts, Photo style without a source photo; objects, places and animals: the GPT prompts, made self-contained (sdSolo) */
 function sdOk(t) {
   return (
-    "person" === t.mode &&
-    "photo" === t.style &&
-    !t.photo &&
-    !(t.locked && t.base && t.base.mode === t.mode)
+    !(t.locked && t.base && t.base.mode === t.mode) &&
+    ("person" !== t.mode || ("photo" === t.style && !t.photo))
   );
 }
 function sdOff(t) {
@@ -516,6 +515,8 @@ function sdAutoBust(t) {
   });
 }
 function sdG(t) {
+  /* "several in the same GPT conversation" names the subject within a GPT conversation (its toggle is hidden in Seedream: P13) */
+  "seedream" === t.model && t.multiChar && (t = Object.assign({}, t, { multiChar: !1 }));
   return sdAutoBust(sdShift(sdRndOutfit("seedream" !== t.model && ("tanga" === t.refCover || "brief" === t.refCover || "sport" === t.refCover) ? Object.assign({}, t, { refCover: "sport" === t.refCover ? "short" : "swim" }) : t)));
 }
 function sdIris() {
@@ -1236,7 +1237,8 @@ function sdFold(label, children, open) {
   });
 }
 function sdCardExtra(k) {
-  if (!sdCur) return null;
+  /* the body and retouch options are a person's; e is the state being rendered, sdCur may be an earlier person's */
+  if (!sdCur || "person" !== e.mode) return null;
   var t = sdCur.t,
     g = sdCur.g,
     L = sdCur.L,
@@ -1884,18 +1886,28 @@ function sdObjBar() {
   ];
 }
 function sdObjRow(i, t, R, I) {
+  /* Seedream has no conversation, so the earlier view is always attached, and its image shape is set in Seedream */
   var V = sdObjViewsSpec(),
     place = sdObjPlace(),
-    F = place
-      ? sdT("16:9, demandé dans le prompt : vérifie l'image obtenue", "16:9, asked in the prompt: check the image you get")
-      : sdT("3:2 (2:3 si l'objet est plus haut que large), demandé dans le prompt : vérifie l'image obtenue", "3:2 (2:3 if the object is taller than wide), asked in the prompt: check the image you get");
+    sd = "seedream" === t.model,
+    F = sd
+      ? place
+        ? sdT("16:9, à choisir dans Seedream", "16:9, set in Seedream")
+        : sdT("3:2 (2:3 si l'objet est plus haut que large), à choisir dans Seedream", "3:2 (2:3 if the object is taller than wide), set in Seedream")
+      : place
+        ? sdT("16:9, demandé dans le prompt : vérifie l'image obtenue", "16:9, asked in the prompt: check the image you get")
+        : sdT("3:2 (2:3 si l'objet est plus haut que large), demandé dans le prompt : vérifie l'image obtenue", "3:2 (2:3 if the object is taller than wide), asked in the prompt: check the image you get");
   if (3 === i)
     return [
       [
         "Joins",
-        t.photo
-          ? sdT("Ta photo, puis la vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "Your photo, then the day view to redo at night: nothing if it is just above in the conversation, otherwise attach it")
-          : sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
+        sd
+          ? t.photo
+            ? sdT("Ta photo, puis la vue de jour à refaire de nuit", "Your photo, then the day view to redo at night")
+            : sdT("La vue de jour à refaire de nuit", "The day view to redo at night")
+          : t.photo
+            ? sdT("Ta photo, puis la vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "Your photo, then the day view to redo at night: nothing if it is just above in the conversation, otherwise attach it")
+            : sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
       ],
       ["Format", F],
       ["Nomme-la", R(rU("nuit"))],
@@ -1909,9 +1921,13 @@ function sdObjRow(i, t, R, I) {
           : "Rien"
         : (0, l.jsxs)("span", {
             children: [
-              t.photo
-                ? sdT("Ta photo, puis la vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "Your photo, then view 1: nothing if it is just above in the conversation, otherwise ")
-                : sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
+              sd
+                ? t.photo
+                  ? sdT("Ta photo, puis la vue 1 : ", "Your photo, then view 1: ")
+                  : sdT("La vue 1 : ", "View 1: ")
+                : t.photo
+                  ? sdT("Ta photo, puis la vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "Your photo, then view 1: nothing if it is just above in the conversation, otherwise ")
+                  : sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
               R(rU(V[0][0])),
             ],
           }),
@@ -1955,7 +1971,9 @@ function sdAnimalHeadJoin(t, R) {
   if (t.photo) return sdT("Ta photo", "Your photo");
   return (0, l.jsxs)("span", {
     children: [
-      sdT("La planche de l'animal : rien si elle est juste au-dessus dans la conversation, sinon ", "The animal sheet: nothing if it is just above in the conversation, otherwise "),
+      "seedream" === t.model
+        ? sdT("La planche de l'animal : ", "The animal sheet: ")
+        : sdT("La planche de l'animal : rien si elle est juste au-dessus dans la conversation, sinon ", "The animal sheet: nothing if it is just above in the conversation, otherwise "),
       R(rU("animal")),
     ],
   });
@@ -2126,13 +2144,36 @@ function sdGptPost(t, m) {
   }
   return o;
 }
-function sdWrap(t, m) {
-  if ("seedream" !== t.model) return sdAnimalSplit(t, sdObjSplit(t, sdGptPost(t, m)));
+/* Seedream keeps nothing from one generation to the next and never checks its own image: an object, place or animal
+   prompt is the GPT one minus what only ChatGPT acts on (earlier images of the conversation, the regenerate loop).
+   ponytail: reuses the GPT wording; write Seedream prose builders, as for people, if Seedream reads these worse */
+function sdSolo(m) {
   var o = {},
     k;
-  if (!sdOk(t)) {
+  for (k in m)
+    o[k] =
+      "string" != typeof m[k]
+        ? m[k]
+        : m[k]
+            .replace(/\n\nGENERATION LIMIT:\n[^\n]*$/, "")
+            .replace(/This is a new[^\n:]*: do not reuse any \w+ from earlier images in this conversation\.\n/, "")
+            .replace(/, never (an?|any other) \w+ from earlier images in this conversation|, never anything from earlier images in this conversation/g, "")
+            .replace(/, or the image just above in this conversation\)/g, ")")
+            .replace(/: the image just above in this conversation, or attached\)/g, ": attached)")
+            .replace(/\(the image just above in this conversation, or attached\)/g, "(attached)")
+            .replace(/the image just above in this conversation \(or attached\)|the image just above(?=\.)/g, "the attached day view");
+  return o;
+}
+function sdWrap(t, m) {
+  var o = {},
+    k;
+  if ("seedream" === t.model && !sdOk(t)) {
     for (k in m) o[k] = sdMsg(t);
     return o;
+  }
+  if ("seedream" !== t.model || "person" !== t.mode) {
+    o = sdAnimalSplit(t, sdObjSplit(t, sdGptPost(t, m)));
+    return "seedream" === t.model ? sdSolo(o) : o;
   }
   for (k in m) o[k] = m[k];
   o.head = sdPlainFace(sdAdult(sdHead()), t.looks);
@@ -2165,8 +2206,8 @@ function sdRows(t, m, R, q) {
   var o = {},
     k;
   for (k in q) o[k] = q[k];
-  if ("seedream" !== t.model) {
-    for (k in o) "string" == typeof m[k] && o[k] && (o[k] = o[k].concat([["Longueur", sdLen(m[k], !1)]]));
+  if (!sdOff(t) && ("seedream" !== t.model || "person" !== t.mode)) {
+    for (k in o) "string" == typeof m[k] && o[k] && (o[k] = o[k].concat([["Longueur", sdLen(m[k], "seedream" === t.model)]]));
     return o;
   }
   if (!sdOk(t)) return q;
