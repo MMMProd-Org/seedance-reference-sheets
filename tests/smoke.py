@@ -383,10 +383,11 @@ with sync_playwright() as p:
             else:
                 assert len(texts) == len(cards) == 4 and cards[3].startswith("At night"), (place, cards)
                 assert "\nNight: " in texts[3] and "Daytime" not in texts[3], place
-                assert "Your photo. The day view to redo at night" in lit.locator("body").inner_text(), place
+                assert "Your photo, then the day view to redo at night" in lit.locator("body").inner_text(), place
             lit.close()
     # With a source photo, views 2 and up (and the night card) are made from an earlier image of the same subject:
-    # the photo's "never ... from earlier images" lets that image through instead of forbidding it.
+    # the photo's "never ... from earlier images" lets that image through instead of forbidding it, and both the
+    # "Attach" row and the prompt say which attached image is which: the photo first, then the earlier image.
     for cat, only in (("object", False), ("object", True), ("house", False), ("house", True)):
         src = clipboard_page(browser, errors)
         src.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
@@ -396,8 +397,20 @@ with sync_playwright() as p:
         assert re.search(r"never an? (object|place) from earlier images", texts[0]), (cat, only)
         for t in texts[1:]:
             assert not re.search(r"never an? (object|place) from earlier images", t), (cat, only, t[:300])
-            assert re.search(r"and (view 1|the day view)\b", t), (cat, only)
+            assert re.search(r"and (view 1|the day view) \(attached after the photo(\(s\))?, or the image just above", t), (cat, only)
+        assert "Your photo, then view 1: nothing if it is just above" in src.locator("body").inner_text(), (cat, only)
         src.close()
+    # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
+    for only in (False, True):
+        ani = clipboard_page(browser, errors)
+        ani.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
+            mode: 'animal', photo: true, photoOnly: {str(only).lower()}}}))""")
+        ani.reload()
+        body = ani.locator("body").inner_text()
+        card = body[body.index("Head close-ups (optional)"):]
+        card = card[: card.index("Copy for GPT Image 2.5")]
+        assert re.search(r"\nAttach\nYour photo\n", card) and "animal sheet" not in card, (only, card)
+        ani.close()
     assert not errors, errors
 
     # Animals: the whole-animal sheet comes first and carries the identity; head close-ups are optional and made
