@@ -1810,10 +1810,12 @@ function sdObjOne(s, i) {
   return s;
 }
 /* with a source photo, views 2 and up and the night card are made from an earlier image of the same subject (view 1,
-   or the day view): the photo's "never ... from earlier images" lets that one image through */
+   or the day view): the photo's "never ... from earlier images" lets that one image through, attached after the photo */
 function sdPhotoAlso(s, what, ref) {
   return s.replace(new RegExp("Use only the attached photo(\\(s\\)| for this " + what + "), never an? " + what + " from earlier images"), function (m0, tail) {
-    return "Use only the attached photo" + ("(s)" === tail ? "(s) and " + ref : " and " + ref + tail) + ", never any other " + what + " from earlier images";
+    var pl = "(s)" === tail ? "(s)" : "";
+    ref += " (attached after the photo" + pl + ", or the image just above in this conversation)";
+    return "Use only the attached photo" + (pl ? "(s) and " + ref : " and " + ref + tail) + ", never any other " + what + " from earlier images";
   });
 }
 /* i: view index; night: the night card, made from the day view just above */
@@ -1891,7 +1893,7 @@ function sdObjRow(i, t, R, I) {
     return [
       [
         "Joins",
-        (t.photo ? sdT("Ta photo. ", "Your photo. ") : "") +
+        (t.photo ? sdT("1. Ta photo. 2. ", "1. Your photo. 2. ") : "") +
           sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
       ],
       ["Format", F],
@@ -1906,7 +1908,7 @@ function sdObjRow(i, t, R, I) {
           : "Rien"
         : (0, l.jsxs)("span", {
             children: [
-              t.photo ? sdT("Ta photo. ", "Your photo. ") : "",
+              t.photo ? sdT("1. Ta photo. 2. ", "1. Your photo. 2. ") : "",
               sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
               R(rU(V[0][0])),
             ],
@@ -1947,9 +1949,10 @@ function sdAnimalSplit(t, m) {
   return o;
 }
 function sdAnimalHeadJoin(t, R) {
+  /* with a source photo, the close-ups are made from the photo alone (see sdAnimalSplit) */
+  if (t.photo) return sdT("Ta photo", "Your photo");
   return (0, l.jsxs)("span", {
     children: [
-      t.photo ? sdT("Ta photo. ", "Your photo. ") : "",
       sdT("La planche de l'animal : rien si elle est juste au-dessus dans la conversation, sinon ", "The animal sheet: nothing if it is just above in the conversation, otherwise "),
       R(rU("animal")),
     ],
