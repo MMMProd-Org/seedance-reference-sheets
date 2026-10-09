@@ -502,6 +502,19 @@ with sync_playwright() as p:
     assert heads[0] == heads[1]
     assert not errors, errors
 
+    # Seedream does not start from a photo: its notice sends to card 3, the retouch card, by the name it shows.
+    msg = clipboard_page(browser, errors)
+    msg.get_by_role("radio", name="Seedream 5.0", exact=True).click()
+    msg.get_by_text("Start from a photo", exact=True).click()
+    notice = msg.get_by_text(re.compile(r"^Seedream doesn't start from a photo\.")).first
+    expect(notice).to_be_visible()
+    assert notice.inner_text().endswith("and use card 3 (Retouch)."), notice.inner_text()
+    msg.get_by_text("Start from a photo", exact=True).click()
+    cards = [h for h in msg.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+    assert cards[2].startswith("Retouch"), cards
+    msg.close()
+    assert not errors, errors
+
     # Seedream retouch: the operation is explicit. A join rewritten without image 2 is flagged and "Free retouch"
     # leaves it; a precision added to "Add the heads" keeps its two images.
     op = clipboard_page(browser, errors)

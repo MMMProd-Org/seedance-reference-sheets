@@ -18,7 +18,7 @@ function sdMsg(t) {
   /* translated here: the message is also shown in the prompt box, which the render-time translation skips */
   return sdTr(
     t && "person" === t.mode && t.photo
-      ? "Seedream ne part pas d'une photo. Pour garder un corps existant, décoche « Partir d'une photo » et passe par « Retoucher une planche validée »."
+      ? "Seedream ne part pas d'une photo. Pour garder un corps existant, décoche « Partir d'une photo » et passe par la carte 3 (Retouche)."
       : SD_MSG,
   );
 }
