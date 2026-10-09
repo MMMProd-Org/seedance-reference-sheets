@@ -64,7 +64,6 @@ L = {
 "Même nom + _v2, _v3…":"Same name + _v2, _v3…",
 "J'ajoute une image guide de forme":"I'm adding a shape guide",
 "Un croquis ou une photo habillée qui montre la forme de poitrine voulue. Souvent plus efficace que les mots, sans garantie.":"A sketch or a dressed photo showing the bust shape you want. Often works better than words, with no guarantee.",
-"Retoucher une planche validée":"Retouch an approved sheet",
 "Change un détail sans refaire tout le corps. Écris seulement le changement, en anglais de préférence, ou choisis une retouche toute prête.":"Change one detail without redoing the whole body. Write only the change, preferably in English, or pick a ready-made retouch.",
 "Habiller en tenue de sport":"Dress in sportswear",
 "Ajouter les têtes":"Add the heads",
