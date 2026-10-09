@@ -17,7 +17,9 @@ concurrency:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: `playwright install --with-deps` installs Ubuntu packages,
+    # so the image changes only on purpose, with a green run.
+    runs-on: ubuntu-24.04
     # Usually about 1 minute; installing the test dependencies once took 13.
     timeout-minutes: 30
     steps:
@@ -55,7 +57,7 @@ jobs:
   deploy:
     if: github.event_name == 'push'
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       pages: write
