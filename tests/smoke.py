@@ -383,7 +383,7 @@ with sync_playwright() as p:
             else:
                 assert len(texts) == len(cards) == 4 and cards[3].startswith("At night"), (place, cards)
                 assert "\nNight: " in texts[3] and "Daytime" not in texts[3], place
-                assert "1. Your photo. 2. The day view to redo at night" in lit.locator("body").inner_text(), place
+                assert "Your photo, then the day view to redo at night" in lit.locator("body").inner_text(), place
             lit.close()
     # With a source photo, views 2 and up (and the night card) are made from an earlier image of the same subject:
     # the photo's "never ... from earlier images" lets that image through instead of forbidding it, and both the
@@ -398,7 +398,7 @@ with sync_playwright() as p:
         for t in texts[1:]:
             assert not re.search(r"never an? (object|place) from earlier images", t), (cat, only, t[:300])
             assert re.search(r"and (view 1|the day view) \(attached after the photo(\(s\))?, or the image just above", t), (cat, only)
-        assert "1. Your photo. 2. View 1: nothing if it is just above" in src.locator("body").inner_text(), (cat, only)
+        assert "Your photo, then view 1: nothing if it is just above" in src.locator("body").inner_text(), (cat, only)
         src.close()
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):
@@ -406,7 +406,10 @@ with sync_playwright() as p:
         ani.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
             mode: 'animal', photo: true, photoOnly: {str(only).lower()}}}))""")
         ani.reload()
-        assert "The animal sheet: nothing if" not in ani.locator("body").inner_text(), only
+        body = ani.locator("body").inner_text()
+        card = body[body.index("Head close-ups (optional)"):]
+        card = card[: card.index("Copy for GPT Image 2.5")]
+        assert re.search(r"\nAttach\nYour photo\n", card) and "animal sheet" not in card, (only, card)
         ani.close()
     assert not errors, errors
 

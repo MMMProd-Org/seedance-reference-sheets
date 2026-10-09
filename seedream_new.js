@@ -1893,8 +1893,9 @@ function sdObjRow(i, t, R, I) {
     return [
       [
         "Joins",
-        (t.photo ? sdT("1. Ta photo. 2. ", "1. Your photo. 2. ") : "") +
-          sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
+        t.photo
+          ? sdT("Ta photo, puis la vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "Your photo, then the day view to redo at night: nothing if it is just above in the conversation, otherwise attach it")
+          : sdT("La vue de jour à refaire de nuit : rien si elle est juste au-dessus dans la conversation, sinon joins-la", "The day view to redo at night: nothing if it is just above in the conversation, otherwise attach it"),
       ],
       ["Format", F],
       ["Nomme-la", R(rU("nuit"))],
@@ -1908,8 +1909,9 @@ function sdObjRow(i, t, R, I) {
           : "Rien"
         : (0, l.jsxs)("span", {
             children: [
-              t.photo ? sdT("1. Ta photo. 2. ", "1. Your photo. 2. ") : "",
-              sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
+              t.photo
+                ? sdT("Ta photo, puis la vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "Your photo, then view 1: nothing if it is just above in the conversation, otherwise ")
+                : sdT("La vue 1 : rien si elle est juste au-dessus dans la conversation, sinon ", "View 1: nothing if it is just above in the conversation, otherwise "),
               R(rU(V[0][0])),
             ],
           }),
