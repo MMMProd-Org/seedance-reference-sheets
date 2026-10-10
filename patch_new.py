@@ -573,7 +573,8 @@ rep('''          obj: [
           ],''', '''          obj: sdObjRow(0, t, R, I),
           obj2: sdObjRow(1, t, R, I),
           obj3: sdObjRow(2, t, R, I),
-          obj4: sdObjRow(3, t, R, I),''')
+          obj4: sdObjRow(3, t, R, I),
+          objTri: sdObjTriRow(t, R),''')
 rep('''          editObj: [
             ["Joins", D(rU("planche"))],
             ["Format", I],
@@ -584,6 +585,21 @@ rep('''          editObj: [
             ["Nomme-la", F("vue", N || C.length > 0)],
           ],''')
 rep('''              ? [["obj", "Copier la planche", !1]]''', '''              ? sdObjBar()''')
+# P47 "Mise en planche seulement" on an object or a place: its own name and help, nothing of a person's face or outfit
+rep('''                              onChange: (e) => g("photoOnly", e),
+                              disabled: k,
+                              children: "Mise en planche seulement",''', '''                              onChange: (e) => g("photoOnly", e),
+                              disabled: k,
+                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",''')
+rep('''                            className: "text-sm",
+                            children: [
+                              (0, l.jsx)("b", {
+                                children: "Mise en planche seulement.",
+                              }),''', '''                            className: "text-sm",
+                            children: y ? sdOnlyHelp(t) : [
+                              (0, l.jsx)("b", {
+                                children: "Mise en planche seulement.",
+                              }),''')
 rep('''                  (0, l.jsx)(av, {
                     label: o,
                     opts: tZ[i],
