@@ -593,10 +593,13 @@ with sync_playwright() as p:
 
     # Seedream makes objects, places and animals from their GPT prompts, minus what only ChatGPT acts on: an earlier
     # image of the conversation, the regenerate loop, "several in the same GPT conversation" left on. Each card names
-    # the file to attach, and no help text speaks of GPT or of a conversation.
+    # the file to attach, and no help text speaks of GPT or of a conversation. In every style: Photo, 3D and 2D.
     chat_only = re.compile(r"conversation|just above|earlier image|GENERATION LIMIT|regenerate|attempt")
     for state, tab in (
         ("mode: 'object', objCat: 'object'", "Look"),
+        ("mode: 'object', objCat: 'object', style: '2d'", None),
+        ("mode: 'object', objCat: 'house', objTime: 'both', style: '3d'", None),
+        ("mode: 'animal', style: '2d'", None),
         ("mode: 'object', objCat: 'clothing', photo: true", None),
         ("mode: 'object', objCat: 'vehicle', photo: true, photoOnly: true", None),
         ("mode: 'object', objCat: 'house', objTime: 'both'", None),
