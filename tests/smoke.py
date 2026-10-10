@@ -349,6 +349,8 @@ with sync_playwright() as p:
     assert not errors, errors
 
     # Objects and places: one image per view, views 2 and up made from view 1, nothing left of the six-view sheet.
+    # Objects, not places, open with a triptych card: their three views side by side in one 16:9 image; without a source
+    # photo it says it is the triptych or the views, since each makes up its own object.
     leftover = re.compile(r"\bsix\b|six-view|panels?\b|3 by 2|top row|bottom row|aerial view|high-angle view from a top corner")
     obj = clipboard_page(browser, errors)
     obj.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
@@ -362,6 +364,16 @@ with sync_playwright() as p:
                 obj.get_by_role("tabpanel").get_by_text(light, exact=True).click()
             texts = prompts(obj)
             cards = [h for h in obj.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            if light:
+                assert not [c for c in cards if c.startswith("Triptych")], (cat, light, cards)
+            else:
+                assert cards[0] == "Triptych: the 3 views in one image", (cat, cards)
+                tri, texts, cards = texts[0], texts[1:], cards[1:]
+                assert "three-view studio turnaround" in tri and "three equal panels side by side" in tri, (cat, tri[:400])
+                assert tri.count(" panel: ") == 3 and not re.search(r"\bsix\b|3 by 2|top row|bottom row", tri), (cat, tri)
+                assert "The triptych or the separate views, not both" in obj.locator("body").inner_text(), cat
+                if cat == "Clothing":
+                    assert "invisible mannequin (ghost mannequin) in the left and middle panels" in tri and "laid flat" in tri, tri
             same = [bool(re.search(r"The same (single object|place)", t)) for t in texts]
             assert len(texts) == len(cards) >= 2 and not same[0] and all(same[1:]), (cat, light, cards, same)
             assert not [t for t in texts if leftover.search(t)], (cat, light)
@@ -394,12 +406,27 @@ with sync_playwright() as p:
             mode: 'object', objCat: '{cat}', objTime: 'both', photo: true, photoOnly: {str(only).lower()}}}))""")
         src.reload()
         texts = prompts(src)
+        if cat == "object":  # the triptych is made from the photo alone, like view 1, and both follow the photo
+            assert re.search(r"never an object from earlier images", texts[0]) and "three equal panels" in texts[0], (only, texts[0][:300])
+            assert "The triptych or the separate views" not in src.locator("body").inner_text(), only
+            texts = texts[1:]
         assert re.search(r"never an? (object|place) from earlier images", texts[0]), (cat, only)
         for t in texts[1:]:
             assert not re.search(r"never an? (object|place) from earlier images", t), (cat, only, t[:300])
             assert re.search(r"and (view 1|the day view) \(attached after the photo(\(s\))?, or the image just above", t), (cat, only)
         assert "Your photo, then view 1: nothing if it is just above" in src.locator("body").inner_text(), (cat, only)
         src.close()
+    # On an object or a place, "Sheet layout only" is named for what it keeps, and its help speaks of no face or outfit.
+    for cat, name in (("object", "Keep the object in the photo as is"), ("house", "Keep the place in the photo as is")):
+        keep = clipboard_page(browser, errors)
+        keep.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
+            mode: 'object', objCat: '{cat}', photo: true, photoOnly: true}}))""")
+        keep.reload()
+        expect(keep.get_by_text(name, exact=True)).to_be_visible()
+        help_text = keep.get_by_text(re.compile("^" + name + r"\. The prompts take the")).inner_text()
+        assert not re.search(r"face|hair|makeup|outfit|sheet", help_text), help_text
+        assert "Sheet layout only" not in keep.locator("body").inner_text(), cat
+        keep.close()
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):
         ani = clipboard_page(browser, errors)
@@ -620,6 +647,8 @@ with sync_playwright() as p:
             assert not sd.locator("[placeholder*='GPT']").count(), state
             if "photo: true" not in state and "objCat: 'object'" in state:
                 assert "View 1: obj_" in body, state
+            if "mode: 'object'" in state and not re.search(r"objCat: '(house|interior)'", state):
+                assert "Triptych: the 3 views in one image" in body, state
         if tab:
             sd.get_by_role("tab", name=tab, exact=True).click()
             assert "conversation" not in sd.locator("body").inner_text().lower(), (state, tab)

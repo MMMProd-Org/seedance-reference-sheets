@@ -1811,6 +1811,29 @@ function sdObjOne(s, i) {
   if (i > 0) s = sdPhotoAlso(s, "object", "view 1");
   return s;
 }
+/* objects, not places: the triptych, the category's three views side by side in one 16:9 image, built from the same
+   six-view prompt. Seedance 2.5 takes an image with several views of one subject (fiche 07, Vues multiples); each view
+   gets a third of the pixels, so the separate views stay for details. Without a source photo it makes up its own
+   object: the triptych or the separate views, not both (sdObjTriRow says so). */
+function sdObjTri(s) {
+  var V = sdObjViewsSpec();
+  return String(s || "")
+    .replace(/( reference for AI video: a )six-view studio turnaround /, "$1three-view studio turnaround ")
+    .replace("It is the same single object in all six views:", "It is the same single object in all three views:")
+    .replace(
+      /\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid(, separated by narrow gaps of the same grey as the backdrop\. )[^\n]*\n(The whole [^\n]*? is visible in every panel, centered, at the same scale in )the front, back and side views/,
+      function (m0, gaps, whole) {
+        return "\nA 16:9 landscape image split into three equal panels side by side" + gaps + "Left panel: " + V[0][3] + " Middle panel: " + V[1][3] + " Right panel: " + V[2][3] + "\n" + whole + "the left and middle panels";
+      },
+    )
+    .replace(
+      "The garment is shown on an invisible mannequin (ghost mannequin), with its natural shape, volume and drape; no person and no visible mannequin.",
+      "The garment is shown on an invisible mannequin (ghost mannequin) in the left and middle panels, with its natural shape, volume and drape, and laid flat on the seamless grey backdrop in the right panel; no person and no visible mannequin.",
+    )
+    .replace(", horizontal in the side views,", ",")
+    .replace("the same light in all six panels", "the same light in all three panels")
+    .replace(", camera perpendicular to the object for the front, back and side views and directly above it for the top view, deep focus", ", deep focus");
+}
 /* with a source photo, views 2 and up and the night card are made from an earlier image of the same subject (view 1,
    or the day view): the photo's "never ... from earlier images" lets that one image through, attached after the photo */
 function sdPhotoAlso(s, what, ref) {
@@ -1863,6 +1886,7 @@ function sdObjSplit(t, m) {
     o.obj2 = place ? sdPlaceOne(m.obj, 1) : sdObjOne(m.obj, 1);
     o.obj3 = place ? sdPlaceOne(m.obj, 2) : sdObjOne(m.obj, 2);
     sdObjNight() && (o.obj4 = sdPlaceOne(m.obj, 0, !0));
+    place || (o.objTri = sdObjTri(m.obj));
   }
   "string" == typeof m.editObj &&
     (o.editObj = m.editObj.replace(
@@ -1877,7 +1901,51 @@ function sdObjCards(B) {
   var V = sdObjViewsSpec(),
     c = [B("obj", "1", sdT(V[0][1][0], V[0][1][1])), B("obj2", "2", sdT(V[1][1][0], V[1][1][1])), B("obj3", "3", sdT(V[2][1][0], V[2][1][1]))];
   sdObjNight() && c.push(B("obj4", "4", sdT("De nuit : même point de vue que la vue de jour choisie", "At night: same viewpoint as the chosen day view")));
+  sdObjPlace() || c.unshift(B("objTri", "T", sdT("Triptyque : les 3 vues sur une image", "Triptych: the 3 views in one image")));
   return c;
+}
+/* "Joins" stays first: Seedream's card shows the first row as the image(s) to add */
+function sdObjTriRow(t, R) {
+  return [
+    ["Joins", t.photo ? "Ta photo" : "Rien"],
+    t.photo
+      ? null
+      : [
+          sdT("Au choix", "Either or"),
+          sdT(
+            "Le triptyque ou les vues séparées, pas les deux : sans photo de départ, chacun invente son propre objet.",
+            "The triptych or the separate views, not both: without a source photo, each one makes up its own object.",
+          ),
+        ],
+    [
+      "Format",
+      "seedream" === t.model
+        ? sdT("16:9, à choisir dans Seedream", "16:9, set in Seedream")
+        : sdT("16:9, demandé dans le prompt : vérifie l'image obtenue", "16:9, asked in the prompt: check the image you get"),
+    ],
+    ["Nomme-la", R(rU("triptyque"))],
+  ].filter(Boolean);
+}
+/* "Mise en planche seulement" on an object or a place: there is no sheet any more, and nothing of a person to keep */
+function sdOnlyLabel(t) {
+  return "house" === t.objCat || "interior" === t.objCat
+    ? sdT("Garder le lieu de la photo tel quel", "Keep the place in the photo as is")
+    : sdT("Garder l'objet de la photo tel quel", "Keep the object in the photo as is");
+}
+function sdOnlyHelp(t) {
+  return [
+    (0, l.jsx)("b", { children: sdOnlyLabel(t) + "." }, "b"),
+    " " +
+      ("house" === t.objCat || "interior" === t.objCat
+        ? sdT(
+            "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
+            "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
+          )
+        : sdT(
+            "Les prompts reprennent l'objet de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni et la lumière de studio égale. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
+            "The prompts take the object in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop and the even studio light change. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
+          )),
+  ];
 }
 function sdObjBar() {
   return [
