@@ -64,6 +64,9 @@ jobs:
       - name: Golden prompts
         run: python tests/golden_prompts.py
 
+      - name: Prompt log gate
+        run: python tests/test_prompt_log_gate.py
+
       - name: Prepare site
         if: github.event_name == 'push'
         run: mkdir -p _site && cp new/merged.html _site/index.html

@@ -1,0 +1,72 @@
+"""Checks .claude/hooks/prompt_log_gate.py: the prompt log is read before anything else, and again once it changes.
+
+    python tests/test_prompt_log_gate.py
+"""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+HOOK = Path(__file__).resolve().parent.parent / ".claude" / "hooks" / "prompt_log_gate.py"
+LOG = "docs/PROMPT-LOG.md"
+
+with tempfile.TemporaryDirectory() as tmp:
+    project, temp = Path(tmp, "project"), Path(tmp, "temp")
+    (project / "docs").mkdir(parents=True)
+    temp.mkdir()
+    log = project / LOG
+    log.write_text("# Prompt log\n\nentry one\n", encoding="utf-8")
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project), "TMPDIR": str(temp)}
+
+    def hook(event, name="", session="s1", raw=None, **args):
+        payload = raw if raw is not None else json.dumps(
+            {"session_id": session, "hook_event_name": event, "tool_name": name, "tool_input": args, "cwd": str(project)}
+        )
+        r = subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True, text=True, env=env)
+        return r.returncode, r.stdout, r.stderr
+
+    def tool(name="Bash", session="s1", **args):
+        return hook("PreToolUse", name, session, **args)[0]
+
+    # nothing read yet: every tool is blocked with the reason, a partial Read of the log too
+    code, _, err = hook("PreToolUse", "Bash", command="ls")
+    assert code == 2 and LOG in err, (code, err)
+    assert tool("Read", file_path="README.md") == 2
+    assert tool("Read", file_path=LOG, limit=5) == 2
+    # the session start loads the log and counts as a read
+    code, out, _ = hook("SessionStart")
+    assert code == 0 and "entry one" in json.loads(out)["hookSpecificOutput"]["additionalContext"], out
+    assert tool() == 0
+    # another session has read nothing
+    assert tool(session="s2") == 2
+    # the log changes: blocked until a whole Read, by a relative or an absolute path
+    log.write_text("# Prompt log\n\nentry two\n", encoding="utf-8")
+    assert tool() == 2
+    assert tool("Read", file_path=LOG, offset=1) == 2
+    assert tool("Read", file_path=str(log)) == 0
+    assert tool() == 0
+    # the session's own edit of the log counts as a read
+    assert tool("Edit", file_path=LOG) == 0
+    log.write_text("# Prompt log\n\nentry three\n", encoding="utf-8")
+    assert hook("PostToolUse", "Edit", file_path=LOG)[0] == 0
+    assert tool() == 0
+    # an edit of another file does not
+    log.write_text("# Prompt log\n\nentry four\n", encoding="utf-8")
+    assert hook("PostToolUse", "Edit", file_path="README.md")[0] == 0
+    assert tool() == 2
+    # a log too long to load whole: the session start asks for a Read and counts as none
+    log.write_text("# Prompt log\n\n" + "x" * 9100 + "\n", encoding="utf-8")
+    code, out, _ = hook("SessionStart")
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert code == 0 and "x" * 100 not in context and "Read" in context, context[:200]
+    assert tool() == 2
+    assert tool("Read", file_path=LOG) == 0 and tool() == 0
+    # a broken input lets the call through, visibly
+    code, out, _ = hook("PreToolUse", raw="not json")
+    assert code == 0 and "failed" in json.loads(out)["systemMessage"], out
+    # no log in the checkout: nothing to read
+    log.unlink()
+    assert tool(session="s3") == 0
+print("prompt log gate checks passed")
