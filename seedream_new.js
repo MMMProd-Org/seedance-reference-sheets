@@ -84,7 +84,7 @@ function sdPhotoTip(t) {
 /* the "?" of "On an invisible mannequin", for a garment kept as in the photo (sdKeepMannequin) */
 function sdMannequinTip() {
   return sdT(
-    "Présente le vêtement comme porté, sur un mannequin invisible : il prend la forme d'un corps, sans personne ni mannequin visibles (vues 1 et 2, cases gauche et milieu du triptyque). La vue 3 reste à plat. Cela change la présentation de ta photo (par exemple une veste posée sur un lit ou sur un cintre) ; le vêtement lui-même (coupe, matières, couleurs, marquages) reste identique.",
+    "Présente le vêtement comme porté, sur un mannequin invisible : il prend la forme d'un corps, sans personne ni mannequin visibles (vues 1 et 2, cases de gauche et du milieu du triptyque). La vue 3 reste à plat. Cela change la présentation de ta photo (par exemple une veste posée sur un lit ou sur un cintre) ; le vêtement lui-même (coupe, matières, couleurs, marquages) reste identique.",
     "Shows the garment as if worn, on an invisible mannequin: it takes the shape of a body, with no person and no visible mannequin (views 1 and 2, left and middle panels of the triptych). View 3 stays laid flat. This changes how your photo presents it (a jacket lying on a bed or on a hanger, for example); the garment itself (cut, materials, colors, markings) stays the same.",
   );
 }

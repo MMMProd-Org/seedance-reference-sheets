@@ -433,7 +433,8 @@ with sync_playwright() as p:
         keep.close()
     # A garment kept as in the photo keeps the photo's presentation unless "On an invisible mannequin", shown only there
     # and explained by its "?", is ticked: then views 1 and 2 and the triptych's left and middle panels put it on the
-    # mannequin, view 3 and the right panel lay it flat. Elsewhere the saved choice shows nothing and changes nothing.
+    # mannequin, view 3 and the right panel lay it flat. "New object" clears it. Elsewhere the saved choice shows nothing
+    # and changes nothing.
     for model in ("gpt", "seedream"):
         gm = clipboard_page(browser, errors)
         gm.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
@@ -459,6 +460,9 @@ with sync_playwright() as p:
         set_lang(gm, "Français", "fr")
         expect(gm.get_by_role("switch", name="Sur mannequin invisible", exact=True)).to_have_attribute("aria-checked", "true")
         expect(gm.locator("#sd-tip-mannequin")).to_contain_text("sur un mannequin invisible")
+        gm.get_by_role("button", name="Nouvel objet", exact=True).click()
+        gm.get_by_role("button", name="Confirmer : effacer cet objet", exact=True).click()
+        gm.wait_for_function(f"{SAVED}.objMannequin === false")
         gm.close()
     for state in ("objCat: 'object', photo: true, photoOnly: true", "objCat: 'clothing', photo: true, photoOnly: false"):
         off = clipboard_page(browser, errors)
