@@ -37,7 +37,7 @@ No install. No account. No API key. It is a single web page.
 ## What's inside
 
 - **One role per image.** For a person, a head sheet for the face and a body sheet for the body. For an animal, one sheet of the whole animal, with optional head close-ups made from it. For an object or a place, one image per view; an object can also have its three views side by side in one image (a triptych), instead of the separate views. Each reference does one job.
-- **People, animals, objects and places.** Vehicles on their wheels, clothing on an invisible mannequin (laid flat for its optional third view), products shot on their own, and location views of a house exterior or an interior, by day and by night.
+- **People, animals, objects and places.** Vehicles on their wheels, clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and location views of a house exterior or an interior, by day and by night.
 - **Fine control where it matters.** Age shown through visible signs, facial structure, skin realism, separate sliders for muscle volume and definition, outfits with wear and dirt, scars and marks pinned to a side and a spot.
 - **Edits without drift.** Retouch an approved sheet, dress a body sheet, add the heads, while the proportions stay put.
 - **A cast, not just a character.** Name several characters in one GPT Image conversation. Each prompt points to its own character and keeps the others out.

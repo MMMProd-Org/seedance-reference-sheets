@@ -81,6 +81,13 @@ function sdPhotoTip(t) {
     return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
   });
 }
+/* the "?" of "On an invisible mannequin", for a garment kept as in the photo (sdKeepMannequin) */
+function sdMannequinTip() {
+  return sdT(
+    "Présente le vêtement comme porté, sur un mannequin invisible : il prend la forme d'un corps, sans personne ni mannequin visibles (vues 1 et 2, cases gauche et milieu du triptyque). La vue 3 reste à plat. Cela change la présentation de ta photo (par exemple une veste posée sur un lit ou sur un cintre) ; le vêtement lui-même (coupe, matières, couleurs, marquages) reste identique.",
+    "Shows the garment as if worn, on an invisible mannequin: it takes the shape of a body, with no person and no visible mannequin (views 1 and 2, left and middle panels of the triptych). View 3 stays laid flat. This changes how your photo presents it (a jacket lying on a bed or on a hanger, for example); the garment itself (cut, materials, colors, markings) stays the same.",
+  );
+}
 /* message shown after "Copier corps" in Seedream: what to attach, or that the head sheet is missing / outdated */
 function sdIterCopyMsg(t) {
   var op = sdOp(t);
@@ -1834,6 +1841,22 @@ function sdObjTri(s) {
     .replace("the same light in all six panels", "the same light in all three panels")
     .replace(", camera perpendicular to the object for the front, back and side views and directly above it for the top view, deep focus", ", deep focus");
 }
+/* "Keep the object in the photo as is" has no PRESENTATION section: a garment keeps the photo's presentation, unless
+   "On an invisible mannequin" is ticked. Same sentence as the other garment prompts, so sdObjOne lays view 3 flat and
+   sdObjTri splits it across the triptych's panels. */
+function sdKeepMannequin(t, s) {
+  return t.photo && t.photoOnly && t.objMannequin && "clothing" === t.objCat
+    ? s
+        .replace(
+          " The only changes are the viewing angles, the plain grey backdrop and an even studio light. ",
+          " The only changes are the viewing angles, the presentation described below, the plain grey backdrop and an even studio light. ",
+        )
+        .replace(
+          "\n\nRENDERING:\n",
+          "\n\nPRESENTATION:\nThe garment is shown on an invisible mannequin (ghost mannequin), with its natural shape, volume and drape; no person and no visible mannequin.\n\nRENDERING:\n",
+        )
+    : s;
+}
 /* with a source photo, views 2 and up and the night card are made from an earlier image of the same subject (view 1,
    or the day view): the photo's "never ... from earlier images" lets that one image through, attached after the photo */
 function sdPhotoAlso(s, what, ref) {
@@ -1882,11 +1905,12 @@ function sdObjSplit(t, m) {
   var o = Object.assign({}, m),
     place = sdObjPlace();
   if ("string" == typeof m.obj) {
-    o.obj = place ? sdPlaceOne(m.obj, 0) : sdObjOne(m.obj, 0);
-    o.obj2 = place ? sdPlaceOne(m.obj, 1) : sdObjOne(m.obj, 1);
-    o.obj3 = place ? sdPlaceOne(m.obj, 2) : sdObjOne(m.obj, 2);
-    sdObjNight() && (o.obj4 = sdPlaceOne(m.obj, 0, !0));
-    place || (o.objTri = sdObjTri(m.obj));
+    var s = sdKeepMannequin(t, m.obj);
+    o.obj = place ? sdPlaceOne(s, 0) : sdObjOne(s, 0);
+    o.obj2 = place ? sdPlaceOne(s, 1) : sdObjOne(s, 1);
+    o.obj3 = place ? sdPlaceOne(s, 2) : sdObjOne(s, 2);
+    sdObjNight() && (o.obj4 = sdPlaceOne(s, 0, !0));
+    place || (o.objTri = sdObjTri(s));
   }
   "string" == typeof m.editObj &&
     (o.editObj = m.editObj.replace(
@@ -1941,7 +1965,12 @@ function sdOnlyHelp(t) {
             "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
             "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
           )
-        : sdT(
+        : "clothing" === t.objCat
+          ? sdT(
+              "Les prompts reprennent le vêtement de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni, la lumière de studio égale et, si tu coches « Sur mannequin invisible », la présentation. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie, le format et « Sur mannequin invisible » restent au choix.",
+              "The prompts take the garment in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop, the even studio light and, if you tick “On an invisible mannequin”, the presentation change. Other settings are ignored while this option is on; only the category, the format and “On an invisible mannequin” can still be chosen.",
+            )
+          : sdT(
             "Les prompts reprennent l'objet de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni et la lumière de studio égale. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
             "The prompts take the object in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop and the even studio light change. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
           )),

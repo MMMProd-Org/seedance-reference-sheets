@@ -13,7 +13,7 @@ def rep(old,new,count=1):
     assert n==count,(n,old[:90])
     src=src.replace(old,new)
 # P1 state defaults
-rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n    sdBodyImg: !0,\n  },')
+rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n    sdBodyImg: !0,\n    objMannequin: !1,\n  },')
 # P17 new bust shape "Poire" (GPT + Seedream)
 rep('''      [
         "conical",
@@ -595,12 +595,29 @@ rep('''          editObj: [
             ["Nomme-la", F("vue", N || C.length > 0)],
           ],''')
 rep('''              ? [["obj", "Copier la planche", !1]]''', '''              ? sdObjBar()''')
-# P47 "Mise en planche seulement" on an object or a place: its own name and help, nothing of a person's face or outfit
+# P47 "Mise en planche seulement" on an object or a place: its own name and help, nothing of a person's face or outfit;
+# for a garment, the optional invisible mannequin, explained on hover (sdKeepMannequin)
 rep('''                              onChange: (e) => g("photoOnly", e),
                               disabled: k,
-                              children: "Mise en planche seulement",''', '''                              onChange: (e) => g("photoOnly", e),
+                              children: "Mise en planche seulement",
+                            }),''', '''                              onChange: (e) => g("photoOnly", e),
                               disabled: k,
-                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",''')
+                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",
+                            }),
+                          y &&
+                            t.photo &&
+                            t.photoOnly &&
+                            "clothing" === t.objCat &&
+                            sdTip(
+                              (0, l.jsx)(ax, {
+                                checked: !!t.objMannequin,
+                                onChange: (e) => g("objMannequin", e),
+                                disabled: k,
+                                children: sdT("Sur mannequin invisible", "On an invisible mannequin"),
+                              }),
+                              sdMannequinTip(),
+                              "sd-tip-mannequin",
+                            ),''')
 rep('''                            className: "text-sm",
                             children: [
                               (0, l.jsx)("b", {
