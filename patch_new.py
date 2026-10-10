@@ -3,6 +3,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 LANG='en'  # default interface language ('en' or 'fr'; tests/smoke.py expects 'en'); visitors can switch in the header
 src=open('new/pretty.js',encoding='utf-8').read()
 sd=open('seedream_new.js',encoding='utf-8').read()+'\n'+open('sd_i18n.js',encoding='utf-8').read()
+# the release version shown in the header, set by CI from version.py; none in a local build
+VERSION=os.environ.get('SD_VERSION','')
+assert VERSION=='' or VERSION.count('.')==2 and all(p.isdigit() for p in VERSION.split('.')),VERSION
+sd+='\nvar SD_VERSION = '+json.dumps(VERSION)+';'
 def rep(old,new,count=1):
     global src
     n=src.count(old)
@@ -241,6 +245,12 @@ rep('''              (0, l.jsx)("p", {
                       ["en", "English"],
                     ],
                   }),
+                  SD_VERSION &&
+                    (0, l.jsx)("span", {
+                      className: "text-xs text-muted-foreground",
+                      style: { alignSelf: "center" },
+                      children: "v" + SD_VERSION,
+                    }),
                 ],
               }),''')
 # P8 rules panel

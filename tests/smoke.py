@@ -3,6 +3,7 @@
 Optional argument: path to another built page (used to check the test fails on a bad build).
 """
 
+import os
 import pathlib
 import re
 import sys
@@ -101,6 +102,9 @@ with sync_playwright() as p:
     assert not errors, errors
     assert page.evaluate("document.documentElement.lang") == "en", "page must open in English"
     assert page.title() == "Seedance Reference Sheets", page.title()
+    # CI builds the page with the release version (version.py) and runs this test with it: the header shows it.
+    if os.environ.get("SD_VERSION"):
+        expect(page.locator("header").get_by_text("v" + os.environ["SD_VERSION"], exact=True)).to_be_visible()
 
     page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()

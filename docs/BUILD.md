@@ -43,6 +43,14 @@ python tests/golden_prompts.py
 On `main`, it also publishes `new/merged.html` to GitHub Pages as `index.html`
 (in a fork, set Settings → Pages → Source to "GitHub Actions" first).
 
+`version.py` reads the Conventional Commits since the last `vX.Y.Z` tag: a breaking change
+(`feat!:`, `BREAKING CHANGE:`) bumps the major version, a `feat` the minor one, a `fix` or `perf`
+the patch; other types make no release, and the first release is `v1.0.0`. CI builds the page
+with that version (`SD_VERSION`), shown in the header, and the smoke test checks it is there.
+After a deploy that brings a new version, the `release` job tags the commit and creates a GitHub
+release with the page attached as `seedance-reference-sheets-vX.Y.Z.html`. A local build shows
+no version. `python version.py --check` runs its own checks.
+
 ## Making changes
 
 - Interface text: add the French string and its English translation to `i18n/extra.json`. Placeholder patterns (`ex. …`, `autre : ex. …`) are translated by the rules in `build_i18n.py` (`SD_EN_RX`).

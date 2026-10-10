@@ -23,8 +23,13 @@ jobs:
     runs-on: ubuntu-26.04
     # Usually about 1 minute; installing the test dependencies once took 13.
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the tags and commits version.py reads
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -32,7 +37,14 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
+      # The version this commit releases: a pull request shows the one its merge would make.
+      - name: Release version
+        id: version
+        run: python version.py --check && python version.py >> "$GITHUB_OUTPUT"
+
       - name: Build the page
+        env:
+          SD_VERSION: ${{ steps.version.outputs.version }}
         run: python build_i18n.py && python patch_new.py
 
       - name: Install test dependencies
@@ -41,6 +53,8 @@ jobs:
           python -m playwright install --with-deps --only-shell chromium
 
       - name: Smoke test
+        env:
+          SD_VERSION: ${{ steps.version.outputs.version }}
         run: python tests/smoke.py
 
       - name: Golden prompts
@@ -72,3 +86,35 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # Once the page is live, a feat, fix or perf commit since the last release makes a new one
+  # (version.py), with the page attached as one HTML file and notes listing the merged pull requests.
+  release:
+    if: github.event_name == 'push' && needs.build-and-test.outputs.release == 'true'
+    needs: [build-and-test, deploy]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # the release and its tag: the only job that writes to the repository
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      # The same commit and version build the same bytes as the page just deployed.
+      - name: Build the page
+        env:
+          SD_VERSION: ${{ needs.build-and-test.outputs.version }}
+        run: |
+          python build_i18n.py && python patch_new.py
+          cp new/merged.html "seedance-reference-sheets-v$SD_VERSION.html"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build-and-test.outputs.version }}
+        run: >-
+          gh release create "v$VERSION" "seedance-reference-sheets-v$VERSION.html"
+          --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
