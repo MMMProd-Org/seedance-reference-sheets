@@ -431,6 +431,51 @@ with sync_playwright() as p:
         assert not re.search(r"face|hair|makeup|outfit|sheet", help_text), help_text
         assert "Sheet layout only" not in keep.locator("body").inner_text(), cat
         keep.close()
+    # A garment kept as in the photo keeps the photo's presentation unless "On an invisible mannequin", shown only there
+    # and explained by its "?", is ticked: then views 1 and 2 and the triptych's left and middle panels put it on the
+    # mannequin, view 3 and the right panel lay it flat. "New object" unticks "On an invisible mannequin". Elsewhere the
+    # saved choice shows nothing and changes nothing.
+    for model in ("gpt", "seedream"):
+        gm = clipboard_page(browser, errors)
+        gm.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+            mode: 'object', objCat: 'clothing', photo: true, photoOnly: true}}))""")
+        gm.reload()
+        box = gm.get_by_role("switch", name="On an invisible mannequin", exact=True)
+        expect(box).to_have_attribute("aria-checked", "false")
+        assert not [t for t in prompts(gm) if "invisible mannequin" in t], model
+        tip = gm.locator("#sd-tip-mannequin")
+        expect(tip).to_be_hidden()
+        gm.locator(".sd-tip", has=tip).locator(".sd-tip-btn").hover()
+        expect(tip).to_be_visible()
+        expect(tip).to_contain_text("on an invisible mannequin")
+        expect(tip).to_contain_text("View 3 stays laid flat")
+        box.click()
+        texts = prompts(gm)
+        assert len(texts) == 4 and all("the presentation described below" in t for t in texts), model
+        assert "invisible mannequin (ghost mannequin) in the left and middle panels" in texts[0], (model, texts[0])
+        assert all("invisible mannequin" in t for t in texts[1:3]), model
+        assert "laid flat on the seamless grey backdrop" in texts[3] and "invisible mannequin" not in texts[3], (model, texts[3])
+        assert "On an invisible mannequin" in gm.get_by_text(re.compile(r"^Keep the object in the photo as is\. ")).inner_text(), model
+        assert gm.evaluate(f"{SAVED}.objMannequin") is True, model
+        set_lang(gm, "Français", "fr")
+        expect(gm.get_by_role("switch", name="Sur mannequin invisible", exact=True)).to_have_attribute("aria-checked", "true")
+        expect(gm.locator("#sd-tip-mannequin")).to_contain_text("sur un mannequin invisible")
+        gm.get_by_role("button", name="Nouvel objet", exact=True).click()
+        gm.get_by_role("button", name="Confirmer : effacer cet objet", exact=True).click()
+        gm.wait_for_function(f"{SAVED}.objMannequin === false")
+        gm.close()
+    for state in ("objCat: 'object', photo: true, photoOnly: true", "objCat: 'clothing', photo: true, photoOnly: false"):
+        off = clipboard_page(browser, errors)
+        off.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'gpt', modelPick: 1,
+            mode: 'object', {state}, objMannequin: true}}))""")
+        off.reload()
+        expect(off.get_by_text("On an invisible mannequin", exact=True)).to_have_count(0)
+        texts = prompts(off)
+        assert not [t for t in texts if "presentation described below" in t or t.count("PRESENTATION:") > 1], state
+        if "'object'" in state:
+            assert not [t for t in texts if "mannequin" in t], state
+        off.close()
+    assert not errors, errors
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):
         ani = clipboard_page(browser, errors)
