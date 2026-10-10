@@ -48,7 +48,7 @@ No install. No account. No API key. It is a single web page.
 | Step | Model | Coverage |
 | --- | --- | --- |
 | Reference sheets | GPT Image 2.5 | People, animals, objects, places |
-| Reference sheets | Seedream 5.0 | People (photo style) for now |
+| Reference sheets | Seedream 5.0 | People (photo style), animals, objects, places |
 | Video | Seedance 2.5 | Uses the sheets as image references |
 
 ## FAQ

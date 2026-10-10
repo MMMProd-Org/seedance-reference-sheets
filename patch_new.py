@@ -247,7 +247,7 @@ rep('''              (0, l.jsx)("p", {
 rep('(0, l.jsx)(aN, { obj: y }),', '(0, l.jsx)(aN, { obj: y, sd: "seedream" === t.model }),')
 rep('function aN({ obj: e }) {', 'function aN({ obj: e, sd: sdM }) {')
 rep('''          "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",''','''          sdM
-            ? "Seedream ne se souvient de rien d'une génération à l'autre : chaque prompt se suffit à lui-même. Choisis le format 16:9 dans Seedream et ajoute les images indiquées sur chaque carte."
+            ? "Seedream ne se souvient de rien d'une génération à l'autre : chaque prompt se suffit à lui-même. Choisis dans Seedream le format indiqué sur chaque carte et ajoute les images qu'elle demande."
             : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",''')
 rep('''          "En mode Thinking, ChatGPT peut vérifier et relancer l'image plusieurs fois. Chaque prompt demande au plus 4 images produites, chaque nouvel essai devant corriger d'abord l'écart le plus visible ; une génération bloquée par le filtre ne compte pas et peut être relancée une fois, à l'identique ; après deux blocages, ChatGPT s'arrête et livre la meilleure image déjà produite. Le respect de ces consignes dépend de ChatGPT.",''','''          sdM
             ? "Seedream ne vérifie pas son image : c'est toi qui juges et relances. Vise moins de 600 mots (conseil de BytePlus) ; le compteur t'alerte au-delà. Si ta plateforme propose d'optimiser le prompt automatiquement, désactive cette option."
@@ -773,6 +773,19 @@ rep('''                                : "animal" === t.mode
 rep('''            "the most recent head sheet" +''', '''            (t ? "the most recent animal sheet" : "the most recent head sheet") +''')
 for a in ['''" described below. If this conversation has no such head sheet, this is a new, original " +''', '''" only where the description below differs from that sheet. If this conversation has no such head sheet, this is a new, original " +''']:
     rep(a, a.replace('no such head sheet, this is a new, original " +', 'no such " +\n                (t ? "animal" : "head") +\n                " sheet, this is a new, original " +'))
+# P46 Seedream for objects, places and animals (prompts: sdSolo): the retouch card, the copy messages and the
+# three-step layout stay a person's; a GPT copy's tracking never reaches a Seedream prompt; formats are set in Seedream
+rep('"seedream" === t.model && !sdX && sdIterBlock(t, g, B, L),', '"seedream" === t.model && !sdX && "person" === t.mode && sdIterBlock(t, g, B, L),')
+rep('sdMsg = "seedream" !== sdModel ? "" : "body" === t ?', 'sdMsg = "seedream" !== sdModel || "person" !== e.mode ? "" : "body" === t ?')
+rep('"seedream" === t.model && t.headless && !sdOff(t)', '"seedream" === t.model && "person" === t.mode && t.headless && !sdOff(t)', 2)
+rep('  return e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name) || sdFaceReset()', '  return "seedream" === e.model || e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name) || sdFaceReset()')
+rep('''        I = "16:9, demandé dans le prompt : vérifie l'image obtenue",''', '''        I = "seedream" === t.model ? "16:9, à choisir dans Seedream" : "16:9, demandé dans le prompt : vérifie l'image obtenue",''')
+# the help texts name GPT and its conversation; in Seedream (people too) they name neither
+rep('''" Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation du personnage.",''', '''"seedream" === sdModelNow
+                                                    ? " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt."
+                                                    : " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation du personnage.",''')
+rep('ph: "vide = Auto : GPT choisit une race précise",', 'ph: "vide = Auto : l\'IA choisit une race précise",')
+rep('hint: "Vide : GPT choisit lui-même une race ou un type précis', 'hint: "Vide : l\'IA choisit elle-même une race ou un type précis')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 L=orig.split('\n'); assert '</script' not in src
