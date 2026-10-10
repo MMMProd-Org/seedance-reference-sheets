@@ -9,11 +9,15 @@ on:
 permissions:
   contents: read
 
-# One run per branch or pull request: a newer push cancels the older run, so a
-# slower build of an older commit can never deploy over a newer one.
+# One run at a time per branch or pull request, so a slower build of an older commit can never
+# deploy over a newer one. On a pull request a newer push cancels the older run. On main runs
+# queue instead, so each merge deploys and gets its release; GitHub keeps one pending run at
+# most, so a third merge before the first finishes replaces the pending one and the release
+# after it covers both. (`queue: max` keeps up to 100 pending runs, but GitHub rejects it
+# together with `cancel-in-progress: true`, which pull requests need.)
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build-and-test:
