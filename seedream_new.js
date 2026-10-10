@@ -1349,13 +1349,28 @@ function sdCardExtra(k) {
                         "Ton texte ne mentionne plus l'image 2 : si tu ne fais plus cette opération, choisis « Retouche libre ».",
                         "Your text no longer mentions image 2: if you are no longer doing this operation, choose “Free retouch”.",
                       )
-                    : "dress" === op
-                      ? "Même corps, avec un haut court et un legging."
-                      : "heads" === op
-                        ? "Agrandis d'abord ta planche habillée de 25 % vers le haut, fond gris."
-                        : "join" === op
-                          ? "Le corps est gardé, la tête est ajoutée."
-                          : "Ta retouche, écrite ci-dessous.",
+                    : /* what the text below is for: written by the user, ready from a preset, or not needed yet
+                         (a headless body's default "join" builds its prompt from the preset while the text is empty) */
+                      [
+                        "dress" === op
+                          ? "Même corps, avec un haut court et un legging."
+                          : "heads" === op
+                            ? "Agrandis d'abord ta planche habillée de 25 % vers le haut, fond gris."
+                            : "join" === op
+                              ? "Le corps est gardé, la tête est ajoutée."
+                              : sdT(
+                                  "Écris ce qu'il faut changer sur ta planche (image 1), en français ou en anglais. Le prompt reprend ce texte et garde tout le reste identique : rien d'autre à ajouter, puis clique sur « Copier pour Seedream 5.0 ».",
+                                  "Write what to change on your sheet (image 1), in English or French. The prompt uses this text and keeps everything else the same: nothing else to add, then click “Copy for Seedream 5.0”.",
+                                ),
+                        op && " ",
+                        op &&
+                          (String(t.sdIter || "").trim()
+                            ? sdT(
+                                "Le texte ci-dessous est prêt et déjà dans le prompt : rien à ajouter, modifie-le seulement si tu veux changer la retouche.",
+                                "The text below is ready and already in the prompt: nothing to add; edit it only if you want a different retouch.",
+                              )
+                            : sdT("Le prompt est déjà prêt : la case peut rester vide.", "The prompt is already complete: the box can stay empty.")),
+                      ],
                 },
                 "hint",
               ),
@@ -1364,7 +1379,7 @@ function sdCardExtra(k) {
                 {
                   id: "sd-iter",
                   className: L + " min-h-[88px] resize-y",
-                  placeholder: "Ou écris ta propre retouche, ex. sharper biceps and triceps",
+                  placeholder: sdT("ex. biceps et triceps plus dessinés", "e.g. sharper biceps and triceps"),
                   value: t.sdIter || "",
                   onChange: (ev) => (g("sdIter", ev.target.value), ev.target.value.trim() || g("sdIterOp", "")),
                 },

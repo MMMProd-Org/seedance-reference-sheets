@@ -121,11 +121,16 @@ with sync_playwright() as p:
 
     open_retouches()
     expect(hint).to_be_visible()
+    # The help above the change says what its text is for: the user's own retouch, or a preset's text, already in the prompt.
+    expect(page.get_by_text(re.compile(r"^Write what to change on your sheet \(image 1\), in English or French\. "))).to_be_visible()
+    expect(change).to_have_attribute("placeholder", "e.g. sharper biceps and triceps")
     preset.click()
     expect(change).not_to_have_value("")
     expect(hint).to_be_hidden()
     open_retouches()
     expect(preset).to_have_attribute("aria-pressed", "true")
+    expect(page.get_by_text(re.compile(r"^Same body, in a cropped top and leggings\. The text below is ready and already in the prompt: "))).to_be_visible()
+    assert change.input_value().rstrip(". ") in page.locator('pre[data-out="iter"]').text_content()
     preset.click()
     expect(change).to_have_value("")
     expect(hint).to_be_visible()
@@ -241,8 +246,17 @@ with sync_playwright() as p:
     if not headless.locator("#sd-iter").is_visible():  # a default preset folds "Other retouches"
         headless.get_by_text("Other retouches", exact=True).click()
     expect(join).to_have_attribute("aria-pressed", "true")
+    # its prompt is built while the change is empty, and the help says so
+    expect(headless.get_by_text("The body is kept and the head is added. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
     join.click()
     expect(headless.locator("#sd-iter")).not_to_have_value("")
+    expect(headless.get_by_text(re.compile(r"^The body is kept and the head is added\. The text below is ready "))).to_be_visible()
+    # in French too; "Free retouch" asks for the user's own text, with a French example
+    set_lang(headless, "Français", "fr")
+    expect(headless.get_by_text(re.compile(r"^Le corps est gardé, la tête est ajoutée\. Le texte ci-dessous est prêt "))).to_be_visible()
+    headless.get_by_role("button", name="Retouche libre", exact=True).click()
+    expect(headless.get_by_text(re.compile(r"^Écris ce qu'il faut changer sur ta planche \(image 1\), en français ou en anglais\. "))).to_be_visible()
+    expect(headless.locator("#sd-iter")).to_have_attribute("placeholder", "ex. biceps et triceps plus dessinés")
 
     # A head copy for another subject must not cancel a pending one: each subject keeps its own head sheet.
     subject = clipboard_page(browser, errors)
