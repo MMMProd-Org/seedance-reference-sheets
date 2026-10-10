@@ -4,7 +4,9 @@
 
 Build clean, consistent reference sheets for people, animals and objects, then hand them to Seedance 2.5 so every clip starts from the same identity.
 
-**[Open the app](https://mmmprod-org.github.io/seedance-reference-sheets/)** · [Report an issue](https://github.com/MMMProd-Org/seedance-reference-sheets/issues/new/choose) · [How it's built](docs/BUILD.md)
+**[Open the app](https://mmmprod-org.github.io/seedance-reference-sheets/)** · [Download a version](https://github.com/MMMProd-Org/seedance-reference-sheets/releases) · [Report an issue](https://github.com/MMMProd-Org/seedance-reference-sheets/issues/new/choose) · [How it's built](docs/BUILD.md)
+
+Each release is the whole app as one HTML file, so any version can be kept and opened offline; the app shows its version in the header.
 
 [![CI](https://github.com/MMMProd-Org/seedance-reference-sheets/actions/workflows/ci.yml/badge.svg)](https://github.com/MMMProd-Org/seedance-reference-sheets/actions/workflows/ci.yml)
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)

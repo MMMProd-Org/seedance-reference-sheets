@@ -9,11 +9,15 @@ on:
 permissions:
   contents: read
 
-# One run per branch or pull request: a newer push cancels the older run, so a
-# slower build of an older commit can never deploy over a newer one.
+# One run at a time per branch or pull request, so a slower build of an older commit can never
+# deploy over a newer one. On a pull request a newer push cancels the older run. On main runs
+# queue instead, so each merge deploys and gets its release; GitHub keeps one pending run at
+# most, so a third merge before the first finishes replaces the pending one and the release
+# after it covers both. (`queue: max` keeps up to 100 pending runs, but GitHub rejects it
+# together with `cancel-in-progress: true`, which pull requests need.)
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build-and-test:
@@ -23,8 +27,13 @@ jobs:
     runs-on: ubuntu-26.04
     # Usually about 1 minute; installing the test dependencies once took 13.
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the tags and commits version.py reads
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -32,7 +41,14 @@ jobs:
           cache: pip
           cache-dependency-path: requirements.txt
 
+      # The version this commit releases: a pull request shows the one its merge would make.
+      - name: Release version
+        id: version
+        run: python version.py --check && python version.py >> "$GITHUB_OUTPUT"
+
       - name: Build the page
+        env:
+          SD_VERSION: ${{ steps.version.outputs.version }}
         run: python build_i18n.py && python patch_new.py
 
       - name: Install test dependencies
@@ -41,6 +57,8 @@ jobs:
           python -m playwright install --with-deps --only-shell chromium
 
       - name: Smoke test
+        env:
+          SD_VERSION: ${{ steps.version.outputs.version }}
         run: python tests/smoke.py
 
       - name: Golden prompts
@@ -54,6 +72,15 @@ jobs:
         if: github.event_name == 'push'
         with:
           path: _site
+
+      # The release job attaches this exact page, built and tested above, so it runs no code of the repository.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'push' && steps.version.outputs.release == 'true'
+        with:
+          name: page
+          path: new/merged.html
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
     if: github.event_name == 'push'
@@ -72,3 +99,31 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # Once the page is live, a feat, fix or perf commit since the last release makes a new one
+  # (version.py), with the page attached as one HTML file and notes listing the merged pull requests.
+  release:
+    if: github.event_name == 'push' && needs.build-and-test.outputs.release == 'true'
+    needs: [build-and-test, deploy]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # the release and its tag: the only job that writes to the repository
+    # No checkout and no code of the repository here: its token can write to the repository, and
+    # a step running such code could read the token or change what the later steps run.
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: page
+
+      # A re-run finds the release an earlier attempt made and only replaces the page.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build-and-test.outputs.version }}
+        run: |
+          mv merged.html "seedance-reference-sheets-v$VERSION.html"
+          gh release view "v$VERSION" > /dev/null 2>&1 ||
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
+          gh release upload "v$VERSION" "seedance-reference-sheets-v$VERSION.html" --clobber
