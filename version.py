@@ -41,7 +41,8 @@ def check():
 
 
 def main():
-    tag = git("describe", "--tags", "--abbrev=0", "--match", "v[0-9]*.[0-9]*.[0-9]*")
+    # every v tag is a release tag: a malformed one (v1.2, v1.1.0-rc1) stops the run instead of being skipped
+    tag = git("describe", "--tags", "--abbrev=0", "--match", "v*")
     last = tag.stdout.strip()[1:] if tag.returncode == 0 else None
     assert last is None or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", last), f"last tag is not vX.Y.Z: v{last}"
     log = git("log", "--no-merges", "--format=%B%x00", *([f"v{last}..HEAD"] if last else ["HEAD"]))

@@ -69,6 +69,15 @@ jobs:
         with:
           path: _site
 
+      # The release job attaches this exact page, built and tested above, so it runs no code of the repository.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'push' && steps.version.outputs.release == 'true'
+        with:
+          name: page
+          path: new/merged.html
+          if-no-files-found: error
+          retention-days: 1
+
   deploy:
     if: github.event_name == 'push'
     needs: build-and-test
@@ -96,25 +105,21 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write # the release and its tag: the only job that writes to the repository
+    # No checkout and no code of the repository here: its token can write to the repository, and
+    # a step running such code could read the token or change what the later steps run.
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          python-version: "3.12"
+          name: page
 
-      # The same commit and version build the same bytes as the page just deployed.
-      - name: Build the page
-        env:
-          SD_VERSION: ${{ needs.build-and-test.outputs.version }}
-        run: |
-          python build_i18n.py && python patch_new.py
-          cp new/merged.html "seedance-reference-sheets-v$SD_VERSION.html"
-
+      # A re-run finds the release an earlier attempt made and only replaces the page.
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.build-and-test.outputs.version }}
-        run: >-
-          gh release create "v$VERSION" "seedance-reference-sheets-v$VERSION.html"
-          --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
+        run: |
+          mv merged.html "seedance-reference-sheets-v$VERSION.html"
+          gh release view "v$VERSION" > /dev/null 2>&1 ||
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
+          gh release upload "v$VERSION" "seedance-reference-sheets-v$VERSION.html" --clobber
