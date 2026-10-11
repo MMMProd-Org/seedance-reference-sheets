@@ -14,7 +14,7 @@ Build, then run `tests/smoke.py`, `tests/golden_prompts.py` and `tests/test_prom
 ## Prompt log
 
 - Read `docs/PROMPT-LOG.md` before any change: what was changed in the prompts and what the real renders showed. Add to it as its "How to add an entry" says, for every prompt change and every result of a user's test.
-- In Claude Code, the project hooks (`.claude/settings.json`) block every tool until the session has read the whole log, and again once it changes. A log under 9,000 bytes is loaded at session start, which counts as that read.
+- In Claude Code, the project hooks (`.claude/settings.json`) block every tool until the session has read the whole log, and again once it changes. A short log is loaded at session start, which counts as that read; a longer one must be read with the Read tool.
 
 ## Invariants
 

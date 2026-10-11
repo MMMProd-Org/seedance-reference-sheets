@@ -20,6 +20,9 @@ LOG = "docs/PROMPT-LOG.md"
 # would count it as read whole. Measured on plain English text: about 2.9 bytes per token, so about 70 KB.
 size = (ROOT / LOG).stat().st_size
 assert size < 50_000, f"{LOG} is {size} bytes: archive its oldest entries as its 'How to add an entry' says"
+# The Read tool reads 2,000 lines by default, and some versions cut lines past 2,000 characters.
+lines = (ROOT / LOG).read_text(encoding="utf-8").split("\n")
+assert len(lines) < 2000 and max(map(len, lines)) < 2000, (len(lines), max(map(len, lines)))
 
 with tempfile.TemporaryDirectory() as tmp:
     project, home, temp = (pathlib.Path(tmp, d) for d in ("project", "home", "temp"))
@@ -30,18 +33,22 @@ with tempfile.TemporaryDirectory() as tmp:
     log.write_text("# Prompt log\n\nentry one\n", encoding="utf-8")
     env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project), "HOME": str(home), "TMPDIR": str(temp)}
 
-    def hook(event, name="", session="s1", raw=None, **args):
-        payload = raw if raw is not None else json.dumps(
-            {"session_id": session, "hook_event_name": event, "tool_name": name, "tool_input": args, "cwd": str(project)}
-        )
+    def hook(event, name="", session="s1", raw=None, response=None, **args):
+        payload = raw if raw is not None else json.dumps({
+            "session_id": session, "hook_event_name": event, "tool_name": name, "tool_input": args,
+            "tool_response": response, "cwd": str(project),
+        })
         r = subprocess.run([sys.executable, str(HOOK)], input=payload, capture_output=True, text=True, env=env)
         return r.returncode, r.stdout, r.stderr
 
     def tool(name="Bash", session="s1", **args):
         return hook("PreToolUse", name, session, **args)[0]
 
-    def done(name, session="s1", **args):  # the tool succeeded
-        return hook("PostToolUse", name, session, **args)[0]
+    def done(name, session="s1", response=None, **args):  # the tool succeeded
+        return hook("PostToolUse", name, session, response=response, **args)[0]
+
+    def returned(content, **more):  # the tool_response of a Read, as Claude Code 2.1 sends it
+        return {"type": "text", "file": {"filePath": str(log), "content": content, **more}}
 
     # nothing read yet: every tool is blocked with the reason and the log's absolute path, even an edit of the log,
     # but the Read of the log goes through
@@ -68,6 +75,18 @@ with tempfile.TemporaryDirectory() as tmp:
     assert done("Edit", file_path=LOG) == 0 and tool() == 0
     log.write_text("# Prompt log\n\nentry four\n", encoding="utf-8")
     assert done("Edit", file_path="README.md") == 0 and tool() == 2
+    # what the Read returned counts, not the log when the hook runs: a log changed meanwhile stays unread
+    seen = log.read_text(encoding="utf-8")
+    log.write_text("# Prompt log\n\nentry four, changed\n", encoding="utf-8")
+    assert done("Read", file_path=LOG, response=returned(seen, numLines=3, totalLines=3)) == 0 and tool() == 2
+    now = log.read_text(encoding="utf-8")
+    assert done("Read", file_path=LOG, response=returned(now, numLines=3, totalLines=3)) == 0 and tool() == 0
+    # a Read cut short by the size cap, or with lines missing, is counted with a warning rather than lock the session
+    for cut in ({"truncatedByTokenCap": True}, {"numLines": 1, "totalLines": 3}):
+        log.write_text("# Prompt log\n\n" + json.dumps(cut) + "\n", encoding="utf-8")
+        code, out, _ = hook("PostToolUse", "Read", response=returned("# Prompt log\n", **cut), file_path=LOG)
+        assert code == 0 and "too long for one Read" in json.loads(out)["systemMessage"], out
+        assert tool() == 0
     # a log too long to load whole: the session start asks for a Read and counts as none
     log.write_text("# Prompt log\n\n" + "x" * 9100 + "\n", encoding="utf-8")
     code, out, _ = hook("SessionStart")
@@ -75,6 +94,12 @@ with tempfile.TemporaryDirectory() as tmp:
     assert code == 0 and "x" * 100 not in context and str(log) in context, context[:200]
     assert tool() == 2
     assert done("Read", file_path=LOG) == 0 and tool() == 0
+    # the size that counts is the output as printed: its escaping can push a log of under 9,000 bytes over
+    log.write_text("# Prompt log\n\n" + "é" * 4000 + "\n", encoding="utf-8")
+    assert len(log.read_bytes()) <= 9000
+    code, out, _ = hook("SessionStart", session="s6")
+    assert code == 0 and str(log) in json.loads(out)["hookSpecificOutput"]["additionalContext"], out[:200]
+    assert tool(session="s6") == 2
     # a log that fails to load at session start is not counted as read
     log.write_bytes(b"# Prompt log\n\n\xff\n")
     code, out, _ = hook("SessionStart", session="s5")
