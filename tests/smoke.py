@@ -671,24 +671,35 @@ with sync_playwright() as p:
         bare.close()
     assert not errors, errors
 
-    # Seedream, a very slim body at "Discrets" with very marked veins (docs/PROMPT-LOG.md, 2026-10-11): the zones at
-    # "Discrets" share one phrase, the pear bust says nothing athletic, and the hard light brings out the veins, not the
-    # muscles. Big biceps drop "no muscle bulk"; an arm at "Marqués" keeps the light on the muscles.
-    for extra, muscles, light in (
-        ("", "Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps,",
-         "weak fill: crisp shadows that bring out the veins; the muscles stay smooth."),
-        ("biceps: 'big'", "Muscles: barely visible muscles, a visible groove", "crisp shadows that bring out the veins;"),
-        ("defArms: 'strong'", "Muscles: barely visible muscles, no muscle bulk, very marked arms",
-         "weak fill: crisp shadows on the muscles and veins."),
+    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11): muscles at "Discrets" except the
+    # arms, very marked veins, the abs' level on Auto. The zones at "Discrets" share one phrase, the abs follow them, the
+    # pear bust says nothing athletic, and the hard light brings out the veins, not the muscles. A body that is not lean
+    # (musculature over "Athlétique", biceps or trapezius at "Développés" or "Massifs", an arm at "Marqués", no zone at
+    # "Discrets") keeps the light on the muscles, and drops "no muscle bulk" where it would contradict the build.
+    on_muscles = "weak fill: crisp shadows on the muscles and veins."
+    tested = ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim upper arms,"
+              " a flat trapezius line, a smooth upper chest.")
+    for extra, wanted in (
+        ("", (tested,
+              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, softly visible.",
+              "weak fill: crisp shadows that bring out the veins; the muscles stay smooth.",
+              "the upper part slightly deflated; the lowest point")),
+        ("absStyle: 'auto'", (tested,)),  # abs at "Discrets" with no style: in the shared phrase, not one of their own
+        ("biceps: 'big'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("traps: 'huge'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("muscle: 4", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("defArms: 'strong'", ("Muscles: barely visible muscles, no muscle bulk, very marked arms", on_muscles)),
+        ("def: 'clear'", ("Muscles: defined shoulders", on_muscles)),
     ):
         slim = clipboard_page(browser, errors)
         slim.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1,
-            mode: 'person', style: 'photo', pres: 'f', fat: 0, chest: 3, bustShape: 'pear', headless: true,
-            biceps: 'slim', def: 'subtle', defArms: 'clear', veins: 'strong', {extra}}}))""")
+            mode: 'person', style: 'photo', pres: 'f', age: 27, fat: 0, muscle: 1, chest: 3, bustShape: 'pear',
+            headless: true, thighs: 1, absStyle: 'line', biceps: 'slim', traps: 'flat', def: 'subtle', defArms: 'clear',
+            veins: 'strong', {extra}}}))""")
         slim.reload()
         body = next(t for t in prompts(slim) if "Muscles:" in t)
-        assert muscles in body and light in body and "the upper part slightly deflated; the lowest point" in body, (extra, body)
-        assert not re.search(r"softly (visible|toned)|lean athletic", body), (extra, body)
+        assert all(w in body for w in wanted), (extra, [w for w in wanted if w not in body], body)
+        assert not re.search(r"softly toned|softly visible (shoulder|chest)|soft outline of the abs|lean athletic", body), (extra, body)
         slim.close()
     assert not errors, errors
 
