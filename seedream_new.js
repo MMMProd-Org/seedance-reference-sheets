@@ -908,51 +908,67 @@ function sdAbs() {
       }[e.defAbs] || ", with clear shadow lines";
   return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
 }
-/* A zone at "Discrets" in the Muscles line; abs with a chosen style get their own line instead (sdAbs). */
+/* The Muscles line's zones at "Discrets" share one phrase when they are at least as many as its zones at "Présents" or
+   "Marqués": listed one by one, they were among the cues that made a slim body athletic (docs/PROMPT-LOG.md). Abs with a
+   chosen style have their own line (sdAbs) and do not count. */
 function sdSoft() {
-  return rA().some(function (k) {
-    return "subtle" === rP(k) && ("defAbs" !== k || "auto" === e.absStyle);
-  });
+  var v = rA()
+      .filter(function (k) {
+        return "defAbs" !== k || "auto" === e.absStyle;
+      })
+      .map(rP),
+    n = function (l) {
+      return v.filter(function (x) {
+        return l.indexOf(x) >= 0;
+      }).length;
+    };
+  return n(["subtle"]) > 0 && n(["subtle"]) >= n(["clear", "strong"]);
 }
 /* Musculature at "Athlétique" or less, no biceps or trapezius at "Développés" or "Massifs". */
 function sdNoBulk() {
   return e.muscle <= 2 && ["big", "huge"].indexOf(e.biceps) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
 }
-/* Zones at "Discrets" (subtle) share one phrase: listed one by one, they were among the cues that made a slim body
-   athletic (docs/PROMPT-LOG.md). */
 function sdMus() {
-  var z = function (k, m) {
-      return "subtle" === rP(k) ? "" : m[rP(k)] || "";
+  var soft = sdSoft(),
+    z = function (k, m) {
+      return soft && "subtle" === rP(k) ? "" : m[rP(k)] || "";
     },
     leg = rN()
       ? {
+          subtle: "softly toned calves, soft thighs",
           clear: "drawn knees, visible calves",
           strong: "sharp knees and calves, soft thighs",
         }
       : e.thighs <= 1
         ? {
+            subtle: "lean, softly toned legs",
             clear: "lean legs with subtle muscle tone",
             strong: "lean legs with defined but slim muscles",
           }
         : 2 === e.thighs
           ? {
+              subtle: "softly toned legs",
               clear: "toned thighs and visible calves",
               strong: "toned thighs and sharp calves",
             }
           : {
+              subtle: "softly toned legs",
               clear: "visible quadriceps and calves",
               strong: "separated quadriceps and sharp calves",
             },
     p = [
       z("defShoulders", {
+        subtle: "softly visible shoulder muscles",
         clear: "defined shoulders",
         strong: "sharply cut shoulders",
       }),
       z("defBack", {
+        subtle: "a softly toned back",
         clear: "visible shoulder blades and spine groove",
         strong: "a sharply defined back with clear lats and a deep groove along the spine",
       }),
       z("defArms", {
+        subtle: "softly toned arms",
         clear: "a visible groove between biceps and triceps",
         strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 ? ", not bulky" : ""),
       }),
@@ -961,6 +977,7 @@ function sdMus() {
   "m" === e.pres &&
     p.push(
       z("defChest", {
+        subtle: "a softly visible chest",
         clear: "a defined chest",
         strong: "a sharply outlined chest",
       }),
@@ -968,6 +985,7 @@ function sdMus() {
   "auto" === e.absStyle &&
     p.push(
       z("defAbs", {
+        subtle: "a soft outline of the abs",
         clear: "visible abs",
         strong: "sharply visible abdominal segments",
       }),
@@ -977,7 +995,7 @@ function sdMus() {
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
-  sdSoft() && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
+  soft && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
   p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && p.push("a smooth upper chest");
   var x = [],
     nz = [];

@@ -674,8 +674,9 @@ with sync_playwright() as p:
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11): muscles at "Discrets" except the
     # arms, very marked veins, abs with a centre line at "Discrets". The zones at "Discrets" share one phrase, the pear
     # bust says nothing athletic, and the hard light brings out the veins, not the muscles. A body that is not lean
-    # (musculature over "Athlétique", biceps or trapezius at "Développés" or "Massifs", an arm at "Marqués", no zone at
-    # "Discrets" in the Muscles line) keeps the light on the muscles, and drops "no muscle bulk" where it would contradict the build.
+    # (musculature over "Athlétique", biceps or trapezius at "Développés" or "Massifs", an arm at "Marqués", fewer zones
+    # at "Discrets" than at "Présents" or "Marqués" in the Muscles line) keeps the light on the muscles, and drops "no
+    # muscle bulk" where it would contradict the build; with fewer zones at "Discrets", each zone keeps its own phrase.
     on_muscles = "weak fill: crisp shadows on the muscles and veins."
     tested = ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim upper arms,"
               " a flat trapezius line, a smooth upper chest.")
@@ -685,11 +686,19 @@ with sync_playwright() as p:
               "weak fill: crisp shadows that bring out the veins; the muscles stay smooth.",
               "the upper part slightly deflated; the lowest point")),
         ("absStyle: 'auto'", (tested,)),  # abs at "Discrets" with no style: in the shared phrase, not one of their own
+        ("absStyle: 'six', defAbs: 'auto'", ("Abdomen: six segments in three rows, with clear shadow lines.",)),
+        ("pres: 'm'", ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim"
+                       " upper arms, a flat trapezius line.",)),  # a man's chest at "Discrets" in the shared phrase
         ("biceps: 'big'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
         ("traps: 'huge'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
         ("muscle: 4", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
         ("defArms: 'strong'", ("Muscles: barely visible muscles, no muscle bulk, very marked arms", on_muscles)),
         ("def: 'clear'", ("Muscles: defined shoulders", on_muscles)),
+        # one zone at "Discrets" against two at "Présents": each keeps its own phrase; the abs at "Discrets" have their
+        # own line and do not count
+        ("def: 'clear', defLegs: 'subtle', defBack: 'none'", (
+            "Muscles: defined shoulders, a visible groove between biceps and triceps, lean, softly toned legs, slim upper"
+            " arms, a flat trapezius line, a smooth upper chest.", on_muscles)),
     ):
         slim = clipboard_page(browser, errors)
         slim.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1,
@@ -699,7 +708,7 @@ with sync_playwright() as p:
         slim.reload()
         body = next(t for t in prompts(slim) if "Muscles:" in t)
         assert all(w in body for w in wanted), (extra, [w for w in wanted if w not in body], body)
-        assert not re.search(r"softly toned|softly visible (shoulder|chest)|soft outline of the abs|lean athletic", body), (extra, body)
+        assert "lean athletic" not in body, (extra, body)
         slim.close()
     assert not errors, errors
 
