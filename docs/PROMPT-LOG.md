@@ -22,7 +22,7 @@ A lean body, below: musculature at "Athlétique" or less, and biceps and trapezi
 2. Pear bust: ", as often on lean athletic women" is gone.
 3. Light: on a lean body with at least one zone in the phrase of item 1, none at "Marqués", and veins at "Visibles" or "Très marquées", the hard light now reads "crisp shadows that bring out the veins; the muscles stay smooth". Otherwise unchanged: "crisp shadows on the muscles", and "and veins" when they show.
 
-The user tested only the settings of the entry below, with a single vertical groove for the abs, set to "Discrets". Other settings follow the same rules but are **TO TEST**: a zone at "Marqués" among zones at "Discrets", a man, a heavier build, abs with segments on Auto (their own "with clear shadow lines") next to the light of item 3. "no muscle bulk" goes against rule 6 below (a negated word is still a word), but it is the tested wording: keep it while it works. GPT Image 2.5 is unchanged, as none of this was tested on it.
+The user tested only the settings of the entry below, with a single vertical groove for the abs, set to "Discrets". Other settings follow the same rules but are **TO TEST**: a zone at "Marqués" among zones at "Discrets", as many zones at "Discrets" as at "Présents" (they share the phrase), a man, a heavier build, abs with segments on Auto (their own "with clear shadow lines") next to the light of item 3. "no muscle bulk" goes against rule 6 below (a negated word is still a word), but it is the tested wording: keep it while it works. GPT Image 2.5 is unchanged, as none of this was tested on it.
 
 ## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · too muscular, not slim
 
