@@ -81,12 +81,35 @@ with tempfile.TemporaryDirectory() as tmp:
     assert done("Read", file_path=LOG, response=returned(seen, numLines=3, totalLines=3)) == 0 and tool() == 2
     now = log.read_text(encoding="utf-8")
     assert done("Read", file_path=LOG, response=returned(now, numLines=3, totalLines=3)) == 0 and tool() == 0
+    # even when it is the version this session already read
+    log.write_text("# Prompt log\n\nentry four, changed again\n", encoding="utf-8")
+    assert done("Read", file_path=LOG, response=returned(now, numLines=3, totalLines=3)) == 0 and tool() == 2
+    assert done("Read", file_path=LOG, response=returned(log.read_text(encoding="utf-8"))) == 0 and tool() == 0
     # a Read cut short by the size cap, or with lines missing, is counted with a warning rather than lock the session
     for cut in ({"truncatedByTokenCap": True}, {"numLines": 1, "totalLines": 3}):
         log.write_text("# Prompt log\n\n" + json.dumps(cut) + "\n", encoding="utf-8")
         code, out, _ = hook("PostToolUse", "Read", response=returned("# Prompt log\n", **cut), file_path=LOG)
         assert code == 0 and "too long for one Read" in json.loads(out)["systemMessage"], out
         assert tool() == 0
+
+    def read_as(content, **more):  # a whole Read returning this text; stdout must stay empty: no hook failure
+        code, out, _ = hook("PostToolUse", "Read", response=returned(content, **more), file_path=LOG)
+        assert code == 0 and not out, out
+        code, out, _ = hook("PreToolUse", "Bash")
+        assert not out, out
+        return code
+
+    # the log as the Read tool returns it (Claude Code 2.1.296): without a BOM, CRLF as LF, a bad byte as U+FFFD
+    log.write_bytes("\ufeff# Prompt log\r\n\r\nentry six\r\n".encode())
+    assert read_as("# Prompt log\n\nentry six\n") == 0
+    log.write_bytes(b"# Prompt log\n\ncaf\xe9\n")
+    assert read_as("# Prompt log\n\ncaf\ufffd\n") == 0
+    # text the fingerprint does not foresee costs one more Read, never a locked session
+    log.write_text("# Prompt log\n\nentry seven\n", encoding="utf-8")
+    assert read_as("entry seven, returned otherwise") == 2 and read_as("entry seven, returned otherwise") == 0
+    # a line count that is not a number does not break the hook
+    log.write_text("# Prompt log\n\nentry eight\n", encoding="utf-8")
+    assert read_as(log.read_text(encoding="utf-8"), numLines=None, totalLines=3) == 0
     # a log too long to load whole: the session start asks for a Read and counts as none
     log.write_text("# Prompt log\n\n" + "x" * 9100 + "\n", encoding="utf-8")
     code, out, _ = hook("SessionStart")
