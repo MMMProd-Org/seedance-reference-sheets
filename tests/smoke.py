@@ -671,6 +671,27 @@ with sync_playwright() as p:
         bare.close()
     assert not errors, errors
 
+    # Seedream, a very slim body at "Discrets" with very marked veins (docs/PROMPT-LOG.md, 2026-10-11): the zones at
+    # "Discrets" share one phrase, the pear bust says nothing athletic, and the hard light brings out the veins, not the
+    # muscles. Big biceps drop "no muscle bulk"; an arm at "Marqués" keeps the light on the muscles.
+    for extra, muscles, light in (
+        ("", "Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps,",
+         "weak fill: crisp shadows that bring out the veins; the muscles stay smooth."),
+        ("biceps: 'big'", "Muscles: barely visible muscles, a visible groove", "crisp shadows that bring out the veins;"),
+        ("defArms: 'strong'", "Muscles: barely visible muscles, no muscle bulk, very marked arms",
+         "weak fill: crisp shadows on the muscles and veins."),
+    ):
+        slim = clipboard_page(browser, errors)
+        slim.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1,
+            mode: 'person', style: 'photo', pres: 'f', fat: 0, chest: 3, bustShape: 'pear', headless: true,
+            biceps: 'slim', def: 'subtle', defArms: 'clear', veins: 'strong', {extra}}}))""")
+        slim.reload()
+        body = next(t for t in prompts(slim) if "Muscles:" in t)
+        assert muscles in body and light in body and "the upper part slightly deflated; the lowest point" in body, (extra, body)
+        assert not re.search(r"softly (visible|toned)|lean athletic", body), (extra, body)
+        slim.close()
+    assert not errors, errors
+
     # A saved GPT session from before the model choice was recorded keeps GPT; a first visit opens on Seedream.
     kept = clipboard_page(browser, errors)
     kept.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, model: 'gpt'}))")

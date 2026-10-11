@@ -870,7 +870,7 @@ function sdBust() {
               "natural" === e.sdAutoTier
                 ? "a natural teardrop shape: a gently sloping upper part, the lower half fuller, a slight natural drop; natural and unenhanced, never implant-like"
                 : c >= 2
-                ? "pear-shaped, hollow above and full below: in profile the upper slope from the chest down to the fullest point is slightly hollow, a concave upper pole, then a deep, round, full curve below it, a convex lower pole holding most of the volume; from the front narrow at the top, no fullness near the collarbones; the upper part slightly deflated, as often on lean athletic women; the lowest point near the bottom of the ribcage; natural and unenhanced, never implant-like, round all over, high or balloon-like"
+                ? "pear-shaped, hollow above and full below: in profile the upper slope from the chest down to the fullest point is slightly hollow, a concave upper pole, then a deep, round, full curve below it, a convex lower pole holding most of the volume; from the front narrow at the top, no fullness near the collarbones; the upper part slightly deflated; the lowest point near the bottom of the ribcage; natural and unenhanced, never implant-like, round all over, high or balloon-like"
                 : "small, flatter at the top, the little volume sitting in the lower half",
             wide: "wide-set, about a hand's width apart at the center, each side angled slightly outward",
             asym: "clearly asymmetric, the left side visibly fuller and slightly lower than the right in every view",
@@ -908,55 +908,49 @@ function sdAbs() {
       }[e.defAbs] || ", with clear shadow lines";
   return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
 }
+/* Zones at "Discrets" (subtle) share one phrase: listed one by one, they made a slim body athletic (docs/PROMPT-LOG.md). */
 function sdMus() {
-  var z = function (k, m) {
-      return m[rP(k)] || "";
+  var soft = !1,
+    z = function (k, m) {
+      return "subtle" === rP(k) ? ((soft = !0), "") : m[rP(k)] || "";
     },
     leg = rN()
       ? {
-          subtle: "softly toned calves, soft thighs",
           clear: "drawn knees, visible calves",
           strong: "sharp knees and calves, soft thighs",
         }
       : e.thighs <= 1
         ? {
-            subtle: "lean, softly toned legs",
             clear: "lean legs with subtle muscle tone",
             strong: "lean legs with defined but slim muscles",
           }
         : 2 === e.thighs
           ? {
-              subtle: "softly toned legs",
               clear: "toned thighs and visible calves",
               strong: "toned thighs and sharp calves",
             }
           : {
-              subtle: "softly toned legs",
               clear: "visible quadriceps and calves",
               strong: "separated quadriceps and sharp calves",
             },
     p = [
       z("defShoulders", {
-        subtle: "softly visible shoulder muscles",
         clear: "defined shoulders",
         strong: "sharply cut shoulders",
       }),
       z("defBack", {
-        subtle: "a softly toned back",
         clear: "visible shoulder blades and spine groove",
         strong: "a sharply defined back with clear lats and a deep groove along the spine",
       }),
       z("defArms", {
-        subtle: "softly toned arms",
         clear: "a visible groove between biceps and triceps",
         strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 ? ", not bulky" : ""),
       }),
-      leg[rO()] || "",
+      z("defLegs", leg),
     ];
   "m" === e.pres &&
     p.push(
       z("defChest", {
-        subtle: "a softly visible chest",
         clear: "a defined chest",
         strong: "a sharply outlined chest",
       }),
@@ -964,7 +958,6 @@ function sdMus() {
   "auto" === e.absStyle &&
     p.push(
       z("defAbs", {
-        subtle: "a soft outline of the abs",
         clear: "visible abs",
         strong: "sharply visible abdominal segments",
       }),
@@ -974,6 +967,7 @@ function sdMus() {
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
+  soft && p.unshift("barely visible muscles" + (["big", "huge"].indexOf(e.biceps) < 0 && ["big", "huge"].indexOf(e.traps) < 0 ? ", no muscle bulk" : ""));
   p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && p.push("a smooth upper chest");
   var x = [],
     nz = [];
@@ -1635,8 +1629,12 @@ function sdBody() {
   s +=
     "Seamless mid-grey backdrop. " +
     (n0()
-      ? "Key light from above and to the side, weak fill: crisp shadows on the muscles" +
-        (["visible", "strong"].indexOf(rD()) >= 0 ? " and veins" : "")
+      ? "Key light from above and to the side, weak fill: " +
+        (rA().some(function (k) {
+          return "strong" === rP(k);
+        })
+          ? "crisp shadows on the muscles" + (["visible", "strong"].indexOf(rD()) >= 0 ? " and veins" : "")
+          : "crisp shadows that bring out the veins; the muscles stay smooth") /* hard light for the veins alone */
       : d || nv()
         ? "Soft key light from slightly above and in front, gentle fill: soft shadows on the muscles"
         : "Soft, even studio light") +
