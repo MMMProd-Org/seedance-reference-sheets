@@ -2,23 +2,26 @@
 
     python tests/test_prompt_log_gate.py
 """
+import hashlib
 import json
 import os
+import pathlib
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 
-HOOK = Path(__file__).resolve().parent.parent / ".claude" / "hooks" / "prompt_log_gate.py"
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+HOOK = ROOT / ".claude" / "hooks" / "prompt_log_gate.py"
 LOG = "docs/PROMPT-LOG.md"
 
 with tempfile.TemporaryDirectory() as tmp:
-    project, temp = Path(tmp, "project"), Path(tmp, "temp")
+    project, home, temp = (pathlib.Path(tmp, d) for d in ("project", "home", "temp"))
     (project / "docs").mkdir(parents=True)
+    home.mkdir()
     temp.mkdir()
     log = project / LOG
     log.write_text("# Prompt log\n\nentry one\n", encoding="utf-8")
-    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project), "TMPDIR": str(temp)}
+    env = {**os.environ, "CLAUDE_PROJECT_DIR": str(project), "HOME": str(home), "TMPDIR": str(temp)}
 
     def hook(event, name="", session="s1", raw=None, **args):
         payload = raw if raw is not None else json.dumps(
@@ -30,39 +33,51 @@ with tempfile.TemporaryDirectory() as tmp:
     def tool(name="Bash", session="s1", **args):
         return hook("PreToolUse", name, session, **args)[0]
 
-    # nothing read yet: every tool is blocked with the reason, a partial Read of the log too
+    def done(name, session="s1", **args):  # the tool succeeded
+        return hook("PostToolUse", name, session, **args)[0]
+
+    # nothing read yet: every tool is blocked with the reason, but the Read of the log goes through
     code, _, err = hook("PreToolUse", "Bash", command="ls")
     assert code == 2 and LOG in err, (code, err)
     assert tool("Read", file_path="README.md") == 2
-    assert tool("Read", file_path=LOG, limit=5) == 2
+    assert tool("Read", file_path=LOG, limit=5) == 0
+    # a partial Read does not count
+    assert done("Read", file_path=LOG, limit=5) == 0 and tool() == 2
     # the session start loads the log and counts as a read
     code, out, _ = hook("SessionStart")
     assert code == 0 and "entry one" in json.loads(out)["hookSpecificOutput"]["additionalContext"], out
     assert tool() == 0
     # another session has read nothing
     assert tool(session="s2") == 2
-    # the log changes: blocked until a whole Read, by a relative or an absolute path
+    # the log changes: blocked until a whole Read succeeds, by a relative or an absolute path
     log.write_text("# Prompt log\n\nentry two\n", encoding="utf-8")
     assert tool() == 2
-    assert tool("Read", file_path=LOG, offset=1) == 2
-    assert tool("Read", file_path=str(log)) == 0
-    assert tool() == 0
-    # the session's own edit of the log counts as a read
-    assert tool("Edit", file_path=LOG) == 0
+    assert tool("Read", file_path=str(log)) == 0 and tool() == 2  # a Read that does not complete counts for nothing
+    assert done("Read", file_path=LOG, offset=1) == 0 and tool() == 2
+    assert done("Read", file_path=str(log)) == 0 and tool() == 0
+    # the session's own edit of the log counts as a read, an edit of another file does not
     log.write_text("# Prompt log\n\nentry three\n", encoding="utf-8")
-    assert hook("PostToolUse", "Edit", file_path=LOG)[0] == 0
-    assert tool() == 0
-    # an edit of another file does not
+    assert done("Edit", file_path=LOG) == 0 and tool() == 0
     log.write_text("# Prompt log\n\nentry four\n", encoding="utf-8")
-    assert hook("PostToolUse", "Edit", file_path="README.md")[0] == 0
-    assert tool() == 2
+    assert done("Edit", file_path="README.md") == 0 and tool() == 2
     # a log too long to load whole: the session start asks for a Read and counts as none
     log.write_text("# Prompt log\n\n" + "x" * 9100 + "\n", encoding="utf-8")
     code, out, _ = hook("SessionStart")
     context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
     assert code == 0 and "x" * 100 not in context and "Read" in context, context[:200]
     assert tool() == 2
-    assert tool("Read", file_path=LOG) == 0 and tool() == 0
+    assert done("Read", file_path=LOG) == 0 and tool() == 0
+    # a symlink planted where the state goes is not followed: the file it points to stays as it was
+    log.write_text("# Prompt log\n\nentry five\n", encoding="utf-8")
+    victim = pathlib.Path(tmp, "victim.txt")
+    victim.write_text("keep me")
+    state_dir = home / ".claude" / "prompt-log-gate"
+    (state_dir / (hashlib.sha256(b"s9").hexdigest() + ".sha")).symlink_to(victim)
+    code, out, _ = hook("SessionStart", session="s9")
+    assert code == 0 and "failed" in json.loads(out)["systemMessage"], out
+    assert victim.read_text() == "keep me" and tool(session="s9") == 2
+    # the state stays out of the shared temp directory
+    assert not any(temp.iterdir()), list(temp.iterdir())
     # a broken input lets the call through, visibly
     code, out, _ = hook("PreToolUse", raw="not json")
     assert code == 0 and "failed" in json.loads(out)["systemMessage"], out

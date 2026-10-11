@@ -13,9 +13,7 @@ Build, then run `tests/smoke.py`, `tests/golden_prompts.py` and `tests/test_prom
 
 ## Prompt log
 
-- Read `docs/PROMPT-LOG.md` before any change. It records each prompt change and what the real renders showed: what works, what does not, what is still to test.
-- Add an entry for every prompt change and for every result of a user's test, in the same pull request or right after the test. Never delete an entry.
-- Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
+- Read `docs/PROMPT-LOG.md` before any change: what was changed in the prompts and what the real renders showed. Add to it as its "How to add an entry" says, for every prompt change and every result of a user's test.
 - In Claude Code, the project hooks (`.claude/settings.json`) load the log at session start and, once it changes, block every tool until it is read again.
 
 ## Invariants

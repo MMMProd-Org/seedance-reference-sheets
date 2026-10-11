@@ -2,17 +2,16 @@
 
 SessionStart  loads the log into the context and records its fingerprint; a log too long to load whole is not
               recorded, so the first tool call asks for a Read.
-PreToolUse    lets a whole Read of the log through and records its fingerprint; blocks any other tool (exit 2)
-              while the log differs from the recorded fingerprint: never read in this session, or changed since.
-PostToolUse   after an Edit or Write of the log, records the new fingerprint: the session wrote it, so it knows it.
+PreToolUse    lets a Read of the log through; blocks any other tool (exit 2) while the log differs from the
+              recorded fingerprint: never read in this session, or changed since.
+PostToolUse   records the fingerprint once the session has read the log whole (no offset or limit) or written it.
+The fingerprint is kept per session in ~/.claude/prompt-log-gate/, written without following a symlink.
 An internal error lets the call through with a warning, so a bug in this hook cannot lock the session.
 Wired in .claude/settings.json; checked by tests/test_prompt_log_gate.py."""
 import hashlib
 import json
 import os
-import re
 import sys
-import tempfile
 from pathlib import Path
 
 LOG = "docs/PROMPT-LOG.md"
@@ -23,52 +22,42 @@ BLOCK = (
 )
 
 
-def fingerprint(log):
-    try:
-        return hashlib.sha256(log.read_bytes()).hexdigest()
-    except FileNotFoundError:
-        return ""
-
-
 def main():
     data = json.load(sys.stdin)
     root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or ".")
     log = root / LOG
-    # ponytail: one tiny file per session, never cleaned; the system temp directory is
-    state = Path(tempfile.gettempdir()) / "claude-prompt-log" / (re.sub(r"[^A-Za-z0-9_-]", "_", str(data.get("session_id") or "none")) + ".sha")
+    if not log.is_file():  # no log in this checkout: nothing to read
+        return 0
+    raw = log.read_bytes()
+    now = hashlib.sha256(raw).hexdigest()
+    # in the user's home, not the shared temp directory, where another account could plant a symlink;
+    # ponytail: one 64-byte file per session, never cleaned
+    state = Path.home() / ".claude" / "prompt-log-gate" / (hashlib.sha256(str(data.get("session_id")).encode()).hexdigest() + ".sha")
     event = data.get("hook_event_name")
-    tool = data.get("tool_name") or ""
     args = data.get("tool_input") or {}
-
-    def is_log():
-        p = args.get("file_path")
-        return bool(p) and (root / p).resolve() == log.resolve()
+    path = args.get("file_path")
+    is_log = bool(path) and (root / path).resolve() == log.resolve()
 
     def record():
-        state.parent.mkdir(parents=True, exist_ok=True)
-        state.write_text(fingerprint(log))
+        state.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd = os.open(state, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(now)
 
-    now = fingerprint(log)
-    if not now:  # no log in this checkout: nothing to read
-        return 0
     if event == "SessionStart":
-        text = log.read_text(encoding="utf-8")
-        if len(text.encode("utf-8")) <= MAX_INLINE:
+        if len(raw) <= MAX_INLINE:
             record()
-            context = "Prompt log (" + LOG + "), loaded before anything else. Follow it and add to it as it says.\n\n" + text
+            context = "Prompt log (" + LOG + "), loaded before anything else. Follow it and add to it as it says.\n\n" + raw.decode("utf-8")
         else:
             state.unlink(missing_ok=True)
             context = BLOCK
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}))
         return 0
-    if event == "PostToolUse":
-        if tool in ("Edit", "Write", "MultiEdit") and is_log():
+    if event == "PostToolUse":  # the matcher limits it to Read, Edit, Write and MultiEdit, after they succeed
+        if is_log and not args.get("offset") and not args.get("limit"):
             record()
         return 0
-    if tool == "Read" and is_log() and not args.get("offset") and not args.get("limit"):
-        record()
-        return 0
-    if state.is_file() and state.read_text() == now:
+    if (data.get("tool_name") == "Read" and is_log) or (state.is_file() and state.read_text() == now):
         return 0
     print(BLOCK, file=sys.stderr)
     return 2
