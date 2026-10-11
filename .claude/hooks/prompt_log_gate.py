@@ -7,7 +7,8 @@ PreToolUse    lets a Read of the log through; blocks any other tool (exit 2) whi
 PostToolUse   records the fingerprint once the session has read the log whole (no offset or limit) or written it.
 The fingerprint is kept per session in ~/.claude/prompt-log-gate/, written without following a symlink.
 An internal error lets the call through with a warning, so a bug in this hook cannot lock the session.
-Wired in .claude/settings.json; checked by tests/test_prompt_log_gate.py."""
+Wired in .claude/settings.json, which runs it only while it exists: a checkout switched mid-session to a commit
+without it is not locked either. Checked by tests/test_prompt_log_gate.py."""
 import hashlib
 import json
 import os
@@ -16,8 +17,8 @@ from pathlib import Path
 
 LOG = "docs/PROMPT-LOG.md"
 MAX_INLINE = 9000  # larger SessionStart output is replaced by a preview, so the log must then be read with Read
-BLOCK = (
-    LOG + " has changed or has not been read in this session. Read the whole file with the Read tool"
+BLOCK = (  # with the absolute path, which the Read tool takes
+    "{} has changed or has not been read in this session. Read the whole file with the Read tool"
     " (no offset or limit) before anything else, and follow it."
 )
 
@@ -46,11 +47,11 @@ def main():
 
     if event == "SessionStart":
         if len(raw) <= MAX_INLINE:
-            record()
             context = "Prompt log (" + LOG + "), loaded before anything else. Follow it and add to it as it says.\n\n" + raw.decode("utf-8")
+            record()  # after the decode: a log that fails to load is not counted as read
         else:
             state.unlink(missing_ok=True)
-            context = BLOCK
+            context = BLOCK.format(log.absolute())
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}))
         return 0
     if event == "PostToolUse":  # the matcher limits it to Read, Edit, Write and MultiEdit, after they succeed
@@ -59,7 +60,7 @@ def main():
         return 0
     if (data.get("tool_name") == "Read" and is_log) or (state.is_file() and state.read_text() == now):
         return 0
-    print(BLOCK, file=sys.stderr)
+    print(BLOCK.format(log.absolute()), file=sys.stderr)
     return 2
 
 

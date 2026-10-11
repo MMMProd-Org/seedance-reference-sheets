@@ -10,6 +10,7 @@ Read it before any change (`AGENTS.md`).
 - Give the model (GPT Image 2.5, Seedream 5.0), the subject and card, the settings that matter, the prompt lines before and after, and the evidence: the user's own words, the render in one line, the release.
 - Only the user's test judges a render: the tests of this repository check the prompt text, never the image.
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
+- Keep this file under 50,000 bytes, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
 ## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · too muscular, not slim
 

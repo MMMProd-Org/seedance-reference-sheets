@@ -2,19 +2,19 @@
   "hooks": {
     "SessionStart": [
       {
-        "hooks": [{ "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"" }]
+        "hooks": [{ "type": "command", "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"; [ -f \"$f\" ] || exit 0; python3 \"$f\"" }]
       }
     ],
     "PreToolUse": [
       {
         "matcher": "*",
-        "hooks": [{ "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"" }]
+        "hooks": [{ "type": "command", "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"; [ -f \"$f\" ] || exit 0; python3 \"$f\"" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Read|Edit|Write|MultiEdit",
-        "hooks": [{ "type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"" }]
+        "hooks": [{ "type": "command", "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/prompt_log_gate.py\"; [ -f \"$f\" ] || exit 0; python3 \"$f\"" }]
       }
     ]
   }
