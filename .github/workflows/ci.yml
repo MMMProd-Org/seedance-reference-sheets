@@ -46,6 +46,10 @@ jobs:
         id: version
         run: python version.py --check && python version.py >> "$GITHUB_OUTPUT"
 
+      # Needs neither the build nor a browser: fail fast.
+      - name: Prompt log gate
+        run: python tests/test_prompt_log_gate.py
+
       - name: Build the page
         env:
           SD_VERSION: ${{ steps.version.outputs.version }}

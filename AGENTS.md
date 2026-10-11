@@ -9,7 +9,12 @@ This repository is the only source of the app. Do not import a new HTML build ma
 
 ## Before opening or updating a pull request
 
-Build, then run `tests/smoke.py` and `tests/golden_prompts.py`. Both must pass. CI runs the same commands.
+Build, then run `tests/smoke.py`, `tests/golden_prompts.py` and `tests/test_prompt_log_gate.py`. All must pass. CI runs the same commands.
+
+## Prompt log
+
+- Read `docs/PROMPT-LOG.md` before any change: what was changed in the prompts and what the real renders showed. Add to it as its "How to add an entry" says, for every prompt change and every result of a user's test.
+- In Claude Code, the project hooks (`.claude/settings.json`) block every tool until the session has read the whole log, and again once it changes. A short log is loaded at session start, which counts as that read; a longer one must be read with the Read tool.
 
 ## Invariants
 
