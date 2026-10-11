@@ -672,10 +672,10 @@ with sync_playwright() as p:
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11): muscles at "Discrets" except the
-    # arms, very marked veins, the abs' level on Auto. The zones at "Discrets" share one phrase, the abs follow them, the
-    # pear bust says nothing athletic, and the hard light brings out the veins, not the muscles. A body that is not lean
+    # arms, very marked veins, abs with a centre line at "Discrets". The zones at "Discrets" share one phrase, the pear
+    # bust says nothing athletic, and the hard light brings out the veins, not the muscles. A body that is not lean
     # (musculature over "Athlétique", biceps or trapezius at "Développés" or "Massifs", an arm at "Marqués", no zone at
-    # "Discrets") keeps the light on the muscles, and drops "no muscle bulk" where it would contradict the build.
+    # "Discrets" in the Muscles line) keeps the light on the muscles, and drops "no muscle bulk" where it would contradict the build.
     on_muscles = "weak fill: crisp shadows on the muscles and veins."
     tested = ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim upper arms,"
               " a flat trapezius line, a smooth upper chest.")
@@ -694,7 +694,7 @@ with sync_playwright() as p:
         slim = clipboard_page(browser, errors)
         slim.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1,
             mode: 'person', style: 'photo', pres: 'f', age: 27, fat: 0, muscle: 1, chest: 3, bustShape: 'pear',
-            headless: true, thighs: 1, absStyle: 'line', biceps: 'slim', traps: 'flat', def: 'subtle', defArms: 'clear',
+            headless: true, thighs: 1, absStyle: 'line', defAbs: 'subtle', biceps: 'slim', traps: 'flat', def: 'subtle', defArms: 'clear',
             veins: 'strong', {extra}}}))""")
         slim.reload()
         body = next(t for t in prompts(slim) if "Muscles:" in t)

@@ -905,12 +905,13 @@ function sdAbs() {
         subtle: ", softly visible",
         clear: ", with clear shadow lines",
         strong: ", sharply outlined with deep shadow lines",
-      }[rP("defAbs")] || ", with clear shadow lines";
+      }[e.defAbs] || ", with clear shadow lines";
   return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
 }
-function sdZone(v) {
+/* A zone at "Discrets" in the Muscles line; abs with a chosen style get their own line instead (sdAbs). */
+function sdSoft() {
   return rA().some(function (k) {
-    return v === rP(k);
+    return "subtle" === rP(k) && ("defAbs" !== k || "auto" === e.absStyle);
   });
 }
 /* Musculature at "Athlétique" or less, no biceps or trapezius at "Développés" or "Massifs". */
@@ -920,9 +921,8 @@ function sdNoBulk() {
 /* Zones at "Discrets" (subtle) share one phrase: listed one by one, they were among the cues that made a slim body
    athletic (docs/PROMPT-LOG.md). */
 function sdMus() {
-  var soft = !1,
-    z = function (k, m) {
-      return "subtle" === rP(k) ? ((soft = !0), "") : m[rP(k)] || "";
+  var z = function (k, m) {
+      return "subtle" === rP(k) ? "" : m[rP(k)] || "";
     },
     leg = rN()
       ? {
@@ -977,7 +977,7 @@ function sdMus() {
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
-  soft && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
+  sdSoft() && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
   p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && p.push("a smooth upper chest");
   var x = [],
     nz = [];
@@ -1640,7 +1640,11 @@ function sdBody() {
     "Seamless mid-grey backdrop. " +
     (n0()
       ? "Key light from above and to the side, weak fill: " +
-        (sdNoBulk() && sdZone("subtle") && !sdZone("strong") /* a lean body: the hard light is for the veins alone */
+        (sdNoBulk() &&
+        sdSoft() &&
+        !rA().some(function (k) {
+          return "strong" === rP(k);
+        }) /* a lean body: the hard light is for the veins alone */
           ? "crisp shadows that bring out the veins; the muscles stay smooth"
           : "crisp shadows on the muscles" + (["visible", "strong"].indexOf(rD()) >= 0 ? " and veins" : ""))
       : d || nv()
