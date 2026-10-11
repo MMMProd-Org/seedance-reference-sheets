@@ -697,7 +697,7 @@ with sync_playwright() as p:
             " slim upper arms, a flat trapezius line.",)),
         ("biceps: 'big'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
         ("traps: 'huge'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
-        ("muscle: 4", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("muscle: 3", ("Muscles: barely visible muscles, a visible groove", on_muscles)),  # "Forte", the first level over "Athlétique"
         ("defArms: 'strong'", ("Muscles: barely visible muscles, no muscle bulk, very marked arms", on_muscles)),
         ("def: 'clear'", ("Muscles: defined shoulders", on_muscles)),
         # one zone at "Discrets" against two at "Présents": each keeps its own phrase; the abs at "Discrets" have their
