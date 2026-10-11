@@ -671,6 +671,55 @@ with sync_playwright() as p:
         bare.close()
     assert not errors, errors
 
+    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11), with the settings that shape the
+    # lines checked here: muscles at "Discrets" except the arms, very marked veins, abs with a centre line at "Discrets";
+    # height and proportions stay at their defaults, as they change none of these lines. The zones at "Discrets" share
+    # one phrase, the pear bust says nothing athletic, and the hard light brings out the veins, not the muscles. Three
+    # separate conditions keep the light on the muscles:
+    # - a body that is not lean (musculature over "Athlétique", biceps or trapezius at "Développés" or "Massifs"): the
+    #   shared phrase also drops "no muscle bulk";
+    # - a zone at "Marqués": on a lean body, the shared phrase keeps "no muscle bulk";
+    # - fewer zones at "Discrets" than at "Présents" or "Marqués" in the Muscles line: no shared phrase, each zone keeps
+    #   its own.
+    on_muscles = "weak fill: crisp shadows on the muscles and veins."
+    tested = ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim upper arms,"
+              " a flat trapezius line, a smooth upper chest.")
+    for extra, wanted in (
+        ("", (tested,
+              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, softly visible.",
+              "weak fill: crisp shadows that bring out the veins; the muscles stay smooth.",
+              "the upper part slightly deflated; the lowest point")),
+        ("absStyle: 'auto'", (tested,)),  # abs at "Discrets" with no style: in the shared phrase, not one of their own
+        ("absStyle: 'six', defAbs: 'auto'", ("Abdomen: six segments in three rows, with clear shadow lines.",)),
+        ("pres: 'm'", ("Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim"
+                       " upper arms, a flat trapezius line.",)),  # a man's chest at "Discrets" in the shared phrase
+        # a tie that the man's chest makes: two zones at "Discrets" (legs, chest) against two at "Présents" share the phrase
+        ("pres: 'm', def: 'clear', defLegs: 'subtle', defChest: 'subtle', defBack: 'none'", (
+            "Muscles: barely visible muscles, no muscle bulk, defined shoulders, a visible groove between biceps and triceps,"
+            " slim upper arms, a flat trapezius line.",)),
+        ("biceps: 'big'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("traps: 'huge'", ("Muscles: barely visible muscles, a visible groove", on_muscles)),
+        ("muscle: 3", ("Muscles: barely visible muscles, a visible groove", on_muscles)),  # "Forte", the first level over "Athlétique"
+        ("defArms: 'strong'", ("Muscles: barely visible muscles, no muscle bulk, very marked arms", on_muscles)),
+        ("def: 'clear'", ("Muscles: defined shoulders", on_muscles)),
+        # one zone at "Discrets" against two at "Présents": each keeps its own phrase; the abs at "Discrets" have their
+        # own line and do not count
+        ("def: 'clear', defLegs: 'subtle', defBack: 'none'", (
+            "Muscles: defined shoulders, a visible groove between biceps and triceps, lean, softly toned legs, slim upper"
+            " arms, a flat trapezius line, a smooth upper chest.", on_muscles)),
+    ):
+        slim = clipboard_page(browser, errors)
+        slim.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1,
+            mode: 'person', style: 'photo', pres: 'f', age: 27, fat: 0, muscle: 1, chest: 3, bustShape: 'pear',
+            headless: true, thighs: 1, absStyle: 'line', defAbs: 'subtle', biceps: 'slim', traps: 'flat', def: 'subtle', defArms: 'clear',
+            veins: 'strong', {extra}}}))""")
+        slim.reload()
+        body = next(t for t in prompts(slim) if "Muscles:" in t)
+        assert all(w in body for w in wanted), (extra, [w for w in wanted if w not in body], body)
+        assert "lean athletic" not in body, (extra, body)
+        slim.close()
+    assert not errors, errors
+
     # A saved GPT session from before the model choice was recorded keeps GPT; a first visit opens on Seedream.
     kept = clipboard_page(browser, errors)
     kept.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, model: 'gpt'}))")

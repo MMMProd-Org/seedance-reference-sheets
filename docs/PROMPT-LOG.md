@@ -12,6 +12,18 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · the test's three changes in the app (v1.1.2)
+
+**WORKS**, by the user's test of the prompt in the entry below, with its three changes: « c bon ça marche avant » (the render was not described). Now in the app, on Seedream only, in a person's body prompt:
+
+A lean body, below: musculature at "Athlétique" or less, and biceps and trapezius at neither "Développés" nor "Massifs".
+
+1. When the Muscles line has at least as many zones at "Discrets" as at "Présents" or "Marqués" (zones: shoulders, back, arms, legs, a man's chest, the abs when their style is Auto), its zones at "Discrets" no longer get one phrase each: one phrase opens the line, "barely visible muscles, no muscle bulk". Zones at "Présents" or "Marqués" keep their own. With fewer zones at "Discrets", the line is unchanged: one zone at "Discrets" among zones at "Présents" would otherwise read "barely visible muscles" next to defined muscles. On a body that is not lean, the phrase stops at "barely visible muscles", so as not to contradict the build.
+2. Pear bust: ", as often on lean athletic women" is gone.
+3. Light: on a lean body with at least one zone in the phrase of item 1, none at "Marqués", and veins at "Visibles" or "Très marquées", the hard light now reads "crisp shadows that bring out the veins; the muscles stay smooth". Otherwise unchanged: "crisp shadows on the muscles", and "and veins" when they show.
+
+The user tested only the settings of the entry below, with a single vertical groove for the abs, set to "Discrets". Other settings follow the same rules but are **TO TEST**: a zone at "Marqués" among zones at "Discrets", as many zones at "Discrets" as at "Présents" (they share the phrase), a man, a heavier build, abs with segments on Auto (their own "with clear shadow lines") next to the light of item 3. "no muscle bulk" goes against rule 6 below (a negated word is still a word), but it is the tested wording: keep it while it works. GPT Image 2.5 is unchanged, as none of this was tested on it.
+
 ## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · too muscular, not slim
 
 **TO TEST.**
