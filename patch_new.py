@@ -86,7 +86,7 @@ rep('''                          (0, l.jsx)(ax, {
 rep('''                  "bust" === i
                     ? "Repère pour toi, jamais envoyé au modèle : le prompt décrit le volume par sa projection de profil, sans taille de bonnet.''', '''                  "bust" === i
                     ? ("seedream" === t.model
-                        ? "Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "
+                        ? "Repère pour toi. En Seedream 5.0, le prompt cite aussi une taille de bonnet (B à C, D, D à E, puis H pour Très généreuse) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "
                         : "Repère pour toi, jamais envoyé au modèle : le prompt décrit le volume par sa projection de profil, sans taille de bonnet. ") + "''')
 rep(''' Bonnet européen = tour de poitrine moins dessous de poitrine''', '''Bonnet européen = tour de poitrine moins dessous de poitrine''')
 # P24 GPT body, men in the reference outfit: natural front fill (same wording as Seedream), no "flat front panel"
@@ -334,12 +334,12 @@ rep('''                                                    opts:
                                                           ? am.concat([["brief", "Seedream : slip de bain, torse nu, pieds nus"]])
                                                           : am
                                                         : "seedream" === t.model
-                                                          ? [["sport", "Haut ajusté et cycliste, pieds nus"]].concat(
+                                                          ? (t.chest >= 4 ? [["sport", "Haut ample sans manches et cycliste, pieds nus"], ["fitted", "Haut ajusté et cycliste, pieds nus", "", null, "warn"]] : [["sport", "Haut ajusté et cycliste, pieds nus"]]).concat(
                                                               ap.filter(function (o) {
                                                                 return "onepiece" === o[0];
                                                               }),
                                                               sdRevealOk(t)
-                                                                ? [["tanga", "Seedream : haut triangle et tanga coupe brésilienne, pieds nus"]]
+                                                                ? [["tanga", t.chest >= 4 ? "Seedream : haut ample sans manches et tanga coupe brésilienne, pieds nus (remplace le triangle en Très généreuse)" : "Seedream : haut triangle et tanga coupe brésilienne, pieds nus"]]
                                                                 : [],
                                                             )
                                                           : ap,
@@ -829,8 +829,81 @@ rep('''" Ajouté aux planches créées. Pour une variante, change-le et recopie 
                                                     : " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation du personnage.",''')
 rep('ph: "vide = Auto : GPT choisit une race précise",', 'ph: "vide = Auto : l\'IA choisit une race précise",')
 rep('hint: "Vide : GPT choisit lui-même une race ou un type précis', 'hint: "Vide : l\'IA choisit elle-même une race ou un type précis')
+# P48 bust: intermediate level "Assez généreuse" (value 2.5, between Moyenne and Généreuse); slider maps positions <-> values; GPT very slim: visible ribs
+rep('      [2, "Moyenne", "a medium bust, average for an adult woman"],\n', '      [2, "Moyenne", "a medium bust, average for an adult woman"],\n      [\n        2.5,\n        "Assez généreuse",\n        "a fairly full bust, a little larger than average, its base covering most of the width of the chest in the front view",\n      ],\n')
+rep('  af = [\n    "≈ bonnet AA à A",\n    "≈ bonnet A à B",\n    "≈ bonnet B à C",\n    "≈ bonnet D à E",\n    "≈ bonnet F et plus",\n  ],', '  af = [\n    "≈ bonnet AA à A",\n    "≈ bonnet A à B",\n    "≈ bonnet B à C",\n    "≈ bonnet C à D",\n    "≈ bonnet D à E",\n    "≈ bonnet F et plus",\n  ],')
+rep('function t0(e, t) {\n  for (var n = tZ[e], r = 0; r < n.length; r++)\n    if (String(n[r][0]) === String(t)) return n[r];\n  return n[0];\n}', 'function t0(e, t) {\n  for (var n = tZ[e], r = 0; r < n.length; r++)\n    if (String(n[r][0]) === String(t)) return n[r];\n  if ("number" == typeof t)\n    for (r = n.length - 1; r >= 0; r--)\n      if ("number" == typeof n[r][0] && n[r][0] <= t) return n[r];\n  return n[0];\n}\nfunction sdBinPos(i, v) {\n  if ("bust" === i) {\n    for (var n = tZ.bust, r = 0; r < n.length; r++) if (String(n[r][0]) === String(v)) return r;\n    return 2;\n  }\n  return "number" == typeof v ? Math.floor(v) : v;\n}')
+rep('                value: t[a],\n                min: 0,\n                max: e,\n                display: String(t0(i, t[a])[1]),', '                value: sdBinPos(i, t[a]),\n                min: 0,\n                max: e,\n                display: String(t0(i, t[a])[1]),')
+rep('badge: "bust" === i ? af[t[a]] : void 0,', 'badge: "bust" === i ? af[sdBinPos(i, t[a])] : void 0,')
+rep('                onChange: (e) => g(a, e),\n              },\n              a + i,', '                onChange: (e) => g(a, "bust" === i ? tZ.bust[e][0] : e),\n              },\n              a + i,')
+rep('    " Body composition: " +\n    n_() +\n    ". " +', '    " Body composition: " +\n    n_() +\n    (0 === e.fat && !(e.photo && e.bodyAsIs) ? sdRibs() : "") +\n    ". " +')
+rep('                                      ": " +\n                                      n_() +\n                                      "; " +', '                                      ": " +\n                                      n_() +\n                                      (0 === e.fat && !(e.photo && e.bodyAsIs) ? sdRibs() : "") +\n                                      "; " +')
+# P49 GPT "Très généreuse": clearly bigger than "Généreuse" (front-view and profile landmarks, out of proportion with the frame)
+rep('        "a very large, full bust with a wide base extending slightly beyond the sides of the ribcage in the front view, much larger than average",', '        "a very large, heavy bust, out of proportion with her frame, much larger than average and clearly bigger than an ordinary large bust: in the front view it fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms, and in profile it projects forward from the ribcage by a little more than the length of her hand, far beyond the stomach",')
+rep('      ? "a very large, full bust with a wide base extending slightly beyond the sides of the ribcage in the front view, much larger than average and fuller in its lower half"', '      ? "a very large, heavy bust, out of proportion with her frame, much larger than average and clearly bigger than an ordinary large bust: in the front view it fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms, and its heavy lower half reaches far forward and down, well beyond the line of the stomach"')
+# P50 GPT lighting: muscle-sculpting key light only with real muscle (sdHardLight; Seedream keeps the v1.1.2 rule of sdBody)
+rep("""                          (!o && n0()
+                            ? "A studio key light from above and slightly to the side of the camera""", """                          (!o && sdHardLight()
+                            ? "A studio key light from above and slightly to the side of the camera""")
+# P51 outfit radio: an option flagged "warn" is drawn in red; warning under the outfit choice (fitted top at "Très généreuse")
+rep("""                (n
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card hover:border-foreground/40"),
+              children: [
+                (0, l.jsx)("input", {
+                  type: "radio",""", """                ("warn" === t[4]
+                  ? n
+                    ? "bg-destructive text-destructive-foreground border-destructive"
+                    : "bg-card border-destructive text-destructive"
+                  : n
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card hover:border-foreground/40"),
+              children: [
+                (0, l.jsx)("input", {
+                  type: "radio",""")
+rep("""                                                    value: sdShownCover(t),
+                                                    onChange: (e) =>
+                                                      g("refCover", e),
+                                                  }),""", """                                                    value: sdShownCover(t),
+                                                    onChange: (e) =>
+                                                      g("refCover", e),
+                                                    children: sdFittedWarn(t),
+                                                  }),""")
+# P52 (v94) GPT: lettering asked in the marks field is allowed on the person, captions still forbidden (head and body)
+rep('''      nh("topSel", "topOpts", "top").length
+        ? nY
+        : "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."))''', '''      nh("topSel", "topOpts", "top").length
+        ? sdNoTextGpt(nY)
+        : "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."))''')
+rep('''                      (o
+                        ? nY
+                        : nk()
+                          ? "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."
+                          : nY))),''', '''                      (o
+                        ? nY
+                        : nk()
+                          ? "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."
+                          : sdNoTextGpt(nY)))),''')
+# P53 (v94) engine not chosen by hand: the same rule live as at load (Seedream when it can, else GPT), so a reload never switches it
+rep('''      ((0, s.useEffect)(() => {
+        try {
+          localStorage.setItem(au, JSON.stringify(t));
+        } catch {}
+      }, [t]),''', '''      ((0, s.useEffect)(() => {
+        if (!t.modelPick && t.model !== (sdOk(t) ? "seedream" : "gpt")) {
+          n((x) => (x.modelPick ? x : { ...x, model: sdOk(x) ? "seedream" : "gpt" }));
+          return;
+        }
+        try {
+          localStorage.setItem(au, JSON.stringify(t));
+        } catch {}
+      }, [t]),''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
+# P35 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
+for a in [':root:not([data-theme=light]){', ':root[data-theme=dark]{']:
+    assert orig.count(a+'--background:220 10% 7%;')==1, a
+    orig=orig.replace(a+'--background:220 10% 7%;', a+'--destructive:0 84% 66%;--destructive-foreground:220 10% 8%;--background:220 10% 7%;')
 L=orig.split('\n'); assert '</script' not in src
 # P36 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)
 if LANG=='en':
