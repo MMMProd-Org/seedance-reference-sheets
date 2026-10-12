@@ -554,7 +554,7 @@ with sync_playwright() as p:
     body.click()
     sig.wait_for_function("window.writes.length === 2")
     sig.evaluate("() => window.writes[1]()")
-    expect(sig.get_by_text(re.compile(r"^Copied\. Your head sheet is out of date"))).to_be_visible()
+    expect(sig.get_by_text(re.compile(r"^Copied\. The face has changed since the last copied head prompt"))).to_be_visible()
     assert not errors, errors
 
     # A head copy saved before the signature covered the build is not reported as changed, only as older; a real
@@ -811,6 +811,154 @@ with sync_playwright() as p:
     flat.reload()
     expect(flat.get_by_text("Not available with Seedream yet", exact=True)).to_be_visible()
     expect(flat.get_by_text("Seedream does not do people in 3D or 2D yet. For this style, switch to GPT Image 2.5.").first).to_be_visible()
+    assert not errors, errors
+
+    # Checks from the owner's second v95 line (the tests/ui_*.py scripts of its build chain), in English.
+    def saved_page(state, viewport=None, scheme=None):
+        """A Seedream person page opened on a saved state, its clipboard held as in clipboard_page."""
+        if scheme:
+            pg = browser.new_context(viewport={"width": 1440, "height": 1000}, color_scheme=scheme).new_page()
+            pg.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+            pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+            pg.goto(page_path.resolve().as_uri())
+        else:
+            pg = clipboard_page(browser, errors)
+        if viewport:
+            pg.set_viewport_size(viewport)
+        pg.evaluate(f"localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: 'seedream', modelPick: 1, mode: 'person', {state}}}))")
+        pg.reload()
+        pg.evaluate(HOLD_CLIPBOARD)
+        return pg
+
+    # Bust: six steps, "Fairly generous" (stored as 2.5) between "Medium" and "Generous"; a man's chest reads 2.5 as one
+    # step below "Developed".
+    bust = saved_page("pres: 'f', chest: 2")
+    bust.get_by_role("tab", name=re.compile(r"^Body")).click()
+    slider = bust.get_by_role("slider", name="Bust", exact=True)
+    stored = []
+    for key in ["ArrowRight"] * 3 + ["ArrowLeft"] * 5:
+        slider.press(key)
+        stored.append(bust.evaluate(f"{SAVED}.chest"))
+        if stored == [2.5]:
+            row = bust.locator("span#l-chest").locator("xpath=ancestor::div[contains(@class,'py-4')][1]").inner_text()
+            assert "Fairly generous" in row and "≈ cup C to D" in row and "then H for Very generous" in row, row
+    assert stored == [2.5, 3, 4, 3, 2.5, 2, 1, 0], stored
+    pecs = saved_page("pres: 'm', chest: 2.5")
+    pecs.get_by_role("tab", name=re.compile(r"^Body")).click()
+    pecs.get_by_role("slider", name="Chest", exact=True).press("ArrowRight")
+    assert pecs.evaluate(f"{SAVED}.chest") == 3
+    bust.close()
+    pecs.close()
+
+    # "Very generous" bust on Seedream: the loose top replaces the triangle and comes with bike shorts; the fitted top stays
+    # an option, drawn in red, with a warning once picked; at "Generous" it is the plain option again; GPT gets its shorts.
+    outfit = "age: 27, bodyRef: true, headless: true"
+    warn = "Fitted top with a Very generous bust: Seedream often removes the image"
+    loose = saved_page(f"pres: 'f', chest: 4, refCover: 'sport', {outfit}")
+    loose.get_by_role("tab", name="Outfit").click()
+    text = loose.locator("body").inner_text()
+    assert "Loose sleeveless top and bike shorts, barefoot" in text and warn not in text
+    assert "Seedream: loose sleeveless top and Brazilian-cut tanga, barefoot (replaces the triangle at Very generous)" in text
+    fitted = loose.locator("label", has_text="Fitted top and bike shorts, barefoot")
+    assert "border-destructive" in fitted.get_attribute("class")
+    assert "a loose cobalt-blue" in next(t for t in prompts(loose) if "Outfit, the same" in t)
+    fitted.click()
+    assert loose.evaluate(f"{SAVED}.refCover") == "fitted" and warn in loose.locator("body").inner_text()
+    body = next(t for t in prompts(loose) if "Outfit, the same" in t)
+    assert "a fitted cobalt-blue sleeveless cropped top" in body and "a loose cobalt-blue" not in body, body
+    loose.close()
+    for state, want in ((f"pres: 'f', chest: 3, refCover: 'fitted', {outfit}", "a fitted cobalt-blue sleeveless cropped top"),
+                        (f"pres: 'f', chest: 4, refCover: 'fitted', {outfit}, model: 'gpt'", "compression shorts")):
+        other = saved_page(state)
+        other.get_by_role("tab", name="Outfit").click()
+        assert warn not in other.locator("body").inner_text(), state
+        if "gpt" not in state:
+            assert "destructive" not in other.locator("label", has_text="Fitted top and bike shorts, barefoot").get_attribute("class")
+        assert want in next(t for t in prompts(other) if "utfit" in t), state
+        other.close()
+    # the red warning and the red option keep a 4.5:1 contrast on their background, in both themes
+    for scheme in ("dark", "light"):
+        red = saved_page(f"pres: 'f', chest: 4, refCover: 'fitted', {outfit}", scheme=scheme)
+        red.get_by_role("tab", name="Outfit").click()
+        ratios = red.evaluate("""() => {
+          const rgb = (s) => s.match(/[\\d.]+/g).map(Number).slice(0, 3);
+          const lum = (c) => { c = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+            return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+          const bg = (el) => { for (; el; el = el.parentElement) { const b = getComputedStyle(el).backgroundColor;
+            if (b && !/rgba\\(0, 0, 0, 0\\)|transparent/.test(b)) return b; } return "rgb(255, 255, 255)"; };
+          const cr = (el) => { const x = lum(rgb(getComputedStyle(el).color)), y = lum(rgb(bg(el)));
+            return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+          const out = [...document.querySelectorAll("p.text-destructive")].map(cr);
+          document.querySelectorAll("label").forEach((l) => /Fitted top and bike shorts/.test(l.textContent) && out.push(cr(l)));
+          return out;
+        }""")
+        assert len(ratios) == 2 and min(ratios) >= 4.5, (scheme, ratios)
+        red.context.close()
+
+    # "Dress" writes the outfit of the with-head body sheet word for word (the dressed sheet becomes its image 2): a man's top
+    # lies over his chest, a very slim woman's has the lower neckline; at "Very generous" both cards carry the red warning.
+    head_outfit = re.compile(r"Outfit, the same in every view: (.*?)\. Opaque, plain, no logos\.")
+    dress_outfit = re.compile(r"Change only this: the outfit is replaced by (.*?); opaque, plain, no logos; ")
+    dress_warn = "make the headless body sheet in the loose top"
+    for state, warned in (("pres: 'f', chest: 4, fat: 0, bustShape: 'low'", True), ("pres: 'f', chest: 3, fat: 2", False),
+                          ("pres: 'm', chest: 2, fat: 2", False)):
+        dressed = saved_page(f"age: 27, bodyRef: true, headless: true, refCover: 'sport', {state}")
+        open_folds(dressed)
+        dressed.get_by_role("button", name="Dress", exact=True).click()
+        edit = next(t for t in prompts(dressed) if t.startswith("Edit image 1"))
+        assert (dress_warn in dressed.locator("body").inner_text()) == warned, state
+        whole = saved_page(f"age: 27, bodyRef: true, headless: false, refCover: 'sport', {state}")
+        outfit_text = next(t for t in prompts(whole) if "Outfit, the same in every view" in t)
+        assert (dress_warn in whole.locator("body").inner_text()) == warned, state
+        dress_match, head_match = dress_outfit.search(edit), head_outfit.search(outfit_text)
+        assert dress_match and head_match and dress_match.group(1) == head_match.group(1), (state, edit, outfit_text)
+        assert "second skin" not in edit and "thin, stretchy" not in edit, state
+        assert "pres: 'm'" not in state or ("bust" not in edit and "over the chest" in edit), edit
+        assert "fat: 0" not in state or "a lower, wider scoop neckline" in edit, edit
+        dressed.close()
+        whole.close()
+
+    # "Free retouch" is an operation of its own: it clears a preset's text left as it is (a text the user wrote stays, as
+    # checked above) and, empty, copies nothing, not even the default join: its Copy buttons are off, on the card and the bar.
+    free = saved_page("headless: true, bodyRef: true", viewport={"width": 390, "height": 844})
+    open_folds(free)
+    free.get_by_role("button", name="Combine head and body", exact=True).click()
+    open_folds(free)
+    free.get_by_role("button", name="Free retouch", exact=True).click()
+    saved = free.evaluate(SAVED)
+    assert saved.get("sdIterOp") == "free" and not saved.get("sdIter"), saved
+    assert not any("Combine these two reference sheets" in t for t in prompts(free))
+    expect(free.get_by_role("button", name="Copy for Seedream 5.0").nth(2)).to_be_disabled()
+    expect(free.locator("div.fixed button", has_text=re.compile(r"^Retouch$"))).to_be_disabled()
+    free.locator("#sd-iter").fill("make the backdrop darker")
+    free.locator("#sd-iter").fill("")
+    assert free.evaluate(f"{SAVED}.sdIterOp") == "free"
+    free.close()
+
+    # Arms at "Marqués" are "not bulky" only up to "Athlétique"; lettering asked in the marks field (English, or French
+    # "écrit") is allowed on both models while captions stay forbidden; marks without lettering keep "No text".
+    for muscle, lean in ((4, False), (2, True)):
+        arms = saved_page(f"pres: 'm', fat: 0, muscle: {muscle}, defArms: 'strong', biceps: 'auto'")
+        body = next(t for t in prompts(arms) if "tendon visible" in t)
+        assert ("tendon visible, not bulky" in body) == lean, (muscle, body)
+        arms.close()
+    for model in ("seedream", "gpt"):
+        for marks, lettering in (("a tattoo reading HELLO on the left forearm", True), ("tatouage écrit HELLO sur l'avant-bras", True),
+                                 ("freckles on the nose", False)):
+            mark = saved_page(f"model: '{model}', pres: 'f', age: 30, marks: \"{marks}\"")
+            head, body = prompts(mark)[:2]
+            for text in (head, body):
+                assert ("the only lettering is the one the marks above describe" in text) == lettering, (model, marks, text[-300:])
+                assert ("No text" in text) != lettering, (model, marks, text[-300:])
+            mark.close()
+
+    # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
+    auto = clipboard_page(browser, errors)
+    for style, model in (("3D", "gpt"), ("Photo", "seedream")):
+        auto.get_by_role("radio", name=style, exact=True).click()
+        auto.wait_for_function(f"{SAVED}.model === '{model}'")
+        auto.reload()
+        assert auto.evaluate(f"{SAVED}.model") == model and not auto.evaluate(f"{SAVED}.modelPick"), style
     assert not errors, errors
 
     browser.close()
