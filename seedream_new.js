@@ -1452,17 +1452,22 @@ function sdCardExtra(k) {
                     ["dress", "Habiller", sdPresetDress()],
                     ["heads", "Ajouter les têtes (canevas agrandi)", sdPresetHeads()],
                     ["free", "Retouche libre", null],
-                  ].map(function (b) {
+                  ].map(function (b, i, all) {
                     /* a preset picked with its text is removed by a second click; "join", shown as the
-                       default for a headless body while the text is empty, is filled in instead */
+                       default for a headless body while the text is empty, is filled in instead.
+                       "Retouche libre" is an operation of its own (empty, it copies nothing, never the default join):
+                       it clears a preset's text left as it is, and keeps a text the user wrote */
                     var on = "free" === b[0] ? "" === op : op === b[0],
-                      picked = on && !!String(t.sdIter || "").trim();
+                      picked = on && !!String(t.sdIter || "").trim(),
+                      left = all.filter(function (x) {
+                        return x[0] === op && x[2] && String(x[2]).trim() === String(t.sdIter || "").trim();
+                      }).length;
                     return (0, l.jsxs)(
                       "button",
                       {
                         type: "button",
                         "aria-pressed": on,
-                        onClick: () => (null === b[2] ? g("sdIterOp", "free") : (g("sdIter", picked ? "" : b[2]), g("sdIterOp", picked ? "" : b[0]))),
+                        onClick: () => (null === b[2] ? (left && g("sdIter", ""), g("sdIterOp", "free")) : (g("sdIter", picked ? "" : b[2]), g("sdIterOp", picked ? "" : b[0]))),
                         className:
                           "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
                           (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
