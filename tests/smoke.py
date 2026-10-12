@@ -953,6 +953,14 @@ with sync_playwright() as p:
     assert stale.evaluate(f"{SAVED}.sdIter") != picked, "the bust change must change the Dress text"
     stale.close()
 
+    # A body copy before any head copy says that the head prompt was not copied yet.
+    first = saved_page("headless: false, bodyRef: true")
+    first.get_by_role("button", name="Copy for Seedream 5.0").nth(1).click()
+    first.wait_for_function("window.writes.length === 1")
+    first.evaluate("() => window.writes[0]()")
+    expect(first.get_by_text(re.compile(r"^Copied\. You have not copied the head prompt yet"))).to_be_visible()
+    first.close()
+
     # Arms at "Marqués" are "not bulky" only up to "Athlétique"; lettering asked in the marks field (English, or French
     # "écrit") is allowed on both models while captions stay forbidden; marks without lettering keep "No text".
     for muscle, lean in ((4, False), (2, True)):
