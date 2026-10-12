@@ -13,7 +13,7 @@ def rep(old,new,count=1):
     assert n==count,(n,old[:90])
     src=src.replace(old,new)
 # P1 state defaults
-rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    uiLang: "'+LANG+'",\n    sdBodyImg: !0,\n    objMannequin: !1,\n  },')
+rep('    veins: "auto",\n    photoOnly: !1,\n  },', '    veins: "auto",\n    photoOnly: !1,\n    model: "seedream",\n    modelPick: 0,\n    sdIter: "",\n    sdShapeRef: !1,\n    sdRndN: 0,\n    sdRndOpen: !1,\n    sdRndMood: "everyday",\n    sdHeadSig: "",\n    sdIterOp: "",\n    sdIterPre: "",\n    uiLang: "'+LANG+'",\n    sdBodyImg: !0,\n    objMannequin: !1,\n  },')
 # P17 new bust shape "Poire" (GPT + Seedream)
 rep('''      [
         "conical",

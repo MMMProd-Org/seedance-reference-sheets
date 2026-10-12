@@ -937,6 +937,21 @@ with sync_playwright() as p:
     free.locator("#sd-iter").fill("")
     assert free.evaluate(f"{SAVED}.sdIterOp") == "free"
     free.close()
+    # the text a preset put in the box is cleared even after a setting has changed that preset's wording
+    stale = saved_page("headless: true, bodyRef: true, pres: 'f', chest: 2.5")
+    open_folds(stale)
+    stale.get_by_role("button", name="Dress", exact=True).click()
+    picked = stale.evaluate(f"{SAVED}.sdIter")
+    stale.get_by_role("tab", name=re.compile(r"^Body")).click()
+    stale.get_by_role("slider", name="Bust", exact=True).press("ArrowRight")
+    open_folds(stale)
+    stale.get_by_role("button", name="Free retouch", exact=True).click()
+    saved = stale.evaluate(SAVED)
+    assert saved.get("sdIterOp") == "free" and not saved.get("sdIter"), saved
+    open_folds(stale)
+    stale.get_by_role("button", name="Dress", exact=True).click()
+    assert stale.evaluate(f"{SAVED}.sdIter") != picked, "the bust change must change the Dress text"
+    stale.close()
 
     # Arms at "Marqués" are "not bulky" only up to "Athlétique"; lettering asked in the marks field (English, or French
     # "écrit") is allowed on both models while captions stay forbidden; marks without lettering keep "No text".
