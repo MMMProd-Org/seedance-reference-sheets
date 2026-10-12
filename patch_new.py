@@ -541,8 +541,9 @@ rep('''          r(e),
           }),
           e.base && n(e.base),''')
 # P39 audit v89: the signature covers the final face, a saved GPT session keeps GPT (head references on reload: P37; Seedream copy order: P11)
-# A GPT session saved before the model choice was recorded (no modelPick key) counts as picked by hand, so P53 never switches it.
-rep('''    t.modelPick || (t.model = sdOk(t) ? "seedream" : "gpt");''', '''    t.modelPick || ("gpt" === e.model && !("modelPick" in e) ? (t.modelPick = 1) : (t.model = sdOk(t) ? "seedream" : "gpt"));''')
+# A saved GPT session P53 would never have saved counts as picked by hand, so P53 never switches it: one for a subject
+# Seedream can do (saved by a build without P53), or one from before the model choice was recorded (no modelPick key).
+rep('''    t.modelPick || (t.model = sdOk(t) ? "seedream" : "gpt");''', '''    t.modelPick || ("gpt" === e.model && (sdOk(t) || !("modelPick" in e)) ? (t.modelPick = 1) : (t.model = sdOk(t) ? "seedream" : "gpt"));''')
 rep('''    .filter(function (e) {
       return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
         e,

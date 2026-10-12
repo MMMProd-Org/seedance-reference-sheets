@@ -720,11 +720,14 @@ with sync_playwright() as p:
         slim.close()
     assert not errors, errors
 
-    # A saved GPT session from before the model choice was recorded keeps GPT; a first visit opens on Seedream.
+    # A saved GPT session from before the model choice was recorded keeps GPT, and so does one saved by an earlier build
+    # without a hand pick for a subject Seedream can do; a first visit opens on Seedream.
     kept = clipboard_page(browser, errors)
-    kept.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, model: 'gpt'}))")
-    kept.reload()
-    expect(kept.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
+    for pick in ("", ", modelPick: 0"):
+        kept.evaluate(f"localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{mode: 'person', style: 'photo', photo: false, model: 'gpt'{pick}}}))")
+        kept.reload()
+        kept.wait_for_timeout(300)  # the live engine rule (P53) would switch it right after the first render
+        expect(kept.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
     kept.evaluate("localStorage.clear()")
     kept.reload()
     expect(kept.get_by_role("radio", name="Seedream 5.0", exact=True)).to_be_checked()
