@@ -976,7 +976,15 @@ with sync_playwright() as p:
             for text in (head, body):
                 assert ("the only lettering is the one the marks above describe" in text) == lettering, (model, marks, text[-300:])
                 assert ("No text" in text) != lettering, (model, marks, text[-300:])
+                assert not lettering or "HELLO" in text, (model, marks, text[-300:])
             mark.close()
+    # on GPT with a source photo whose clothing is kept, the clothing's own logos and prints stay allowed too
+    photo = saved_page("model: 'gpt', pres: 'f', age: 30, photo: true, marks: 'a tattoo reading HELLO on the left forearm'")
+    for text in prompts(photo)[:2]:
+        assert "HELLO" in text and "No text" not in text, text[-300:]
+        assert ("the only lettering is the one the marks above describe, besides any logo or print on the clothing taken from"
+                " the photo.") in text, text[-300:]
+    photo.close()
 
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)

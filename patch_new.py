@@ -871,12 +871,13 @@ rep("""                                                    value: sdShownCover(t
                                                       g("refCover", e),
                                                     children: sdFittedWarn(t),
                                                   }),""")
-# P52 (v94) GPT: lettering asked in the marks field is allowed on the person, captions still forbidden (head and body)
+# P52 (v94) GPT: lettering asked in the marks field is allowed on the person, captions still forbidden (head and body),
+# also with clothing taken from the source photo, whose own logos and prints stay
 rep('''      nh("topSel", "topOpts", "top").length
         ? nY
         : "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."))''', '''      nh("topSel", "topOpts", "top").length
         ? sdNoTextGpt(nY)
-        : "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."))''')
+        : sdNoTextGpt("No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.", 1)))''')
 rep('''                      (o
                         ? nY
                         : nk()
@@ -884,7 +885,7 @@ rep('''                      (o
                           : nY))),''', '''                      (o
                         ? nY
                         : nk()
-                          ? "No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo."
+                          ? sdNoTextGpt("No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.", 1)
                           : sdNoTextGpt(nY)))),''')
 # P53 (v94) engine not chosen by hand: the same rule live as at load (Seedream when it can, else GPT), so a reload never switches it
 rep('''      ((0, s.useEffect)(() => {

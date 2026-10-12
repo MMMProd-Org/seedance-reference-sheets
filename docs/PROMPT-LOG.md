@@ -31,6 +31,8 @@ Read it before any change (`AGENTS.md`).
 
 Default prompts: the only change is the default Seedream body (build "Moyenne"), which now gets `A normal, healthy layer of soft body fat: ...` (v78 below). The delivered page is not copied: the import commit rebuilds it byte for byte.
 
+Found in review, GPT with a source photo whose clothing is kept: the second line's v94 lettering fix did not reach this ending, so a tattoo reading a word was still followed by `No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.` on the head and body sheets. It now gets the lettering ending, followed by `, besides any logo or print on the clothing taken from the photo.` **TO TEST** in a render, like the v94 fix itself.
+
 ## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · the test's three changes in the app (v1.1.2)
 
 **WORKS**, by the user's test of the prompt in the entry below, with its three changes: « c bon ça marche avant » (the render was not described). Now in the app, on Seedream only, in a person's body prompt:

@@ -978,7 +978,7 @@ function sdBust() {
       (c >= 3 && !big && ["low", "conical"].indexOf(e.bustShape) < 0 ? " with a wide base" : "") +
       (3 === c && ["pear", "conical"].indexOf(e.bustShape) >= 0 ? ", clearly larger than average" : "") +
       (sh ? ", " + sh : "");
-  /* "Très généreuse": visibly bigger than "Généreuse" through landmarks, no cup letter, no nipple wording */
+  /* "Très généreuse": visibly bigger than "Généreuse" through landmarks and its cup (about an H, v80), no nipple wording */
   return big
     ? out.replace(/,? the nipples pointing[^,;.]*/, "") +
         "; in the front view the bust fills the whole width of the chest, its outer sides " + ("low" === e.bustShape ? "spreading" : "bulging") + " past the ribcage against the inner arms" +
@@ -1330,8 +1330,13 @@ function sdLetters() {
   return "person" === e.mode && /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i.test(String(e.marks || ""));
 }
 var SD_LETTERS = "No captions, labels, panel numbers or watermark added to the image; the only lettering is the one the marks above describe.";
-function sdNoTextGpt(d) {
-  return sdLetters() ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe." : d;
+/* clothing: the ending of a person whose clothing is taken from the source photo, whose own logos and prints stay */
+function sdNoTextGpt(d, clothing) {
+  return sdLetters()
+    ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe" +
+        (clothing ? ", besides any logo or print on the clothing taken from the photo" : "") +
+        "."
+    : d;
 }
 function sdOp(t) {
   return "free" === t.sdIterOp ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : nw() ? "join" : "";
