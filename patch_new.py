@@ -902,7 +902,7 @@ rep('''      ((0, s.useEffect)(() => {
       }, [t]),''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
-# P35 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
+# P54 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
 for a in [':root:not([data-theme=light]){', ':root[data-theme=dark]{']:
     assert orig.count(a+'--background:220 10% 7%;')==1, a
     orig=orig.replace(a+'--background:220 10% 7%;', a+'--destructive:0 84% 66%;--destructive-foreground:220 10% 8%;--background:220 10% 7%;')
