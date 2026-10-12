@@ -9,7 +9,7 @@ for mod in ('en_a','en_b','en_c'):
     if hasattr(m,'L'): D.update(m.L)
 # Seedream variant of the bust help (prefix + original rest)
 orig=ui[487]; rest=orig[orig.index('Bonnet européen'):]
-D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup range (B to C, D to E, F and up); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
+D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une taille de bonnet (B à C, D, D à E, puis H pour Très généreuse) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup size (B to C, D, D to E, then H for Very generous); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
 extra=json.load(open(os.path.join(HERE,'i18n','extra.json'),encoding='utf-8'))
 D.update(extra)
 # A French text node can start or end with the space that separates it from the next node: the English
