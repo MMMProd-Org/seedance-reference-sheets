@@ -9,7 +9,7 @@ for mod in ('en_a','en_b','en_c'):
     if hasattr(m,'L'): D.update(m.L)
 # Seedream variant of the bust help (prefix + original rest)
 orig=ui[487]; rest=orig[orig.index('Bonnet européen'):]
-D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une fourchette de bonnet (B à C, D à E, F et plus) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup range (B to C, D to E, F and up); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
+D["Repère pour toi. En Seedream 5.0, le prompt cite aussi une taille de bonnet (B à C, D, D à E, puis H pour Très généreuse) ; en GPT Image 2.5, aucune taille de bonnet n'est envoyée. "+rest]=("A guide for you. In Seedream 5.0 the prompt also names a cup size (B to C, D, D to E, then H for Very generous); GPT Image 2.5 gets no cup size. "+D[orig][D[orig].index('European cup'):])
 extra=json.load(open(os.path.join(HERE,'i18n','extra.json')))
 D.update(extra)
 js='''/* ---- interface language (FR / EN): translation applied to rendered props, prompts untouched ---- */
@@ -85,18 +85,47 @@ function sdTrProps(type, p) {
 }
 function sdSetLang(t) {
   sdLang = "en" === t.uiLang ? "en" : "fr";
+  sdModelNow = t.model || "";
   try {
     document.documentElement.lang = sdLang;
   } catch (er) {}
+}
+/* long help texts: first sentence visible, the rest behind "Plus" */
+function SdMore(props) {
+  var st = (0, s.useState)(!1),
+    open = st[0],
+    set = st[1],
+    m = String(props.text).match(/^([\s\S]{20,}?[.!?»)])\s+([\s\S]+)$/);
+  if (!m) return props.text;
+  return (0, l.jsxs)("span", {
+    children: [
+      m[1],
+      open ? " " + m[2] : "",
+      " ",
+      (0, l.jsx)("button", {
+        type: "button",
+        className: "font-semibold text-foreground underline",
+        style: { textUnderlineOffset: "2px" },
+        "aria-expanded": open,
+        onClick: (ev) => (ev.preventDefault(), ev.stopPropagation(), set(!open)),
+        children: open ? sdT("Moins", "Less") : sdT("Plus", "More"),
+      }),
+    ],
+  });
+}
+function sdHintProps(p) {
+  return p && "string" == typeof p.hint && p.hint.length > 110 && /[.!?»)]\s+\S/.test(p.hint.slice(20))
+    ? Object.assign({}, p, { hint: (0, l.jsx)(SdMore, { text: p.hint }) })
+    : p;
 }
 (function () {
   var j0 = l.jsx,
     j1 = l.jsxs;
   l.jsx = function (a, p, k) {
-    return j0(a, sdTrProps(a, p), k);
+    return j0(a, sdHintProps(sdTrProps(a, p)), k);
   };
   l.jsxs = function (a, p, k) {
-    return j1(a, sdTrProps(a, p), k);
+    return j1(a, sdHintProps(sdTrProps(a, p)), k);
   };
 })();
 '''
