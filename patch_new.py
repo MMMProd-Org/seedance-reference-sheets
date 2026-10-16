@@ -1,4 +1,5 @@
-import sys, os, json
+import os
+import json
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 LANG='en'  # default interface language ('en' or 'fr'; tests/smoke.py expects 'en'); visitors can switch in the header
 src=open('new/pretty.js',encoding='utf-8').read()
@@ -301,7 +302,8 @@ rep('''          let a = await ad(r);
             sdHeadNow = "head" === t && "seedream" === sdModel && "object" !== e.mode ? as() : "",
             sdMode0 = e.mode,
             sdSeed0 = e.faceSeed,
-            sdKey = sdModel + ":" + e.mode,
+            sdKey = sdModel + ":" + e.mode + ":" + sdKind(e),
+            sdKid0 = sdKind(e),
             sdMsg = "seedream" !== sdModel ? "" : "body" === t ? sdBodyCopyMsg(e) : "iter" === t ? sdIterCopyMsg(e) : "";
           sdTracked(t, e.mode) && (sdSeq = sdHeadCopySeq[sdKey] = (sdHeadCopySeq[sdKey] || 0) + 1);
           if (sdTracked(t, e.mode) && "seedream" !== sdModel) {
@@ -318,8 +320,8 @@ rep('''          let a = await ad(r);
           a &&
             sdSnap &&
             sdSeq === sdHeadCopySeq[sdKey] &&
-            n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 ? { ...e, ...sdSnap } : e));
-          a && sdHeadNow && sdSeq === sdHeadCopySeq[sdKey] && n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 ? { ...e, sdHeadSig: sdHeadNow } : e));''')
+            n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 && sdKind(e) === sdKid0 ? { ...e, ...sdSnap } : e));
+          a && sdHeadNow && sdSeq === sdHeadCopySeq[sdKey] && n((e) => (e.mode === sdMode0 && e.faceSeed === sdSeed0 && sdKind(e) === sdKid0 ? { ...e, sdHeadSig: sdHeadNow } : e));''')
 rep('h("Copié. Colle-le dans GPT Image 2.5.")', 'h(sdMsg || sdT("Copié. Colle-le dans ", "Copied. Paste it into ") + ("seedream" === sdModel ? "Seedream 5.0." : "GPT Image 2.5."))')
 # P12 tanga option (Seedream, women) + displayed value
 rep('''                                                    opts:
@@ -395,7 +397,7 @@ rep('''                                    B("head", "1", "Planche tête"),''', 
 rep('''                                    B("body", "2", "Planche corps"),''', '''                                    !("seedream" === t.model && sdX) && B("body", "2", "Planche corps"),''')
 rep('''              : "seedream" === t.model
                 ? "Tes trois étapes, dans l'ordre"
-                : "Tes deux images"''', '''              : "seedream" === t.model && t.headless && !sdOff(t)
+                : "Tes deux images"''', '''              : "seedream" === t.model && t.headless && !sdChild(t) && !sdOff(t)
                 ? "Tes trois étapes, dans l'ordre"
                 : "Tes images"''')
 rep('''              ? [["obj", "Copier la planche", !1]]
@@ -403,7 +405,7 @@ rep('''              ? [["obj", "Copier la planche", !1]]
                   ["head", "Copier tête", !1],
                   ["body", "Copier corps", !1],
                 ]''', '''              ? [["obj", "Copier la planche", !1]]
-              : "seedream" === t.model && t.headless && !sdOff(t)
+              : "seedream" === t.model && t.headless && !sdChild(t) && !sdOff(t)
                 ? sdBarItems(t)
                 : [
                     ["head", "Copier tête", !1],
@@ -586,6 +588,7 @@ rep('''          obj: [
           obj2: sdObjRow(1, t, R, I),
           obj3: sdObjRow(2, t, R, I),
           obj4: sdObjRow(3, t, R, I),
+          obj5: sdObjRow(4, t, R, I),
           objTri: sdObjTriRow(t, R),''')
 rep('''          editObj: [
             ["Joins", D(rU("planche"))],
@@ -645,7 +648,7 @@ rep('''                  (0, l.jsx)(av, {
                       onChange: (e) => g(a, e),
                     }),
                   ),''')
-# P42 one image per view for every object category and place: the six-square layout preview goes, texts say views, not a sheet
+# P42 separate images for objects and places; v110 replaces the static preview with selectable views
 for _call in ('''                  y &&
                     (0, l.jsx)(aS, { cat: t.objCat, className: "lg:hidden" }),
 ''', '''                  y &&
@@ -654,8 +657,10 @@ for _call in ('''                  y &&
                       className: "hidden lg:block",
                     }),
 '''):
-    rep(_call, '')
-_a = src.index('function aS({ cat: e, className: t }) {'); _b = src.index('\nfunction ', _a + 10)
+    _cls = 'lg:hidden' if 'lg:hidden' in _call else 'hidden lg:block'
+    rep(_call, '                  y && sdPlaceThumb(t, g, h, ' + repr(_cls) + '),\n')
+_a = src.index('function aS({ cat: e, className: t }) {')
+_b = src.index('\nfunction ', _a + 10)
 src = src[:_a] + src[_b + 1:]
 rep('''          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent une planche de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",''', '''          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent des vues de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",''')
 rep('''          hint: "« Jour et nuit » : rangée du haut de jour, rangée du bas de nuit, mêmes points de vue. C'est ce qui fixe la lumière pour Seedance.",''', '''          hint: "« Jour et nuit » : les vues de jour, puis une carte « De nuit » à faire depuis la vue de jour choisie, même point de vue. C'est ce qui fixe la lumière pour Seedance.",''')
@@ -822,7 +827,7 @@ for a in ['''" described below. If this conversation has no such head sheet, thi
 # three-step layout stay a person's; a GPT copy's tracking never reaches a Seedream prompt; formats are set in Seedream
 rep('"seedream" === t.model && !sdX && sdIterBlock(t, g, B, L),', '"seedream" === t.model && !sdX && "person" === t.mode && sdIterBlock(t, g, B, L),')
 rep('sdMsg = "seedream" !== sdModel ? "" : "body" === t ?', 'sdMsg = "seedream" !== sdModel || "person" !== e.mode ? "" : "body" === t ?')
-rep('"seedream" === t.model && t.headless && !sdOff(t)', '"seedream" === t.model && "person" === t.mode && t.headless && !sdOff(t)', 2)
+rep('"seedream" === t.model && t.headless && !sdChild(t) && !sdOff(t)', '"seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)', 2)
 rep('  return e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name) || sdFaceReset()', '  return "seedream" === e.model || e.photo || !e.headSig || (e.headOwner || "") !== n1(e.name) || sdFaceReset()')
 rep('''        I = "16:9, demandé dans le prompt : vérifie l'image obtenue",''', '''        I = "seedream" === t.model ? "16:9, à choisir dans Seedream" : "16:9, demandé dans le prompt : vérifie l'image obtenue",''')
 # the help texts name GPT and its conversation; in Seedream (people too) they name neither
@@ -901,13 +906,654 @@ rep('''      ((0, s.useEffect)(() => {
           localStorage.setItem(au, JSON.stringify(t));
         } catch {}
       }, [t]),''')
+# P39 (v96) "Forte": a fat, heavy build (was "heavy-set"), the body fat described in GPT too, slim body details swapped, slider hint
+rep('''    "heavy-set, large and soft build",
+    "heavy-set with some muscle tone under the softness",
+    "heavy-set but strong and mobile",
+    "very heavy and strong, thick muscles under a lot of body fat",
+    "very large and massively powerful, like a super-heavyweight strongman",''', '''    "obese, fat and heavy, large and soft all over",
+    "obese, fat and heavy, with some muscle tone under the fat",
+    "obese, fat and heavy, soft on the surface, with ordinary muscle underneath",
+    "obese and strong, thick muscles under a lot of body fat",
+    "very large and massively powerful, like a super-heavyweight strongman",''')
+rep('    !t && rR() && n.push("Skin texture: " + rR()),', '    sdForteFat(1) && n.push(sdForteFat(1)),\n    !t && rR() && n.push("Skin texture: " + rR()),')
+rep('''                                    "Individual body details that make this body unique, kept identical in all four views: " +
+                                      a.join(", ") +''', '''                                    "Individual body details that make this body unique, kept identical in all four views: " +
+                                      (4 === e.fat ? a.map(sdForteDetail) : a).join(", ") +''')
+rep('{ t: "bins", k: "fat", l: "Corpulence" },', '{ t: "bins", k: "fat", l: "Corpulence", hint: "Forte : gros ventre (si Abdominaux est sur Auto) ; laissés au milieu, Tour de taille passe à Très large, Hanches, Fessiers et Cuisses au cran au-dessus, dans le prompt seulement." },')
+# P40 (v101) "Front" (forehead height) in the Visage tab: Auto (random, as before), Petit, Naturel, Grand; both engines through nn(); replaces the random forehead
+rep('''    noseW: "auto",
+    noseP: "auto",''', '''    noseW: "auto",
+    noseP: "auto",
+    forehead: "auto",''')
+rep('    noseW: [', '''    forehead: [
+      ["auto", "Auto", ""],
+      ["low", "Petit", "a low forehead, the hairline close to the eyebrows"],
+      ["medium", "Naturel", "a forehead of medium height"],
+      ["high", "Grand", "a high forehead, the hairline set well above the eyebrows"],
+    ],
+    noseW: [''')
+rep('        { t: "chips", k: "face", l: "Forme du visage" },', '        { t: "chips", k: "face", l: "Forme du visage" },\n        { t: "chips", k: "forehead", l: "Front", hint: "Hauteur du front, des sourcils à la racine des cheveux. Auto : tiré avec le visage." },')
+rep('      a ? a + " nose" : "",', '      sdForehead(),\n      a ? a + " nose" : "",')
+rep('          l.push(g),', '          ("auto" === (e.forehead || "auto")) && l.push(g),')
+rep('''      a.push(
+        r([
+          "a low hairline",
+          "a slight widow's peak",
+          "a rounded hairline",
+          "a straight hairline",
+        ]),
+      );''', '''      a.push(
+        sdHairlineFix(r([
+          "a low hairline",
+          "a slight widow's peak",
+          "a rounded hairline",
+          "a straight hairline",
+        ])),
+      );''')
+rep('''      ? h.push(
+          u([
+            "a high forehead",
+            "a low hairline",
+            "a slight widow's peak",
+            "a rounded hairline",
+          ]),
+        )''', '''      ? h.push(
+          sdHairlineFix(u([
+            "a high forehead",
+            "a low hairline",
+            "a slight widow's peak",
+            "a rounded hairline",
+          ])),
+        )''')
+rep('      : h.push("a high forehead"),', '      : ("auto" === (e.forehead || "auto")) && h.push("a high forehead"),')
+rep('      (n.jaw = a("jaw")),', '      (n.jaw = a("jaw")),\n      (n.forehead = "auto"),')
+# P41 (v101-v102) saved sessions: an unedited older "Assembler tête et corps" text (v75-v100, v101) is rewritten to the current one (sdJoinMigrate)
+rep('    for (let n in tJ) t[n] = n in e ? e[n] : tJ[n];', '    for (let n in tJ) t[n] = n in e ? e[n] : tJ[n];\n    sdJoinMigrate(t);\n    sdChild(t) && ((t.photo = !1), (t.photoOnly = !1));')
+# P42 (v103) animal: its own head shape drawn from faceSeed (sdAnimalHead, GPT head prompt); "Autre tête" (same settings, another individual) shown for an animal too;
+# "Animal au hasard" (species and breed kept) and "Nouvel animal" give an animal a new faceSeed as for a person; animals saved with faceSeed 0 keep their prompt
+rep(r""""." +
+              (nV() ? " " + nV() : "") +
+              "\n"),
+        t5(e.amarks) &&""", r""""." +
+              (nV() ? " " + nV() : "") +
+              "\n" +
+              (sdAnimalHead() ? sdAnimalHead() + "\n" : "")),
+        t5(e.amarks) &&""")
+rep('                                    faceSeed: "person" === t.mode ? rh() : 0,', '                                    faceSeed: "object" !== t.mode ? rh() : 0,')
+rep('                              faceSeed: "person" === e.mode ? rh() : 0,', '                              faceSeed: "object" !== e.mode ? rh() : 0,')
+rep("""                          !y &&
+                            !b &&
+                            !t.photo &&
+                            (0, l.jsxs)("button", {
+                              type: "button",
+                              title:
+                                "Mêmes réglages : une autre personne à chaque clic. Tous les traits laissés sur Auto sont retirés (forme du visage, yeux, nez, bouche, mâchoire) ainsi que les détails du corps.",""", """                          !y &&
+                            !t.photo &&
+                            (0, l.jsxs)("button", {
+                              type: "button",
+                              title: b
+                                ? "Mêmes réglages : un autre individu de la même espèce et de la même race à chaque clic. Seule la forme de la tête change (crâne, museau ou bec, yeux)."
+                                : "Mêmes réglages : une autre personne à chaque clic. Tous les traits laissés sur Auto sont retirés (forme du visage, yeux, nez, bouche, mâchoire) ainsi que les détails du corps.",""")
+rep("""                                  h(
+                                    "Autre visage : une nouvelle personne, mêmes réglages.",
+                                  ));""", """                                  h(
+                                    b
+                                      ? "Autre tête : un autre individu, mêmes réglages."
+                                      : "Autre visage : une nouvelle personne, mêmes réglages.",
+                                  ));""")
+rep("""                                (0, l.jsx)(tK, { size: 16 }),
+                                "Autre visage",""", """                                (0, l.jsx)(tK, { size: 16 }),
+                                b ? "Autre tête" : "Autre visage",""")
+rep('? "Pour un autre animal : « Nouvel animal », en bas."', '? "Pour un autre animal : « Autre tête » (mêmes réglages) ou « Nouvel animal », en bas (tout remettre à zéro)."')
+# P43 (v104) "Habiller avec ma tenue" (Seedream): the Tenue tab stays usable while the body sheet keeps the reference outfit; a note says what the outfit is used for
+rep("""                                                    children: sdFittedWarn(t),
+                                                  }),
+                                                }),
+                                            ],""", """                                                    children: sdFittedWarn(t),
+                                                  }),
+                                                }),
+                                              t.bodyRef &&
+                                                sdMineTenue(t) &&
+                                                (0, l.jsx)("p", {
+                                                  className:
+                                                    "mt-3 text-sm text-muted-foreground",
+                                                  children:
+                                                    "Ta tenue, ci-dessous : la planche corps garde la tenue de référence ; ta tenue sert à la retouche « Habiller avec ma tenue » (carte 3, Autres retouches).",
+                                                }),
+                                            ],""")
+rep("""                                              !(t.bodyRef && "tenue" === w.id),""", """                                              !(t.bodyRef && "tenue" === w.id && !sdMineTenue(t)),""")
+# P44 (v104) "Fantastique" (GPT animal, house, interior): stated as the defining feature, physically present, impossible to miss; no "believable" house or room with it; checked in the generation limit
+rep(r"""function nV() {
+  return t5(e.afantasy)
+    ? "Fantastic features, intentional and rendered as if real, identical in every panel where they show: " +
+        t5(e.afantasy) +
+        "."
+    : "";
+}""", r"""function nV() {
+  return t5(e.afantasy) ? sdFantasyText(t5(e.afantasy), 0) : "";
+}""")
+rep(r"""              (nV()
+                ? " Add only these fantastic features to it, without changing anything else: " +
+                  t5(e.afantasy) +
+                  "."
+                : "") +""", r"""              (nV()
+                ? " Add the fantastic elements below to it, without changing anything else. " +
+                  nV()
+                : "") +""")
+rep(r"""                              (nV()
+                                ? ", except these fantastic features, intentional and identical in every view where they show: " +
+                                  t5(e.afantasy)
+                                : "") +
+                              ".\n")""", r"""                              (nV() ? ", except the fantastic elements below" : "") +
+                              ".\n" +
+                              (nV() ? nV() + "\n" : ""))""")
+rep(r"""                          t5(e.objFantasy) &&
+                            (a +=
+                              "Fantastic elements, intentional and rendered as if real, identical in every view where they show: " +
+                              t5(e.objFantasy) +
+                              ".\n"),""", r"""                          t5(e.objFantasy) &&
+                            (a += sdFantasyText(t5(e.objFantasy), 1) + "\n"),""")
+rep(r"""                                  : n
+                                    ? ": a believable, lived-in house"
+                                    : ": a believable, lived-in room") +""", r"""                                  : n
+                                    ? t5(e.objFantasy)
+                                      ? ": a lived-in house"
+                                      : ": a believable, lived-in house"
+                                    : t5(e.objFantasy)
+                                      ? ": a lived-in room"
+                                      : ": a believable, lived-in room") +""")
+rep(r"""            an()
+          )
+            return "";
+          var n = at[e.legs] || 47;""", r"""            an()
+          )
+            return sdFantasyMiss();
+          var n = at[e.legs] || 47;""")
+# P45 (v104) house: "Décor" chips, "Décor entier" (as before) or "Sol et fond gris neutre" (house alone on a grey floor and backdrop); weather hidden in the grey case
+rep(r"""    objFantasy: "",""", r"""    objFantasy: "",
+    objBg: "scene",""")
+rep(r"""    objCat: [""", r"""    objBg: [
+      ["scene", "Décor entier", ""],
+      ["grey", "Sol et fond gris neutre", ""],
+    ],
+    objCat: [""")
+rep(r"""          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent des vues de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",
+        },""", r"""          hint: "Règle la présentation : véhicule posé sur ses roues, vêtement sur mannequin invisible, objet seul comme en photo produit. Maison et Intérieur donnent des vues de repérage de lieu, avec jour et nuit dans l'onglet Lumière et ambiance.",
+        },
+        {
+          t: "chips",
+          k: "objBg",
+          l: "Décor",
+          show: function () {
+            return "house" === e.objCat;
+          },
+          hint: "« Sol et fond gris neutre » : la maison seule, posée sur un sol gris devant un fond gris, avec ses ombres au sol, sans jardin, rue ni ciel, pour l'intégrer plus facilement.",
+        },""")
+rep(r"""          k: "objWeather",
+          l: "Météo",
+          show: function () {
+            return "house" === e.objCat;
+          },""", r"""          k: "objWeather",
+          l: "Météo",
+          show: function () {
+            return "house" === e.objCat && "grey" !== e.objBg;
+          },""")
+rep(r"""                        (t5(e.objSize) &&
+                          (a += "Approximate size: " + t5(e.objSize) + ".\n"),""", r"""                        ((a += sdHouseBg()),
+                        t5(e.objSize) &&
+                          (a += "Approximate size: " + t5(e.objSize) + ".\n"),""")
+rep(r"""                            (n
+                              ? "architecture, surroundings"
+                              : "architecture, layout, furniture") +""", r"""                            (n
+                              ? sdHouseGrey()
+                                ? "architecture"
+                                : "architecture, surroundings"
+                              : "architecture, layout, furniture") +""")
+rep(r"""              "high aerial three-quarter view showing the roof and the plot",""", r"""              sdHouseGrey()
+                ? "high aerial three-quarter view showing the roof"
+                : "high aerial three-quarter view showing the roof and the plot",""")
+rep(r"""function rr() {
+  var t = "house" === e.objCat,""", r"""function rr() {
+  if (sdHouseGrey()) return sdHouseGreyLight();
+  var t = "house" === e.objCat,""")
+rep(r"""                              ? "Eye-level views from about 1.6 m high with a 35mm lens, from far enough to show the whole house and its immediate surroundings, kept simple and identical in every view" +""", r"""                              ? (sdHouseGrey()
+                                  ? "Eye-level views from about 1.6 m high with a 35mm lens, from far enough to show the whole house with some grey floor around it, identical in every view"
+                                  : "Eye-level views from about 1.6 m high with a 35mm lens, from far enough to show the whole house and its immediate surroundings, kept simple and identical in every view") +""")
+rep(r"""              return [
+                e.objTime,
+                e.objWeather,""", r"""              return [
+                e.objBg,
+                e.objTime,
+                e.objWeather,""")
+rep(r"""              return (
+                "Light and atmosphere: «" +
+                rr() +""", r"""              return (
+                (sdHouseGrey() ? sdHouseBg().replace(/\n$/, " ") : "") +
+                "Light and atmosphere: «" +
+                rr() +""")
+# P46 (v104) hair: "Épaisseur" (fine, thick), "Aspect" (neat, tousled, messy, greasy) and the "Frisottés" texture, in both engines through ne(); hidden for a bald or shaved head; Auto keeps the old text
+rep(r"""    hairLen: "shoulder",
+    hairTex: "straight",
+    hairColor: "darkbrown",""", r"""    hairLen: "shoulder",
+    hairTex: "straight",
+    hairThick: "auto",
+    hairCare: "auto",
+    hairColor: "darkbrown",""")
+rep(r"""      ["coily", "Crépus", "coily"],
+    ],""", r"""      ["coily", "Crépus", "coily"],
+      ["frizzy", "Frisottés", "frizzy"],
+    ],
+    hairThick: [
+      ["auto", "Auto", ""],
+      ["fine", "Fins", "fine"],
+      ["thick", "Épais", "thick"],
+    ],
+    hairCare: [
+      ["auto", "Auto", ""],
+      ["neat", "Soigné", "neatly combed and styled"],
+      ["tousled", "Décoiffé", "tousled, as if wind-blown or slept on, with loose strands"],
+      ["messy", "Négligé", "unkempt and uncombed, tangled in places, with frizz and stray strands"],
+      ["greasy", "Gras", "unwashed, with greasy, flat roots and clumped strands"],
+    ],""")
+rep(r"""        { t: "chips", k: "hairTex", l: "Texture" },""", r"""        { t: "chips", k: "hairTex", l: "Texture" },
+        {
+          t: "chips",
+          k: "hairThick",
+          l: "Épaisseur",
+          show: function () {
+            return "shaved" !== e.hairLen && "bald" !== e.hairStyleSel;
+          },
+        },""")
+rep(r"""        { t: "chips", k: "hairStyleSel", l: "Coiffure" },""", r"""        { t: "chips", k: "hairStyleSel", l: "Coiffure" },
+        {
+          t: "chips",
+          k: "hairCare",
+          l: "Aspect",
+          show: function () {
+            return "shaved" !== e.hairLen && "bald" !== e.hairStyleSel;
+          },
+          hint: "Négligé : non coiffés, emmêlés, frisottis et mèches folles. Gras : racines grasses, mèches collées. Auto : rien n'est précisé.",
+        },""")
+rep(r"""            t1("hairLen", e.hairLen) +
+            " " +
+            t1("hairTex", e.hairTex) +""", r"""            t1("hairLen", e.hairLen) +
+            " " +
+            (t1("hairThick", e.hairThick) ? t1("hairThick", e.hairThick) + " " : "") +
+            t1("hairTex", e.hairTex) +""")
+rep(r"""          "loose" !== n && (t += " " + t1("hairStyleSel", n))),""", r"""          "loose" !== n && (t += " " + t1("hairStyleSel", n)),
+          t1("hairCare", e.hairCare) && (t += ", " + t1("hairCare", e.hairCare))),""")
+rep(r"""    ((n.hairStyleSel = l), (n.hairStyle = ""), (n.hairColorCustom = ""));""", r"""    ((n.hairStyleSel = l), (n.hairStyle = ""), (n.hairColorCustom = ""), (n.hairThick = "auto"), (n.hairCare = "auto"));""")
+# P47 (v106) child mode "Enfant": a 4th type button (person with child: true); child settings in Corps; adult controls hidden; no photo, reference outfit,
+# headless body, retouch or variant; "Enfant au hasard"; "Nouveau personnage" keeps the child; prompts from sdChildPrompts in both engines
+rep(r"""    objFantasy: "",
+    objBg: "scene",""", r"""    objFantasy: "",
+    objBg: "scene",
+    child: !1,
+    childPhotoBak: 0,
+    childSex: "f",
+    childAge: 7,
+    childHeight: "avg",
+    childBuild: "avg",
+    childHeadless: !1,
+    placeViews: [],
+    view: "sheets",
+    integAsset: "",
+    integPlace: "",
+    integOrient: "",
+    integScale: "",
+    integLit: !1,
+    integLight: "",""")
+rep(r"""    objBg: [
+      ["scene", "Décor entier", ""],""", r"""    childSex: [
+      ["f", "Fille", "girl"],
+      ["m", "Garçon", "boy"],
+    ],
+    childHeight: [
+      ["small", "Petit pour son âge", "small"],
+      ["avg", "Taille moyenne", "average"],
+      ["tall", "Grand pour son âge", "tall"],
+    ],
+    childBuild: [
+      ["slim", "Mince", "slim"],
+      ["avg", "Moyenne", "average"],
+      ["sturdy", "Costaud", "sturdy"],
+    ],
+    objBg: [
+      ["scene", "Décor entier", ""],""")
+rep(r"""        { t: "chips", k: "pres", l: "Présentation" },""", r"""        { t: "chips", k: "pres", l: "Présentation" },
+        {
+          t: "chips",
+          k: "childSex",
+          l: "Fille ou garçon",
+          show: function () {
+            return !!e.child;
+          },
+        },
+        {
+          t: "num",
+          k: "childAge",
+          l: "Âge",
+          show: function () {
+            return !!e.child;
+          },
+          min: 3,
+          max: 12,
+          unit: " ans",
+          hint: "Enfants de 3 à 12 ans. Planches toujours habillées, sans réglage du corps : seulement la taille pour l'âge et la silhouette.",
+        },
+        {
+          t: "chips",
+          k: "childHeight",
+          l: "Taille pour son âge",
+          show: function () {
+            return !!e.child;
+          },
+        },
+        {
+          t: "chips",
+          k: "childBuild",
+          l: "Silhouette",
+          show: function () {
+            return !!e.child;
+          },
+        },
+        {
+          t: "toggle",
+          k: "childHeadless",
+          l: "Planche corps sans tête",
+          show: function () {
+            return !!e.child;
+          },
+          hint: "Corps habillé, cadré du cou aux pieds, fait sans image. Dans Seedance, joins la planche tête et cette planche : le visage ne vient que de la planche tête.",
+        },""")
+rep(r"""function nv() {
+  return "animal" !== e.mode && !!e.bodyRef;
+}
+function nw() {
+  return (
+    "person" === e.mode &&
+    !!e.headless &&""", r"""function nv() {
+  return "animal" !== e.mode && !e.child && !!e.bodyRef;
+}
+function nw() {
+  return (
+    "person" === e.mode &&
+    !e.child &&
+    !!e.headless &&""")
+rep(r"""function n2() {
+  return "seedream" === e.model || e.photo || !e.headSig""", r"""function n2() {
+  return sdChild(e) || "seedream" === e.model || e.photo || !e.headSig""")
+rep(r"""function as() {
+  var t;
+  if ("object" === e.mode) return "";""", r"""function as() {
+  var t;
+  if ("object" === e.mode) return "";
+  if (sdChild(e)) return sdChildSig();""")
+rep(r"""                          (0, l.jsx)(ab, {
+                            label: "Type",
+                            value: t.mode,
+                            onChange: (e) =>
+                              n((t) =>
+                                (function (e, t) {""", r"""                          (0, l.jsx)(ab, {
+                            label: "Type",
+                            value: sdChild(t) ? "child" : t.mode,
+                            onChange: (e) =>
+                              n((t) =>
+                                sdChildMode(e, t, function (e, t) {""")
+rep(r"""                                })(t, e),
+                              ),
+                            options: [
+                              ["person", "Personne"],
+                              ["animal", "Animal"],""", r"""                                }),
+                              ),
+                            options: [
+                              ["person", "Personne"],
+                              ["child", "Enfant"],
+                              ["animal", "Animal"],""")
+rep(r"""                          sdTip(
+                            (0, l.jsx)(ax, {
+                              checked: t.photo,""", r"""                          !sdChild(t) &&
+                          sdTip(
+                            (0, l.jsx)(ax, {
+                              checked: t.photo,""")
+rep(r"""                              onClick: () => {
+                                (n((t) => {
+                                  let n = {
+                                    ...t,
+                                    headSig: "",""", r"""                              onClick: () => {
+                                if (sdChild(t))
+                                  return (n((s) => sdChildRandom(s)), h("Enfant tiré au hasard."));
+                                (n((t) => {
+                                  let n = {
+                                    ...t,
+                                    headSig: "",""")
+rep(r"""                                b ? "Animal au hasard" : "Personnage au hasard",""", r"""                                b ? "Animal au hasard" : sdChild(t) ? "Enfant au hasard" : "Personnage au hasard",""")
+rep(r"""        z = (e, t) => {
+          let n = "animal" === e.mode;
+          return (
+            !!(ae[e.mode] || []).includes(t) &&""", r"""        z = (e, t) => {
+          let n = "animal" === e.mode;
+          return (
+            !(sdChild(e) && ("corps" === t || "tenue" === t)) &&
+            !!(ae[e.mode] || []).includes(t) &&""")
+rep(r"""                                        "tenue" === w.id &&
+                                          (0, l.jsxs)("div", {
+                                            className:
+                                              "my-4 rounded-2xl border p-4 " +""", r"""                                        sdChild(t) &&
+                                          sdChildNote(t, w.id),
+                                        "tenue" === w.id &&
+                                          !sdChild(t) &&
+                                          (0, l.jsxs)("div", {
+                                            className:
+                                              "my-4 rounded-2xl border p-4 " +""")
+rep(r"""                                            (e) =>
+                                              (!e.show || e.show()) &&
+                                              !(
+                                                b &&""", r"""                                            (e) =>
+                                              (!e.show || e.show()) &&
+                                              !sdChildHide(t, w.id, e.k) &&
+                                              !(
+                                                b &&""")
+rep(r"""                                              !(t.bodyRef && "tenue" === w.id && !sdMineTenue(t)),""", r"""                                              !(t.bodyRef && "tenue" === w.id && !sdMineTenue(t) && !sdChild(t)),""")
+rep(r"""                                  "modelPick" !== r &&
+                                  "uiLang" !== r &&""", r"""                                  "modelPick" !== r &&
+                                  "uiLang" !== r &&
+                                  "child" !== r &&
+                                  "view" !== r &&
+                                  "placeViews" !== r &&
+                                  0 !== r.indexOf("integ") &&""")
+rep(r"""                                    "seedream" === t.model && !sdX && "person" === t.mode && sdIterBlock(t, g, B, L),""", r"""                                    "seedream" === t.model && !sdX && "person" === t.mode && (sdChild(t) ? ((sdCur = { t: t, g: g, L: L }), null) : sdIterBlock(t, g, B, L)),""")
+# P48 (v106) "Intégration d'image": a 3rd switch in the header (Planches / Intégration d'image); the tool replaces the sheets view and its mobile bar
+rep(r"""                    label: "Langue de l'interface",
+                    value: "en" === t.uiLang ? "en" : "fr",
+                    onChange: (e) => n((t) => ({ ...t, uiLang: e })),
+                    options: [
+                      ["fr", "Français"],
+                      ["en", "English"],
+                    ],
+                  }),""", r"""                    label: "Langue de l'interface",
+                    value: "en" === t.uiLang ? "en" : "fr",
+                    onChange: (e) => n((t) => ({ ...t, uiLang: e })),
+                    options: [
+                      ["fr", "Français"],
+                      ["en", "English"],
+                    ],
+                  }),
+                  (0, l.jsx)(ab, {
+                    label: "Outil",
+                    value: "integ" === t.view ? "integ" : "sheets",
+                    onChange: (e) => n((t) => ({ ...t, view: e })),
+                    options: [
+                      ["sheets", "Planches"],
+                      ["integ", "Intégration d'image"],
+                    ],
+                  }),""")
+rep(r"""          (0, l.jsxs)("div", {
+            className:
+              "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start",""", r"""          "integ" === t.view && sdIntegTool(t, n, h),
+          (0, l.jsxs)("div", {
+            className:
+              ("integ" === t.view ? "hidden " : "") +
+              "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start",""")
+rep(r"""            className:
+              "fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 px-4 pt-3 backdrop-blur lg:hidden",""", r"""            className:
+              ("integ" === t.view ? "hidden " : "") +
+              "fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 px-4 pt-3 backdrop-blur lg:hidden",""")
+# P49 v107 child: "Cheveux au hasard" draws as for a young person (no grey, bald, receding, mohawk, undercut or shaved head)
+rep('''  if ("cheveux" === t) {
+    var i = e.origin,''', '''  if ("cheveux" === t) {
+    if (sdChild(e) && !e.sdKid) return sdChildHair();
+    var i = e.origin,''')
+# P51 (v108) child body without the head: no hat, cap or glasses in its outfit (same filter as the adult headless body); "Moment" hint follows the chosen views
+rep(r"""  (nw() &&
+    (u = u.filter(function (e) {""", r"""  ((nw() || sdChildHl(e)) &&
+    (u = u.filter(function (e) {""")
+# P52 (v109) "Bébé": a 5th type button (person with child and baby); only "Fille ou garçon" in Corps; one card "Planche bébé"; "Bébé au hasard";
+# animals in Seedream: no retouch card for an animal, the "three steps" heading and bar only for a person
+rep(r"""    child: !1,
+    childPhotoBak: 0,""", r"""    child: !1,
+    baby: !1,
+    childPhotoBak: 0,""")
+rep(r"""                            value: sdChild(t) ? "child" : t.mode,""", r"""                            value: sdChild(t) ? (t.baby ? "baby" : "child") : t.mode,""")
+rep(r"""                              ["child", "Enfant"],""", r"""                              ["child", "Enfant"],
+                              ["baby", "Bébé"],""")
+rep(r"""                                  return (n((s) => sdChildRandom(s)), h("Enfant tiré au hasard."));""", r"""                                  return (n((s) => (sdBaby(s) ? sdBabyRandom(s) : sdChildRandom(s))), h(sdBaby(t) ? "Bébé tiré au hasard." : "Enfant tiré au hasard."));""")
+rep(r"""                                b ? "Animal au hasard" : sdChild(t) ? "Enfant au hasard" : "Personnage au hasard",""", r"""                                b ? "Animal au hasard" : sdBaby(t) ? "Bébé au hasard" : sdChild(t) ? "Enfant au hasard" : "Personnage au hasard",""")
+rep(r"""                                  "child" !== r &&""", r"""                                  "child" !== r &&
+                                  "baby" !== r &&""")
+rep(r"""          ...(y ? t3 : b ? t4 : t2).filter((e) => !e.show || e.show()),""", r"""          ...(y ? t3 : b ? t4 : t2).filter((e) => (!e.show || e.show()) && (!sdBaby(t) || "corps" === e.id)),""")
+rep('B("head", "1", "Planche tête")', 'B("head", "1", sdBaby(t) ? "Planche bébé" : "Planche tête")')
+rep(': B("body", "2", "Planche corps")', ': !sdBaby(t) && B("body", "2", "Planche corps")')
+rep(r'''              : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes images"''', r'''              : sdBaby(t)
+                ? "Ta planche"
+                : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes images"''')
+rep(r"""              : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)""", r"""              : sdBaby(t)
+                ? [["head", "Copier la planche", !1]]
+                : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)""")
+rep('        $ = "seedream" !== t.model && !y && "animal" !== t.mode && !!t.headSig && "changed" === sdSigState(t.headSig),', '        $ = "seedream" !== t.model && !y && "animal" !== t.mode && !sdBaby(t) && !!t.headSig && "changed" === sdSigState(t.headSig),')
+rep(r"""                      !y &&
+                        "seedream" !== t.model &&
+                        (0, l.jsxs)("div", {
+                          className: "mt-4",""", r"""                      !y &&
+                        "seedream" !== t.model &&
+                        !sdBaby(t) &&
+                        (0, l.jsxs)("div", {
+                          className: "mt-4",""")
+rep(r"""            ["Nomme-la", R(rU("tete"))],""", r"""            ["Nomme-la", R(rU(sdBaby(t) ? "bebe" : "tete"))],""")
+# P53 (v109) the Type selector has 5 buttons: it may wrap on a narrow screen (optional "wrap" on the segmented control, used only there)
+rep(r"""  big: a,
+  disabled: o,
+}) {
+  return (0, l.jsx)("div", {
+    role: "radiogroup",
+    "aria-label": r,
+    "aria-disabled": o || void 0,
+    className:
+      "rounded-full border bg-card p-1 " +
+      (a ? "flex w-full sm:inline-flex sm:w-auto shadow-sm" : "inline-flex") +""", r"""  big: a,
+  disabled: o,
+  wrap: sdW,
+}) {
+  return (0, l.jsx)("div", {
+    role: "radiogroup",
+    "aria-label": r,
+    "aria-disabled": o || void 0,
+    className:
+      (sdW ? "rounded-2xl" : "rounded-full") +
+      " border bg-card p-1 " +
+      (a ? "flex w-full sm:inline-flex sm:w-auto shadow-sm" : sdW ? "flex flex-wrap" : "inline-flex") +""")
+rep(r"""                            label: "Type",
+                            value: sdChild(t) ? (t.baby ? "baby" : "child") : t.mode,""", r"""                            label: "Type",
+                            wrap: !0,
+                            value: sdChild(t) ? (t.baby ? "baby" : "child") : t.mode,""")
+# P54 (v109) review: the Seedream head record is kept per type (person, animal), like the GPT one; the baby UI never points to the hidden
+# "Plusieurs personnages" box
+rep(r"""    "headRemovals",
+    "headLooks",
+    "headFat",
+    "faceSeed",
+    "faceGen",
+  ],
+  r5 = [""", r"""    "headRemovals",
+    "headLooks",
+    "headFat",
+    "sdHeadSig",
+    "faceSeed",
+    "faceGen",
+  ],
+  r5 = [""")
+rep(r"""    headRemovals: "",
+    headLooks: "",
+    headFat: "",
+    eState: "",""", r"""    headRemovals: "",
+    headLooks: "",
+    headFat: "",
+    sdHeadSig: "",
+    eState: "",""")
+rep(r"""                        !y &&
+                          (0, l.jsxs)(l.Fragment, {
+                            children: [
+                              " Pour enchaîner des ",""", r"""                        !y &&
+                          !sdBaby(t) &&
+                          (0, l.jsxs)(l.Fragment, {
+                            children: [
+                              " Pour enchaîner des ",""")
+rep(r"""                  (0, l.jsx)(aN, { obj: y, sd: "seedream" === t.model }),""", r"""                  (0, l.jsx)(aN, { obj: y, sd: "seedream" === t.model, baby: sdBaby(t) }),""")
+# v110 selections drive the separate-view cards; the triptych keeps its three established views.
+rep('    placeViews: [],', '    placeViews: [],\n    objViews: [],')
+rep('                                  "placeViews" !== r &&', '                                  "placeViews" !== r &&\n                                  "objViews" !== r &&')
+# P58 (v110, GPT Pro audit) GPT card of a child body without the head: no image is required
+rep(r"""                  children: [
+                        t.photo ? "Ta photo. " : "",
+                        "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",
+                        R(rU("tete")),
+                      ],""", r"""                  children: sdChildHl(t)
+                        ? ["Rien d'obligatoire. Tu peux joindre la planche tête (", R(rU("tete")), ") pour reprendre le teint et les cheveux sous le cou."]
+                        : [
+                            t.photo ? "Ta photo. " : "",
+                            "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",
+                            R(rU("tete")),
+                          ],""")
+# P59 (v110, review) Forte with slim arms and receding hairlines
+rep(r"""function n_() {
+  return nP[e.fat][e.muscle];
+}""", r"""function n_() {
+  return sdForteBuild(nP[e.fat][e.muscle]);
+}""")
+rep(r"""    "bald" !== e.hairStyleSel &&
+      "shaved" !== e.hairLen &&
+      a.push(
+        sdHairlineFix(r([""", r"""    "bald" !== e.hairStyleSel &&
+      "shaved" !== e.hairLen &&
+      sdPushHairline(
+        a,
+        sdHairlineFix(r([""")
+rep(r"""    "bald" !== e.hairStyleSel && "shaved" !== e.hairLen
+      ? h.push(
+          sdHairlineFix(u([""", r"""    "bald" !== e.hairStyleSel && "shaved" !== e.hairLen
+      ? sdPushHairline(
+          h,
+          sdHairlineFix(u([""")
+# P55 (v109) rules panel: no "Plusieurs personnages" sentence for a baby (after P27, which rewrites the panel's first lines)
+rep(r"""function aN({ obj: e, sd: sdM }) {""", r"""function aN({ obj: e, sd: sdM, baby: sdBb }) {""")
+rep(r"""            : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",""", r"""            : sdBb
+              ? "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser."
+              : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",""")
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 # P54 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
 for a in [':root:not([data-theme=light]){', ':root[data-theme=dark]{']:
     assert orig.count(a+'--background:220 10% 7%;')==1, a
     orig=orig.replace(a+'--background:220 10% 7%;', a+'--destructive:0 84% 66%;--destructive-foreground:220 10% 8%;--background:220 10% 7%;')
-L=orig.split('\n'); assert '</script' not in src
+L=orig.split('\n')
+assert '</script' not in src
 # P36 English page defaults before the script runs (sdSetLang keeps lang and title in sync afterwards)
 if LANG=='en':
     title=json.load(open('i18n/extra.json',encoding='utf-8'))['Fiche personnage pour Seedance']

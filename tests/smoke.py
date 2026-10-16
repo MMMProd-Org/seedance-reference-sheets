@@ -6,6 +6,7 @@ Optional argument: path to another built page (used to check the test fails on a
 import os
 import pathlib
 import re
+import subprocess
 import sys
 
 from playwright.sync_api import expect, sync_playwright
@@ -995,6 +996,22 @@ with sync_playwright() as p:
         assert auto.evaluate(f"{SAVED}.model") == model and not auto.evaluate(f"{SAVED}.modelPick"), style
     assert not errors, errors
 
+    # v110b modes: reuse the same bilingual check for every visible tab and the new tool.
+    new_found = {}
+    for model in ("gpt", "seedream"):
+        for baby in (False, True):
+            child = saved_page(f"model: '{model}', child: true, baby: {str(baby).lower()}")
+            tabs = child.get_by_role("tab")
+            for i in range(tabs.count()):
+                tabs.nth(i).click()
+                untranslated(child, f"{model} / {'Baby' if baby else 'Child'} / {i}", new_found)
+            child.close()
+        integ = saved_page(f"model: '{model}', view: 'integ', integLit: true")
+        untranslated(integ, f"{model} / Image integration", new_found)
+        integ.close()
+    assert not new_found, "untranslated: " + repr(new_found)
+    assert not errors, errors
     browser.close()
 
+subprocess.run([sys.executable, str(ROOT / "tests/v110b/test_upgrade.py"), str(page_path.resolve())], check=True)
 print("smoke test passed")

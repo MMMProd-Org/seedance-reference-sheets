@@ -35,7 +35,7 @@ A head sheet for the face, a body sheet for the body, both added to Seedance 2.5
 
 ## How it works
 
-1. **Set it up.** Pick Person, Animal or Object. Adjust face, body, hair, outfit and marks, or leave them on Auto. *Random character* if you have no idea yet.
+1. **Set it up.** Pick Person, Child, Baby, Animal or Object. Adjust the available controls or leave them on Auto. *Random character* if you have no idea yet.
 2. **Copy the prompt.** Each card says which image model it is for and which images to attach.
 3. **Generate and reuse.** Make the sheet in GPT Image 2.5 or Seedream 5.0, then add it to Seedance 2.5 as a reference. The suggested file names keep every sheet easy to find.
 
@@ -47,8 +47,11 @@ A head sheet for the face, a body sheet for the body, both added to Seedance 2.5
 
 - **One role per image.** For a person, a head sheet for the face and a body sheet for the body. For an animal, one sheet of the whole animal, with optional head close-ups made from it. For an object or a place, one image per view; an object can also have its three views side by side in one image (a triptych). Each reference does one job.
 - **People, animals, objects and places.** Vehicles on their wheels, clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and a house exterior or an interior, by day and by night.
+- **Children and babies.** Separate, dressed reference prompts: head and body for children aged 3–12, one sheet for a nine-month-old baby. Adult body settings stay out of these modes.
+- **Choose your views.** Pick 1–4 separate views for an object or place. Existing saves keep their usual views; the object triptych remains available. Houses also have a plain grey floor and backdrop option.
 - **Fine control where it matters.** Age shown through visible signs, facial structure, skin realism, separate sliders for muscle volume and definition, outfits with wear and dirt, scars and marks pinned to a side and a spot.
-- **Edits without drift.** Retouch an approved sheet, dress a body sheet, add the heads, while the proportions stay put.
+- **Edits that preserve the reference.** Retouch an approved sheet, dress it in the outfit you choose, or combine head and body. Prompts ask to preserve proportions; check the generated result.
+- **Image integration.** Prepare a prompt to insert an asset into a still photo, matching its camera, light, shadows and texture. Add the two images in your image generator.
 - **A cast, not just a character.** Name several characters in one GPT Image conversation. Each prompt points to its own character and keeps the others out.
 - **Two image models.** Prompts written for GPT Image 2.5 or Seedream 5.0, with a length counter that warns you when a prompt gets long enough for the model to skip parts of it.
 - **English or French interface.**
@@ -60,8 +63,9 @@ Each release is the whole app as one HTML file, so any version can be kept and o
 
 | Step | Model | Coverage |
 | --- | --- | --- |
-| Reference sheets | GPT Image 2.5 | People, animals, objects, places |
-| Reference sheets | Seedream 5.0 | People (photo style), animals, objects, places |
+| Reference sheets | GPT Image 2.5 | Adults, children, babies, animals, objects, places |
+| Reference sheets | Seedream 5.0 | Adults, children and babies (photo style), animals, objects, places |
+| Still image integration | GPT Image 2.5 / Seedream 5.0 | Compositing prompt for a base photo and an asset |
 | Video | Seedance 2.5 | Uses the sheets as image references |
 
 ## What works, written down
