@@ -52,6 +52,23 @@ with sync_playwright() as p:
                 expect(page.get_by_text("Not available with Seedream yet", exact=True)).to_be_visible()
                 unsupported.add(f"{model} / {subject}")
             prompts[f"{model} / {subject}"] = texts
+    # Fresh contexts keep the established adult/animal/object sequence unchanged.
+    for model, code in [("GPT Image 2.5", "gpt"), ("Seedream 5.0", "seedream")]:
+        for subject in ("Child", "Baby"):
+            page = browser.new_page(viewport={"width": 1440, "height": 1000})
+            page.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+            page.add_init_script(SEED)
+            state = {"model": code, "modelPick": 1, "mode": "person", "child": True, "baby": subject == "Baby", "uiLang": "en"}
+            page.add_init_script("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(" + json.dumps(state) + "));")
+            page.goto(page_path.resolve().as_uri())
+            page.locator("header").wait_for()
+            show = page.get_by_role("button", name="Show the prompt", exact=True)
+            for _ in range(show.count()):
+                show.first.click()
+            texts = page.locator("pre").all_text_contents()
+            assert len(texts) == (1 if subject == "Baby" else 2) and all(texts), (model, subject)
+            prompts[f"{model} / {subject}"] = texts
+            page.close()
     browser.close()
 
 empty = [state for state, texts in prompts.items() if not texts and state not in unsupported]
