@@ -286,7 +286,8 @@ class Upgrade(unittest.TestCase):
                                              objTime="day", **{"objViews" if category == "object" else "placeViews": [0, 2, 4, 5][:count]})
                             page.set_viewport_size({"width": 390, "height": 844})
                             labels = [("Copy view " if language == "en" else "Copier vue ") + str(i + 1) for i in range(count)]
-                            bar = page.locator("div.fixed").get_by_role("button")
+                            fixed_bar = page.locator("div.fixed").filter(has=page.get_by_role("button"))
+                            bar = fixed_bar.get_by_role("button")
                             self.assertEqual(bar.all_text_contents(), labels)
                             self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 391)
                             for bounds in bar.evaluate_all("buttons => buttons.map(b => b.getBoundingClientRect().toJSON())"):
@@ -298,8 +299,15 @@ class Upgrade(unittest.TestCase):
                             expected = texts[1:] if category == "object" else texts
                             page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
                             for i in range(count):
+                                page.set_viewport_size({"width": 320 if i % 2 else 390, "height": 844})
                                 bar.nth(i).click()
                                 self.assertEqual(page.evaluate("window.copied"), expected[:i + 1])
+                                status = page.get_by_role("status")
+                                expect(status).to_contain_text(re.compile("Copied|Copié"))
+                                self.assertLessEqual(status.evaluate("e => e.getBoundingClientRect().bottom"),
+                                                     fixed_bar.evaluate("e => e.getBoundingClientRect().top"))
+                            page.set_viewport_size({"width": 1440, "height": 1000})
+                            self.assertAlmostEqual(status.evaluate("e => e.getBoundingClientRect().bottom"), 976, delta=1)
 
     def test_view_selection_keyboard_mobile_and_reload(self):
         page = self.load(mode="object", objCat="object", objViews=[0])

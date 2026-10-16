@@ -58,6 +58,17 @@ rep('''    bustShape: [
       ["auto", "Auto (âge)", ""],''')
 # P21 long status messages stay longer and wrap inside the screen
 rep('''          let e = setTimeout(() => h(""), 2400);''', '''          let e = setTimeout(() => h(""), d.length > 60 ? 7e3 : 2400);''')
+rep('''        }, [d]),
+        (e = t));''', '''        }, [d]),
+        (0, s.useEffect)(() => {
+          const bar = document.getElementById("sd-mobile-copy-bar");
+          const measure = () => bar.parentElement.style.setProperty("--sd-copy-bar-height", bar.getBoundingClientRect().height + "px");
+          const observer = new ResizeObserver(measure);
+          observer.observe(bar, { box: "border-box" });
+          measure();
+          return () => observer.disconnect();
+        }, []),
+        (e = t));''')
 rep('''            className:
               "pointer-events-none fixed left-1/2 z-30 -translate-x-1/2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity bottom-24 lg:bottom-6 " +
               (d ? "opacity-100" : "opacity-0"),
@@ -65,7 +76,7 @@ rep('''            className:
               "pointer-events-none fixed left-1/2 z-30 -translate-x-1/2 bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity bottom-24 lg:bottom-6 " +
               (d.length > 60 ? "rounded-2xl " : "rounded-full ") +
               (d ? "opacity-100" : "opacity-0"),
-            style: { maxWidth: "min(92vw, 560px)", width: d.length > 60 ? "max-content" : void 0, textAlign: "center" },
+            style: { maxWidth: "min(92vw, 560px)", width: d.length > 60 ? "max-content" : void 0, textAlign: "center", "--sd-toast-bottom": y && U.length > 2 ? "max(6rem, calc(var(--sd-copy-bar-height, 0px) + 8px))" : void 0 },
             children: d,''')
 # P22 tooltip on "Partir d'une photo"
 rep('''                          (0, l.jsx)(ax, {
@@ -602,6 +613,8 @@ rep('''          editObj: [
 rep('''              ? [["obj", "Copier la planche", !1]]''', '''              ? sdObjBar()''')
 rep('''              className: "mx-auto flex max-w-[640px] gap-2",''', '''              className: "mx-auto flex max-w-[640px] gap-2",
               style: y && U.length > 2 ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } : void 0,''')
+rep('''              "fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 px-4 pt-3 backdrop-blur lg:hidden",''', '''              "fixed inset-x-0 bottom-0 z-20 border-t bg-card/95 px-4 pt-3 backdrop-blur lg:hidden",
+            id: "sd-mobile-copy-bar",''')
 # P47 "Mise en planche seulement" on an object or a place: its own name and help, nothing of a person's face or outfit;
 # for a garment, the optional invisible mannequin, explained on hover (sdKeepMannequin)
 rep('''                              onChange: (e) => g("photoOnly", e),
@@ -1550,6 +1563,8 @@ rep(r"""            : "Une conversation GPT par personnage permet de regrouper s
               : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",""")
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
+assert orig.count('.bottom-24{bottom:6rem}')==1
+orig=orig.replace('.bottom-24{bottom:6rem}', '.bottom-24{bottom:var(--sd-toast-bottom,6rem)}')
 # P54 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
 for a in [':root:not([data-theme=light]){', ':root[data-theme=dark]{']:
     assert orig.count(a+'--background:220 10% 7%;')==1, a
