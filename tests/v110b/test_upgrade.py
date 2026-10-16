@@ -286,7 +286,7 @@ class Upgrade(unittest.TestCase):
                                              objTime="day", **{"objViews" if category == "object" else "placeViews": [0, 2, 4, 5][:count]})
                             page.set_viewport_size({"width": 390, "height": 844})
                             labels = [("Copy view " if language == "en" else "Copier vue ") + str(i + 1) for i in range(count)]
-                            fixed_bar = page.locator("div.fixed").filter(has=page.get_by_role("button"))
+                            fixed_bar = page.locator("#sd-mobile-copy-bar")
                             bar = fixed_bar.get_by_role("button")
                             self.assertEqual(bar.all_text_contents(), labels)
                             self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 391)
@@ -308,6 +308,17 @@ class Upgrade(unittest.TestCase):
                                                      fixed_bar.evaluate("e => e.getBoundingClientRect().top"))
                             page.set_viewport_size({"width": 1440, "height": 1000})
                             self.assertAlmostEqual(status.evaluate("e => e.getBoundingClientRect().bottom"), 976, delta=1)
+                            self.assertEqual(fixed_bar.evaluate("e => getComputedStyle(e.parentElement).paddingBottom"), "64px")
+                            reset = page.get_by_role("button", name="New object" if language == "en" else "Nouvel objet", exact=True)
+                            for width in (390, 320):
+                                page.set_viewport_size({"width": width, "height": 844})
+                                reset.scroll_into_view_if_needed()
+                                page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                                self.assertLessEqual(reset.evaluate("e => e.getBoundingClientRect().bottom"),
+                                                     fixed_bar.evaluate("e => e.getBoundingClientRect().top"))
+                                reset.click(trial=True)
+                            reset.click()
+                            expect(page.get_by_role("button", name="Confirm: delete this object" if language == "en" else "Confirmer : effacer cet objet", exact=True)).to_be_visible()
 
     def test_view_selection_keyboard_mobile_and_reload(self):
         page = self.load(mode="object", objCat="object", objViews=[0])

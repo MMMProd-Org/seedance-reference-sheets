@@ -1565,6 +1565,8 @@ open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
 orig=orig.replace('.bottom-24{bottom:6rem}', '.bottom-24{bottom:var(--sd-toast-bottom,6rem)}')
+assert orig.count('.pb-32{padding-bottom:8rem}')==1
+orig=orig.replace('.pb-32{padding-bottom:8rem}', '.pb-32{padding-bottom:max(8rem,calc(var(--sd-copy-bar-height,0px) + 1rem))}')
 # P54 dark theme: lighter destructive red (and dark text on it), so red text (warnings, red outfit option, word-count alert) passes WCAG AA on dark cards
 for a in [':root:not([data-theme=light]){', ':root[data-theme=dark]{']:
     assert orig.count(a+'--background:220 10% 7%;')==1, a
