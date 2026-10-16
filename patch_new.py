@@ -600,6 +600,8 @@ rep('''          editObj: [
             ["Nomme-la", F("vue", N || C.length > 0)],
           ],''')
 rep('''              ? [["obj", "Copier la planche", !1]]''', '''              ? sdObjBar()''')
+rep('''              className: "mx-auto flex max-w-[640px] gap-2",''', '''              className: "mx-auto flex max-w-[640px] gap-2",
+              style: y && U.length > 2 ? { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" } : void 0,''')
 # P47 "Mise en planche seulement" on an object or a place: its own name and help, nothing of a person's face or outfit;
 # for a garment, the optional invisible mannequin, explained on hover (sdKeepMannequin)
 rep('''                              onChange: (e) => g("photoOnly", e),

@@ -289,6 +289,11 @@ class Upgrade(unittest.TestCase):
                             bar = page.locator("div.fixed").get_by_role("button")
                             self.assertEqual(bar.all_text_contents(), labels)
                             self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 391)
+                            for bounds in bar.evaluate_all("buttons => buttons.map(b => b.getBoundingClientRect().toJSON())"):
+                                self.assertGreaterEqual(bounds["left"], 0)
+                                self.assertGreaterEqual(bounds["top"], 0)
+                                self.assertLessEqual(bounds["right"], 390)
+                                self.assertLessEqual(bounds["bottom"], 844)
                             texts = self.prompts()
                             expected = texts[1:] if category == "object" else texts
                             page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
