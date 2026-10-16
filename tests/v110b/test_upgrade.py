@@ -276,6 +276,26 @@ class Upgrade(unittest.TestCase):
                         if model == "seedream":
                             self.assertNotIn("conversation", "\n".join(texts))
 
+    def test_mobile_copy_bar_includes_all_selected_views(self):
+        for model in ("gpt", "seedream"):
+            for language in ("en", "fr"):
+                for category in ("object", "house"):
+                    for count in (3, 4):
+                        with self.subTest(model=model, language=language, category=category, count=count):
+                            page = self.load(model=model, uiLang=language, mode="object", objCat=category,
+                                             objTime="day", **{"objViews" if category == "object" else "placeViews": [0, 2, 4, 5][:count]})
+                            page.set_viewport_size({"width": 390, "height": 844})
+                            labels = [("Copy view " if language == "en" else "Copier vue ") + str(i + 1) for i in range(count)]
+                            bar = page.locator("div.fixed").get_by_role("button")
+                            self.assertEqual(bar.all_text_contents(), labels)
+                            self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 391)
+                            texts = self.prompts()
+                            expected = texts[1:] if category == "object" else texts
+                            page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
+                            for i in range(count):
+                                bar.nth(i).click()
+                                self.assertEqual(page.evaluate("window.copied"), expected[:i + 1])
+
     def test_view_selection_keyboard_mobile_and_reload(self):
         page = self.load(mode="object", objCat="object", objViews=[0])
         page.set_viewport_size({"width": 390, "height": 844})

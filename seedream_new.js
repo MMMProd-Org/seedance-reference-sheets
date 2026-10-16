@@ -3127,10 +3127,10 @@ function sdOnlyHelp(t) {
   ];
 }
 function sdObjBar() {
-  return [
-    ["obj", sdT("Copier vue 1", "Copy view 1"), !1],
-    ["obj2", sdT("Copier vue 2", "Copy view 2"), !1],
-  ].slice(0, sdObjViewsSpec().length);
+  /* Older saves keep the two main shortcuts; explicit selections expose every chosen view. */
+  return sdObjViewsSpec().slice(0, sdViewChoice(e).length || 2).map(function (v, i) {
+    return [i ? "obj" + (i + 1) : "obj", sdT("Copier vue " + (i + 1), "Copy view " + (i + 1)), !1];
+  });
 }
 function sdObjRow(i, t, R, I) {
   /* Seedream has no conversation, so the earlier view is always attached, and its image shape is set in Seedream */
