@@ -127,6 +127,38 @@ class Upgrade(unittest.TestCase):
                 self.assertIn("full-length cotton sleepsuit", texts[0])
                 self.assertNotIn("a red coat", texts[0])
 
+    def test_child_nose_slider_endpoints(self):
+        for model in ("gpt", "seedream"):
+            for key, position, description in (("xnarrow", "Home", "very narrow nose"),
+                                               ("xwide", "End", "very wide nose")):
+                with self.subTest(model=model, width=key):
+                    page = self.load(model=model, child=True, looks=1)
+                    page.get_by_role("tab", name=re.compile("^Face")).click()
+                    page.get_by_role("slider", name="Nose width", exact=True).press(position)
+                    self.assertEqual(self.state()["noseW"], key)
+                    self.assertIn(description, self.prompts()[0])
+                    page.reload()
+                    self.assertIn(description, self.prompts()[0])
+
+    def test_child_nose_ignores_saved_adult_beauty(self):
+        for model in ("gpt", "seedream"):
+            for looks in (3, 4):
+                with self.subTest(model=model, looks=looks):
+                    page = self.load(model=model, looks=looks, noseW="narrow")
+                    self.assertIn("wide nose", self.prompts()[0])
+                    types = page.get_by_role("radiogroup", name="Type", exact=True)
+                    types.get_by_role("radio", name="Child", exact=True).click()
+                    self.assertIn("narrow nose", self.prompts()[0])
+                    page.get_by_role("tab", name=re.compile("^Face")).click()
+                    expect(page.get_by_text(re.compile(r"^(Plain|Homely) →"))).to_have_count(0)
+                    self.assertEqual(self.state()["looks"], looks)
+                    self.assertEqual(self.state()["noseW"], "narrow")
+                    page.reload()
+                    self.assertIn("narrow nose", self.prompts()[0])
+                    types.get_by_role("radio", name="Person", exact=True).click()
+                    self.assertEqual(self.state()["looks"], looks)
+                    self.assertIn("wide nose", self.prompts()[0])
+
     def test_integration_requires_meaningful_fields(self):
         page = self.load(view="integ")
         self.assertEqual(page.locator("#integ-integAsset").count(), 1)
@@ -284,6 +316,26 @@ class Upgrade(unittest.TestCase):
         self.assertNotIn("cropped top", texts[1])
         self.load(pres="f", looks=0)
         self.assertNotIn("real male model", self.prompts()[0])
+
+    def test_canon_keeps_explicit_face_traits(self):
+        self.load(pres="m", looks=0)
+        self.assertIn("a clearly defined jaw, thick natural eyebrows", self.prompts()[0])
+        for generation in (1, 2):
+            for brows, jaw in (("thin", "auto"), ("auto", "soft"), ("thin", "soft")):
+                with self.subTest(generation=generation, brows=brows, jaw=jaw):
+                    self.load(pres="m", looks=0, faceGen=generation, face="heart", forehead="low",
+                              eyeShape="up", brows=brows, noseW="narrow", noseP="upturned",
+                              lips="full", jaw=jaw)
+                    head = self.prompts()[0]
+                    for trait in ("heart-shaped face", "a low forehead, the hairline close to the eyebrows",
+                                  "upturned eyes", "narrow, upturned nose", "full lips"):
+                        self.assertIn(trait, head)
+                    if brows != "auto":
+                        self.assertIn("thin eyebrows", head)
+                    if jaw != "auto":
+                        self.assertIn("soft jawline", head)
+                    self.assertEqual("thick natural eyebrows" in head, brows == "auto")
+                    self.assertEqual("a clearly defined jaw" in head, jaw == "auto")
 
     def test_animal_individuality_respects_source_photo(self):
         for model in ("gpt", "seedream"):

@@ -490,11 +490,12 @@ function sdChildDropped(t) {
 }
 /* the child's own face: chosen features first, then traits drawn from faceSeed for the features left on Auto (child-appropriate pools) */
 function sdChildFace() {
-  var f = [
+  var w = { xnarrow: "very narrow", xwide: "very wide" }[e.noseW] || t1("noseW", e.noseW),
+    f = [
       t1("face", e.face),
       sdForehead(),
       t1("brows", e.brows),
-      t1("noseW", e.noseW) ? t1("noseW", e.noseW) + " nose" : "",
+      w ? w + " nose" : "",
     ].filter(Boolean),
     t = (0x7f4a7c15 ^ (e.faceSeed || 1)) >>> 0,
     n = function () {
@@ -1468,7 +1469,10 @@ function sdLooks() {
   if (e.looks >= 2) return sdLooksText(e.looks);
   var b = "f" === e.pres ? "Beautiful" : "m" === e.pres ? "Handsome" : "Good-looking";
   if (0 === e.looks && "m" === e.pres)
-    return "Handsome in a natural, clearly male way, like a real male model in an unretouched agency polaroid: harmonious, well-balanced proportions close to the average of real faces rather than unusual ones, a lean face, a clearly defined jaw, thick natural eyebrows, clear, healthy skin with warm, even color, neither feminized nor exaggerated, with the slight asymmetry of a real face; an original person who resembles no celebrity.";
+    return "Handsome in a natural, clearly male way, like a real male model in an unretouched agency polaroid: harmonious, well-balanced proportions close to the average of real faces rather than unusual ones, a lean face" +
+      ("auto" === e.jaw ? ", a clearly defined jaw" : "") +
+      ("auto" === e.brows ? ", thick natural eyebrows" : "") +
+      ", clear, healthy skin with warm, even color, neither feminized nor exaggerated, with the slight asymmetry of a real face; an original person who resembles no celebrity.";
   return (
     (0 === e.looks
       ? b + " in a natural, individual way, like a real model in an unretouched agency polaroid"
@@ -2797,7 +2801,7 @@ function sdIdx(L, v) {
   return -1;
 }
 function sdShiftOf(t) {
-  return "person" === t.mode && !t.photo && t.looks >= 3 ? (t.looks >= 4 ? 2 : 1) : 0;
+  return "person" === t.mode && !sdChild(t) && !t.photo && t.looks >= 3 ? (t.looks >= 4 ? 2 : 1) : 0;
 }
 function sdEffIdx(eyes, i, s) {
   return eyes ? Math.max(0, i - s) : Math.min(SD_NOSE.length - 1, Math.max(3, i + s));

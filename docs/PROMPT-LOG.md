@@ -12,6 +12,14 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-16 · Seedream 5.0 · Person, male Canon head · explicit brows and jaw
+
+**RULE.** PR #55 review: explicit face, forehead, eyes, brows, nose, lips and jaw already stay outside the random-trait normalization. However, the general Canon sentence still added `a clearly defined jaw, thick natural eyebrows` beside a selected `soft jawline` or `thin eyebrows`. Those two general cues now appear only when their respective control is Auto; the explicit choices keep their own wording. The all-Auto Canon text stays identical. The acceptance test covers each manual choice separately and together, in both saved face generations, and preserves the other explicit traits. **TO TEST** in a render; this is a prompt-consistency fix, not a new image result.
+
+## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · Child head · nose width and hidden adult Beauty
+
+**RULE.** PR #55 review: the child face builder used the old three-step nose dictionary, so the visible Very narrow and Very wide slider endpoints produced no nose description. They now use `very narrow nose` and `very wide nose`, matching the adult formatter. The saved adult Beauty at Plain or Homely also widened the child's nose through the shared prompt adjustment and displayed its adjustment badge. That shared rule now applies only to adults; the child keeps the chosen width, and returning to Person retains the adult Beauty value and its established adjustment. Regression cases cover both endpoints, reloads and adult-to-child-to-adult transitions on both models. **TO TEST** in a render; no image result is claimed.
+
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · v110b integration from the owner's second line
 
 **RULE.** Source: the owner's `planches-seedance-pipeline_v110b_v52.zip`, its companion HTML and [unaltered French lessons](sources/lecons_prompts_planches_seedance-v110b.md). Rebuilding that ZIP reproduced the supplied HTML byte for byte. Its source chain continues the second v95 line imported in commit `42646b1`; this integration starts from repository main `e85632f`. The standalone HTML is a comparison witness, not a replacement for the maintained build chain. The source's statuses below are reported user results, not new image tests.
