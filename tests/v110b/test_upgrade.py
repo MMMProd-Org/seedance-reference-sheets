@@ -425,6 +425,80 @@ class Upgrade(unittest.TestCase):
                 expect(switch).not_to_be_checked()
                 self.assertEqual(self.state()["topSel"], ["hoodie"])
 
+    def test_v112_photo_outfit_keeps_head_copy_current(self):
+        for model, key in (("gpt", "headSig"), ("seedream", "sdHeadSig")):
+            with self.subTest(model=model):
+                page = self.load(model=model, photo=True, photoClothes=True, topSel=["hoodie"])
+                self.prompts()
+                page.evaluate("navigator.clipboard.writeText = async () => {}")
+                copies = page.get_by_role("button", name="Copy for " + ("GPT Image 2.5" if model == "gpt" else "Seedream 5.0"), exact=True)
+                copies.first.click()
+                expect(page.get_by_role("status")).to_contain_text("Copied")
+                saved = self.state()[key]
+                self.assertTrue(saved)
+                page.get_by_role("switch", name="Use the clothes in the photo", exact=True).click()
+                self.assertIn("Its clothing is not used", self.prompts()[0])
+                copies.nth(1).click()
+                expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
+                copies.first.click()
+                expect(page.get_by_role("status")).to_contain_text("Copied")
+                self.assertEqual(self.state()[key], saved, "an outfit change is not a new face")
+                page.reload()
+                self.prompts()
+                self.assertEqual(self.state()[key], saved)
+                # Changing the identity source must still invalidate the copied face.
+                page.get_by_role("switch", name="Start from a photo", exact=True).click()
+                copies.nth(1).click()
+                expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_be_visible()
+
+    def test_v112_photo_outfit_saved_head_compatibility(self):
+        # Recorded on main 7f817d1: person from a photo, hoodie, default head settings.
+        legacy = """Create a real photograph to be used as an identity reference for AI video: four close-up studio views of the same person, side by side in one image.
+
+CHARACTER:
+Use only the attached photo for this person's identity, never a person from earlier images in this conversation.
+The attached photo is the only source for the face and hair: reproduce exactly the face, bone structure, eyes, eyebrows, nose, lips, jawline, skin tone and texture, hairline, hairstyle and hair color, with natural asymmetry. Do not beautify, age, de-age or restyle them.
+Never flip the subject horizontally and never swap details between its left and right sides.
+
+LAYOUT:
+A 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop.
+Each panel is a tight close-up of the head and neck, framed from just above the top of the hair down to the base of the neck and cropped at the collarbones, so the head, from the top of the hair to the chin, fills about two thirds of the panel height. Nothing below the collarbones is visible: no chest and no torso.
+First panel (left): front view, facing the camera, eyes looking into the lens.
+Second panel: three-quarter view, head turned 45 degrees toward the right edge of the panel, showing more of the right side of the face.
+Third panel: exact profile of the subject's left side, the face pointing toward the left edge of the panel.
+Fourth panel (right): back view, the back of the head seen straight from behind, no face visible, showing how the hair falls at the back, its length and parting, worn down with no tie or clip.
+The head is the same size and at the same height in all four panels. Long hair may be cropped by the panel edges.
+
+EXPRESSION:
+Neutral and relaxed, mouth closed.
+
+LIGHT, BACKGROUND, CAMERA:
+Seamless plain mid-grey studio backdrop, identical in all panels. Soft, even studio lighting from a large softbox slightly above the camera, neutral daylight white balance, the same light in every panel. 85mm lens, camera at the subject's eye level, same distance in every panel, deep focus so the whole head is sharp.
+
+RENDERING:
+Real photograph with natural skin, hair and fabric texture, natural color, fine film grain, no retouching."""
+        note = "Its clothing is not used: the person wears only the clothing described below.\n"
+        v112 = legacy.replace("Never flip", note + "Never flip", 1)
+        for model, key in (("gpt", "headSig"), ("seedream", "sdHeadSig")):
+            cases = [("v112", v112, {"photoClothes": False}),
+                     ("v112-outfit-changed", v112, {"photoClothes": True})]
+            if model == "gpt":
+                cases.insert(0, ("main", legacy, {}))
+            for version, signature, extra in cases:
+                with self.subTest(model=model, version=version):
+                    page = self.load(model=model, photo=True, topSel=["hoodie"],
+                                     **{key: signature, **extra})
+                    before = self.prompts()
+                    self.assertEqual(self.state()[key], signature, "keep the saved reference")
+                    page.evaluate("navigator.clipboard.writeText = async () => {}")
+                    copies = page.get_by_role("button", name="Copy for " + ("GPT Image 2.5" if model == "gpt" else "Seedream 5.0"), exact=True)
+                    copies.nth(1).click()
+                    expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
+                    copies.first.click()
+                    expect(page.get_by_role("status")).to_contain_text("Copied")
+                    self.assertEqual(self.state()[key], legacy)
+                    self.assertEqual(self.prompts(), before, "tracking must not change the prompts")
+
     def test_v112_photo_clothes_migration(self):
         cases = [({}, True), ({"topSel": ["hoodie"]}, False), ({"bottom": "green trousers"}, False),
                  ({"shoesSel": ["sneakers"]}, False), ({"accSel": ["cap"]}, True),

@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · Photo head tracking
+
+**RULE.** PR #56: the v112 clothing-only line stays in the head prompt, but is excluded from current and saved face signatures. Tests cover unchanged old saves, outfit switches and real identity changes. No render result.
+
 ## 2026-10-17 · GPT Image 2.5 and Seedream 5.0 · v111/v112 integration
 
 **RULE.** Source: the owner's v112 ZIP and [unaltered lessons](sources/lecons_prompts_planches_seedance-v112.md). A person's photo can supply the clothes, or the Outfit tab can supply both sheets. Old saved garments keep priority. Photo-only keeps the photos unchanged; body/attachment help follows the clothes, reference outfit and body-source choices. GPT photo-only no longer requests a head sheet; neutral silhouette wording changes `typical adult adult` to `typical adult person`.

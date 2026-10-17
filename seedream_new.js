@@ -1571,6 +1571,8 @@ function sdSlim() {
    still matches, only that class is unknown, so the tool says so instead of announcing a changed face */
 function sdSigState(saved) {
   if (!saved) return "none";
+  /* Copies saved by v112 may still include this outfit-only instruction. */
+  saved = saved.replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "");
   var cur = as();
   if (saved === cur) return "same";
   var x = sdSigExtra();

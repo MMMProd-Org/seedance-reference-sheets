@@ -564,7 +564,7 @@ rep('''    .filter(function (e) {
     })
     .join("\\n");
 }''', '''    .filter(function (e) {
-      return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
+      return e !== "Its clothing is not used: the person wears only the clothing described below." && !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
         e,
       );
     })
