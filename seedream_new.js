@@ -2618,6 +2618,7 @@ function sdIterBlock(t, g, B, L) {
   return B("iter", "3", sdIterTitle(t), sdIterOff(t), "Choisis ou écris une retouche ci-dessous.");
 }
 function sdBarItems(t) {
+  t = sdIterNorm(t);
   var op = "free" === t.sdIterOp && !String(t.sdIter || "").trim() ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : "dressMine" === t.sdIterOp ? "dressMine" : "join";
   if (sdChild(t))
     return [

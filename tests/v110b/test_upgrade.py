@@ -994,6 +994,37 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
         self.assertEqual(self.state()["sdIterOp"], "dressMine")
         self.assertIn("Edit image 1", self.prompts()[-1])
 
+    def test_v114_mobile_retouch_label_follows_headless_toggle(self):
+        text = "Make the jacket blue, keeping its silver buttons."
+        for language in ("en", "fr"):
+            with self.subTest(language=language):
+                page = self.load(uiLang=language, headless=True, sdIterOp="dress",
+                                 sdIter=text, sdIterPre="Original clothing preset.")
+                page.set_viewport_size({"width": 390, "height": 844})
+                bar = page.locator("#sd-mobile-copy-bar")
+                dress = "Dress" if language == "en" else "Habiller"
+                retouch = "Retouch" if language == "en" else "Retouche"
+                expect(bar.get_by_role("button", name=dress, exact=True)).to_be_visible()
+                page.get_by_role("tab", name="Body" if language == "en" else "Corps", exact=True).click()
+                headless = page.get_by_role("switch", name="Headless body sheet" if language == "en" else "Planche corps sans tête", exact=True)
+                headless.click()
+                prompt = self.prompts()[-1]
+                expect(page.locator("#sd-card-iter h3")).to_have_text("Free retouch" if language == "en" else "Retouche libre")
+                expect(bar.get_by_role("button", name=retouch, exact=True)).to_be_visible()
+                expect(bar.get_by_role("button", name=dress, exact=True)).to_have_count(0)
+                page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
+                bar.get_by_role("button", name=retouch, exact=True).click()
+                page.wait_for_function("window.copied.length === 1")
+                self.assertEqual(page.evaluate("window.copied"), [prompt])
+                self.assertEqual(self.state()["sdIter"], text)
+                self.assertEqual(self.state()["sdIterOp"], "dress")
+                self.assertEqual(self.state()["sdIterPre"], "Original clothing preset.")
+                headless.click()
+                expect(page.locator("#sd-card-iter h3")).to_have_text(dress)
+                expect(bar.get_by_role("button", name=dress, exact=True)).to_be_visible()
+                self.assertIn(text.rstrip("."), self.prompts()[-1])
+                self.assertEqual(self.state()["sdIter"], text)
+
     def test_v114_mobile_layout_and_tabs(self):
         for language in ("en", "fr"):
             for width in (320, 340, 390):
