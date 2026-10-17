@@ -1,0 +1,321 @@
+[
+  [
+    "",
+    "car"
+  ],
+  [
+    "",
+    "gen",
+    {
+      "photo": true
+    }
+  ],
+  [
+    "jet black sports car",
+    "car"
+  ],
+  [
+    "jet-black sports car",
+    "car"
+  ],
+  [
+    "compact hatchback with a large fuel tank",
+    "car"
+  ],
+  [
+    "1930s biplane, red and cream",
+    "air"
+  ],
+  [
+    "avion de chasse gris",
+    "air"
+  ],
+  [
+    "rusty space ship",
+    "air"
+  ],
+  [
+    "",
+    "air",
+    {
+      "objBrand": "real",
+      "objModel": "Boeing 747-400"
+    }
+  ],
+  [
+    "military helicopter",
+    "air"
+  ],
+  [
+    "wooden sailing yacht",
+    "water"
+  ],
+  [
+    "aircraft carrier",
+    "water"
+  ],
+  [
+    "jet ski",
+    "water"
+  ],
+  [
+    "jet-ski",
+    "water"
+  ],
+  [
+    "1970s cafe racer motorcycle",
+    "two"
+  ],
+  [
+    "vélo de course",
+    "two"
+  ],
+  [
+    "WWII battle tank",
+    "track"
+  ],
+  [
+    "horse-drawn carriage",
+    "gen"
+  ],
+  [
+    "retro rocket ship",
+    "air"
+  ],
+  [
+    "alien star ship",
+    "air"
+  ],
+  [
+    "mother ship",
+    "air"
+  ],
+  [
+    "porte-avions",
+    "water"
+  ],
+  [
+    "SUV with a bike rack on the roof",
+    "car"
+  ],
+  [
+    "station wagon with a kayak on the roof rack",
+    "car"
+  ],
+  [
+    "pickup truck towing a boat",
+    "car"
+  ],
+  [
+    "1950s sedan with jet-inspired tail fins",
+    "car"
+  ],
+  [
+    "jet-age 1950s sedan",
+    "car"
+  ],
+  [
+    "car with rocket-style tail lights",
+    "car"
+  ],
+  [
+    "tank truck",
+    "car"
+  ],
+  [
+    "armored SUV built like a tank",
+    "car"
+  ],
+  [
+    "car with a fuel-tank cap",
+    "car"
+  ],
+  [
+    "car with a full tank",
+    "car"
+  ],
+  [
+    "char",
+    "track"
+  ],
+  [
+    "char de combat",
+    "track"
+  ],
+  [
+    "char Leclerc",
+    "track"
+  ],
+  [
+    "char d’assaut",
+    "track"
+  ],
+  [
+    "",
+    "car",
+    {
+      "objBrand": "real",
+      "objModel": "Porsche 911"
+    }
+  ],
+  [
+    "",
+    "car",
+    {
+      "objBrand": "real",
+      "objModel": "Triumph Spitfire"
+    }
+  ],
+  [
+    "",
+    "car",
+    {
+      "objBrand": "real",
+      "objModel": "Oldsmobile Rocket 88"
+    }
+  ],
+  [
+    "",
+    "two",
+    {
+      "objBrand": "real",
+      "objModel": "Kawasaki Ninja"
+    }
+  ],
+  [
+    "lifeboat",
+    "water"
+  ],
+  [
+    "rowboat",
+    "water"
+  ],
+  [
+    "motorboat",
+    "water"
+  ],
+  [
+    "houseboat",
+    "water"
+  ],
+  [
+    "steamship",
+    "water"
+  ],
+  [
+    "warship",
+    "water"
+  ],
+  [
+    "starship",
+    "air"
+  ],
+  [
+    "warplane",
+    "air"
+  ],
+  [
+    "aircrafts",
+    "air"
+  ],
+  [
+    "racecar",
+    "car"
+  ],
+  [
+    "hypercar",
+    "car"
+  ],
+  [
+    "minibus",
+    "car"
+  ],
+  [
+    "station wagon",
+    "car"
+  ],
+  [
+    "pushbike",
+    "two"
+  ],
+  [
+    "VTT",
+    "two"
+  ],
+  [
+    "motoneige",
+    "track"
+  ],
+  [
+    "hélico",
+    "air"
+  ],
+  [
+    "vélomoteur",
+    "two"
+  ],
+  [
+    "quad bike",
+    "gen"
+  ],
+  [
+    "flying boat",
+    "air"
+  ],
+  [
+    "gondola lift cabin",
+    "gen"
+  ],
+  [
+    "horse-drawn coach",
+    "gen"
+  ],
+  [
+    "venetian gondola",
+    "water"
+  ],
+  [
+    "seaplane",
+    "air"
+  ],
+  [
+    "Land Cruiser",
+    "car"
+  ],
+  [
+    "steam locomotive",
+    "gen"
+  ],
+  [
+    "go-kart",
+    "gen"
+  ],
+  [
+    "spaceship",
+    "air"
+  ],
+  [
+    "red sports car with a jet engine",
+    "car"
+  ],
+  [
+    "fishing trawler",
+    "water"
+  ],
+  [
+    "submarine",
+    "water"
+  ],
+  [
+    "airship",
+    "air"
+  ],
+  [
+    "tank top",
+    "car"
+  ],
+  [
+    "fuel tank",
+    "car"
+  ]
+]
