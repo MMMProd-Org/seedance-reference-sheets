@@ -1567,12 +1567,17 @@ function sdLean() {
 function sdSlim() {
   return +e.fat <= 1;
 }
+/* New and saved face signatures must ignore the same clothing-only instructions. */
+function sdSigWithoutOutfit(sig) {
+  return sig
+    .replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "")
+    .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), besides any logo or print on the clothing taken from the photo\.$/gm, "$1.");
+}
 /* "same", "changed", or "legacy": a signature saved before v90 has no corpulence class; when everything it does hold
    still matches, only that class is unknown, so the tool says so instead of announcing a changed face */
 function sdSigState(saved) {
   if (!saved) return "none";
-  /* Copies saved by v112 may still include this outfit-only instruction. */
-  saved = saved.replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "");
+  saved = sdSigWithoutOutfit(saved);
   var cur = as();
   if (saved === cur) return "same";
   var x = sdSigExtra();

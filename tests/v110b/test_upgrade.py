@@ -427,29 +427,51 @@ class Upgrade(unittest.TestCase):
 
     def test_v112_photo_outfit_keeps_head_copy_current(self):
         for model, key in (("gpt", "headSig"), ("seedream", "sdHeadSig")):
-            with self.subTest(model=model):
-                page = self.load(model=model, photo=True, photoClothes=True, topSel=["hoodie"])
-                self.prompts()
-                page.evaluate("navigator.clipboard.writeText = async () => {}")
-                copies = page.get_by_role("button", name="Copy for " + ("GPT Image 2.5" if model == "gpt" else "Seedream 5.0"), exact=True)
-                copies.first.click()
-                expect(page.get_by_role("status")).to_contain_text("Copied")
-                saved = self.state()[key]
-                self.assertTrue(saved)
-                page.get_by_role("switch", name="Use the clothes in the photo", exact=True).click()
-                self.assertIn("Its clothing is not used", self.prompts()[0])
-                copies.nth(1).click()
-                expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
-                copies.first.click()
-                expect(page.get_by_role("status")).to_contain_text("Copied")
-                self.assertEqual(self.state()[key], saved, "an outfit change is not a new face")
-                page.reload()
-                self.prompts()
-                self.assertEqual(self.state()[key], saved)
-                # Changing the identity source must still invalidate the copied face.
-                page.get_by_role("switch", name="Start from a photo", exact=True).click()
-                copies.nth(1).click()
-                expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_be_visible()
+            for marks in ("", "a tattoo reading HELLO on the left cheek"):
+                for photo_clothes in (True, False):
+                    with self.subTest(model=model, marks=marks, photo_clothes=photo_clothes):
+                        page = self.load(model=model, photo=True, photoClothes=photo_clothes,
+                                         topSel=["hoodie"], marks=marks)
+                        self.prompts()
+                        page.evaluate("navigator.clipboard.writeText = async () => {}")
+                        # Keep the card indexes stable while a button temporarily reads "Copied".
+                        copy_label = "Copy for " + ("GPT Image 2.5" if model == "gpt" else "Seedream 5.0")
+                        copies = page.get_by_role("button", name=re.compile(r"^(" + re.escape(copy_label) + r"|Copied)$"))
+                        copies.first.click()
+                        expect(page.get_by_role("status")).to_contain_text("Copied")
+                        saved = self.state()[key]
+                        self.assertTrue(saved)
+                        page.get_by_role("switch", name="Use the clothes in the photo", exact=True).click()
+                        self.assertIs(self.state()["photoClothes"], not photo_clothes)
+                        if photo_clothes:
+                            self.assertIn("Its clothing is not used", self.prompts()[0])
+                        else:
+                            self.assertNotIn("Its clothing is not used", self.prompts()[0])
+                        copies.nth(1).click()
+                        expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
+                        copies.first.click()
+                        expect(page.get_by_role("status")).to_contain_text("Copied")
+                        self.assertEqual(self.state()[key], saved, "an outfit change is not a new face")
+                        page.reload()
+                        self.prompts()
+                        self.assertEqual(self.state()[key], saved)
+                        if marks:
+                            changed = self.state()
+                            changed["marks"] = "a tattoo reading WORLD on the left cheek"
+                            page.evaluate("([k,s]) => localStorage.setItem(k, JSON.stringify(s))", [KEY, changed])
+                            page.reload()
+                            self.prompts()
+                            page.evaluate("navigator.clipboard.writeText = async () => {}")
+                            copies.nth(1).click()
+                            expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_be_visible()
+                            copies.first.click()
+                            expect(page.get_by_role("status")).to_contain_text("Copied")
+                            copies.nth(1).click()
+                            expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
+                        # Changing the identity source must still invalidate the copied face.
+                        page.get_by_role("switch", name="Start from a photo", exact=True).click()
+                        copies.nth(1).click()
+                        expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_be_visible()
 
     def test_v112_photo_outfit_saved_head_compatibility(self):
         # Recorded on main 7f817d1: person from a photo, hoodie, default head settings.
@@ -479,15 +501,31 @@ RENDERING:
 Real photograph with natural skin, hair and fabric texture, natural color, fine film grain, no retouching."""
         note = "Its clothing is not used: the person wears only the clothing described below.\n"
         v112 = legacy.replace("Never flip", note + "Never flip", 1)
+        # Lettering signatures recorded on main 7f817d1 and v112 1ebc146, in both outfit states.
+        marks = "a tattoo reading HELLO on the left cheek"
+        mark_line = "Distinctive marks, each exactly where described and on the stated side: " + marks + ".\n"
+        lettering = "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe."
+        photo_lettering = lettering[:-1] + ", besides any logo or print on the clothing taken from the photo."
+        marked_legacy = legacy.replace("Never flip", mark_line + "Never flip", 1)
+        marked_v112 = v112.replace("Never flip", mark_line + "Never flip", 1)
         for model, key in (("gpt", "headSig"), ("seedream", "sdHeadSig")):
             cases = [("v112", v112, {"photoClothes": False}),
                      ("v112-outfit-changed", v112, {"photoClothes": True})]
+            lettering_saves = [("v112-outfit", marked_v112 + "\n" + lettering, False),
+                               ("v112-photo", marked_legacy + "\n" + photo_lettering, True)]
             if model == "gpt":
                 cases.insert(0, ("main", legacy, {}))
+                lettering_saves += [("main-outfit", marked_legacy + "\n" + lettering, False),
+                                    ("main-photo", marked_legacy + "\n" + photo_lettering, True)]
+            for version, signature, photo_clothes in lettering_saves:
+                for changed in (False, True):
+                    cases.append((version + ("-changed" if changed else "-same"), signature,
+                                  {"marks": marks, "photoClothes": not photo_clothes if changed else photo_clothes,
+                                   "topSel": [] if version == "main-photo" else ["hoodie"]}))
             for version, signature, extra in cases:
                 with self.subTest(model=model, version=version):
-                    page = self.load(model=model, photo=True, topSel=["hoodie"],
-                                     **{key: signature, **extra})
+                    page = self.load(model=model, photo=True,
+                                     **{"topSel": ["hoodie"], key: signature, **extra})
                     before = self.prompts()
                     self.assertEqual(self.state()[key], signature, "keep the saved reference")
                     page.evaluate("navigator.clipboard.writeText = async () => {}")
@@ -496,7 +534,8 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                     expect(page.get_by_text(re.compile(r"^(Copied\. )?The face has changed"))).to_have_count(0)
                     copies.first.click()
                     expect(page.get_by_role("status")).to_contain_text("Copied")
-                    self.assertEqual(self.state()[key], legacy)
+                    expected = marked_legacy + "\n" + lettering if extra.get("marks") else legacy
+                    self.assertEqual(self.state()[key], expected)
                     self.assertEqual(self.prompts(), before, "tracking must not change the prompts")
 
     def test_v112_photo_clothes_migration(self):

@@ -557,18 +557,22 @@ rep('''          r(e),
 # A saved GPT session P53 would never have saved counts as picked by hand, so P53 never switches it: one for a subject
 # Seedream can do (saved by a build without P53), or one from before the model choice was recorded (no modelPick key).
 rep('''    t.modelPick || (t.model = sdOk(t) ? "seedream" : "gpt");''', '''    t.modelPick || ("gpt" === e.model && (sdOk(t) || !("modelPick" in e)) ? (t.modelPick = 1) : (t.model = sdOk(t) ? "seedream" : "gpt"));''')
-rep('''    .filter(function (e) {
+rep('''  return t
+    .split("\\n")
+    .filter(function (e) {
       return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
         e,
       );
     })
     .join("\\n");
-}''', '''    .filter(function (e) {
-      return e !== "Its clothing is not used: the person wears only the clothing described below." && !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
+}''', '''  return sdSigWithoutOutfit(t
+    .split("\\n")
+    .filter(function (e) {
+      return !/^(Clothing at the bottom edge|Bare neck|Worn on the head and face|Current state|No text)/.test(
         e,
       );
     })
-    .join("\\n") + sdSigExtra();
+    .join("\\n")) + sdSigExtra();
 }''')
 # P40 audit v90: signatures saved before v90 are judged on what they hold (no false "face changed"); GPT says when only the build class is unknown
 rep('''      : { sameFace: as() === e.headSig && "updated" !== e.headKind };''', '''      : { sameFace: "changed" !== sdSigState(e.headSig) && "updated" !== e.headKind };''')
