@@ -653,6 +653,7 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                     clothes = page.get_by_role("switch", name="Use the clothes in the photo" if language == "en" else "Utiliser les habits de la photo", exact=True)
                     expect(clothes).to_have_count(0)
                     control.press("Space")
+                    self.assertFalse(self.state()["photoOnly"])
                     if extra.get("mode", "person") == "person":
                         expect(clothes).to_be_checked()
                         clothes.focus()
