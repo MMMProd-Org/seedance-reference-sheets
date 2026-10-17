@@ -1735,6 +1735,296 @@ rep(r"""                                      (i =
 rep(r"""? "seedream" === t.model && sdX
                                 ? sdUnsup(t, n)
                                 : sdObjCards(B)""", r"""? sdObjCards(B)""")
+# P64-P68: v113/v114b outfit text, vehicles, face character and contextual controls.
+rep(r'''function nz() {
+  if (nv() || sdPhotoClothes()) return "";''', r'''function nz() {
+  if (nv() || sdPhotoClothes() || sdFreeOn()) return "";''')
+rep(r'''  var t = sdPhotoClothes() ? [] : nh("topSel", "topOpts", "top");
+  return t.length ? t.join(", ") : nN("top");''', r'''  if (sdFreeOn()) return sdFreeText() ? "the top of this outfit: " + sdFreeText() : "a plain crew-neck top in a solid neutral color";
+  var t = sdPhotoClothes() ? [] : nh("topSel", "topOpts", "top");
+  return t.length ? t.join(", ") : nN("top");''')
+rep(r'''  var r = "; outfit condition: " + t1("wear", e.wear);
+  if (!nj())''', r'''  if (sdFreeOn()) return sdFreeText() ? sdFreeText() + (nw() ? " (anything worn on the head or the face stays outside the frame)" : "") : "a simple realistic everyday outfit in plain solid colors";
+  var r = "; outfit condition: " + t1("wear", e.wear);
+  if (!nj())''')
+rep(r'''function nx() {
+  var e = nk();''', r'''function nx() {
+  if (sdFreeText()) return "No logos or printed text beyond what this outfit description names.";
+  var e = nk();''')
+rep(r'''            : "Clothing at the bottom edge of each panel, only its neckline visible: " +''', r'''            : sdFreeText()
+              ? "Clothing and accessories of this outfit, identical in every panel, only the parts a head close-up shows (the neckline at the bottom edge, and anything worn at the neck, on the head or on the face): " + sdFreeText() + ".\n"
+              : "Clothing at the bottom edge of each panel, only its neckline visible: " +''')
+rep(r'''                            : ". Fully clothed. The outfit is identical in all four views.") +''', r'''                            : sdFreeText()
+                              ? ". Exactly this outfit, with nothing added or left out. The outfit is identical in all four views."
+                              : ". Fully clothed. The outfit is identical in all four views.") +''')
+rep(r'''                                              !("tenue" === w.id && sdPhotoClothes(t)),''', r'''                                              !("tenue" === w.id && sdPhotoClothes(t)) &&
+                                              !("tenue" === w.id && t.outfitFree && !sdChild(t)),''')
+rep(r'''            !("tenue" === t && sdPhotoClothes(e)) &&''', r'''            !("tenue" === t && sdPhotoClothes(e)) &&
+            !("tenue" === t && e.outfitFree && !sdChild(e)) &&''')
+rep(r'''                                                    "Ta tenue, ci-dessous : la planche corps garde la tenue de référence ; ta tenue sert à la retouche « Habiller avec ma tenue » (carte 3, Autres retouches).",
+                                                }),
+                                            ],
+                                          }),''', r'''                                                    "Ta tenue, ci-dessous : la planche corps garde la tenue de référence ; ta tenue sert à la retouche « Habiller avec ma tenue » (carte 3, Autres retouches).",
+                                                }),
+                                            ],
+                                          }),
+                                        "tenue" === w.id &&
+                                          !sdChild(t) &&
+                                          !sdPhotoClothes(t) &&
+                                          !(t.bodyRef && !sdMineTenue(t)) &&
+                                          sdFreeBox(t, g, L),''')
+rep(r'''    objViews: [],
+    photoClothes: !0,''', r'''    objViews: [],
+    photoClothes: !0,
+    outfitFree: !1,
+    outfitText: "",''')
+rep(r'''                            ? "The vehicle stands on its wheels on the seamless grey studio floor, wheels pointing straight ahead, all doors, hood and trunk closed, with a soft contact shadow."''', r'''                            ? sdVehicle()''')
+rep(r'''          ph: "en anglais : ex. compact 1980s hatchback, boxy shape, round headlights",
+          hint: "Forme, éléments, époque. En anglais de préférence : le texte part tel quel dans le prompt.",''', r'''          ph: "en anglais : ex. compact 1980s hatchback, boxy shape, round headlights",
+          get hint() {
+            return "vehicle" === e.objCat
+              ? "Tout véhicule : voiture, moto, vélo, avion, hélicoptère, bateau, char… Écris son type ici, en anglais de préférence : sa mise en place sur la planche suit (roues, train d'atterrissage, coque sur un support, chenilles). Le texte part tel quel dans le prompt."
+              : "Forme, éléments, époque. En anglais de préférence : le texte part tel quel dans le prompt.";
+          },''')
+rep(r'''    noseW: "auto",
+    noseP: "auto",
+    forehead: "auto",''', r'''    noseW: "auto",
+    noseP: "auto",
+    forehead: "auto",
+    faceChar: "auto",''')
+rep(r'''    forehead: [
+      ["auto", "Auto", ""],''', r'''    faceChar: [
+      ["auto", "Auto", ""],
+      ["gueule", "Gueule", ""],
+      ["mechant", "Méchant", ""],
+      ["gentil", "Gentil", ""],
+      ["ange", "Angélique", ""],
+    ],
+    forehead: [
+      ["auto", "Auto", ""],''')
+rep(r'''          hint: "Peau, asymétrie, cernes : ce qui rend un visage réel. « Naturelles » est le bon point de départ.",
+        },
+        { t: "chips", k: "face", l: "Forme du visage" },''', r'''          hint: "Peau, asymétrie, cernes : ce qui rend un visage réel. « Naturelles » est le bon point de départ.",
+        },
+        {
+          t: "chips",
+          k: "faceChar",
+          l: "Caractère",
+          hint: "L'air du visage, lisible même au repos : « Gueule » pour un visage buriné qui a du caractère, « Méchant », « Gentil », « Angélique ». Il oriente les traits laissés sur Auto, jamais ceux que tu choisis, et se combine avec Beauté, qui garde le dernier mot.",
+        },
+        { t: "chips", k: "face", l: "Forme du visage" },''')
+rep(r'''              (rm() ? "\n" + rm() : "") +
+              "\nLooks: " +''', r'''              (rm() ? "\n" + sdCharFace(rm()) : "") +
+              (sdChar() ? "\n" + sdChar() : "") +
+              "\nLooks: " +''')
+rep(r'''                : sdNat(t) && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)''', r'''                : sdNat(t) && "person" === t.mode && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)''')
+rep(r'''                        "Conseillé : sans visage dans l'image, Seedream respecte mieux la poitrine, les fessiers et les proportions. La tête s'ajoute ensuite avec la carte 3 (« Assembler tête et corps »).",''', r'''                        [
+                          "m" === t.pres
+                            ? "Conseillé : sans visage dans l'image, Seedream respecte mieux les pectoraux, les fessiers et les proportions."
+                            : "Conseillé : sans visage dans l'image, Seedream respecte mieux la poitrine, les fessiers et les proportions.",
+                          " Joins ensuite ce corps et la planche tête séparément dans Seedance, ou assemble-les en une planche avec la carte 3 (« Assembler tête et corps »).",
+                        ],''')
+rep(r'''+ "Bonnet européen = tour de poitrine moins dessous de poitrine, par paliers de 2 cm (A ≈ 12 cm, C ≈ 16 cm, E ≈ 20 cm). À partir de « Généreuse », le haut de la tenue de référence suit la poitrine comme un T-shirt ajusté, sans la remonter ni l'aplatir. Le modèle suit une description, pas des mesures."''', r'''+ "Bonnet européen = tour de poitrine moins dessous de poitrine, par paliers de 2 cm (A ≈ 12 cm, C ≈ 16 cm, E ≈ 20 cm). Le modèle suit une description, pas des mesures."''')
+rep(r'''          hint: "Avec la tenue de référence, le haut est ample, court, sans manches, à décolleté rond classique, sans armature ni compression : il laisse le ventre visible et ne serre jamais la poitrine. Le maillot une pièce soutient toujours un peu : préfère le short ou l'ensemble de bain. Avec une tenue ordinaire, le prompt demande seulement de ne pas remonter ni aplatir la forme. Si le filtre bloque, repasse sur « Auto ».",''', r'''          get hint() {
+            return sdNat(e)
+              ? "Le prompt demande de ne pas remonter ni aplatir la forme. Si le filtre bloque, repasse sur « Auto »."
+              : "Avec la tenue de référence, le haut est ample, court, sans manches, à décolleté rond classique, sans armature ni compression : il laisse le ventre visible et ne serre jamais la poitrine. Le maillot une pièce soutient toujours un peu : préfère le short ou l'ensemble de bain. Avec une tenue ordinaire, le prompt demande seulement de ne pas remonter ni aplatir la forme. Si le filtre bloque, repasse sur « Auto ».";
+          },''')
+rep(r'''                              " Les prompts mettent la photo en planche (",
+                              y
+                                ? "une image par vue"
+                                : "animal" === t.mode
+                                  ? "l'animal entier en quatre vues, gros plans de tête en option"
+                                  : "tête et corps en quatre vues",
+                              ") sur fond gris, sous une lumière neutre, sans rien modifier d'autre : ni le visage, ni les cheveux, ni le maquillage, ni la tenue, ni les marques. Les autres réglages sont ignorés tant que cette option est active ; seul le format reste au choix.",''', r'''                              ...[].concat(sdPhotoOnlyText(t)),''')
+rep(r'''                              opts: tZ.objCat,
+                              value: t.objCat,
+                              onChange: (e) => g("objCat", e),
+                            }),
+                          !y &&
+                            !b &&''', r'''                              opts: tZ.objCat,
+                              value: t.objCat,
+                              onChange: (e) => g("objCat", e),
+                            }),
+                          y &&
+                            "house" === t.objCat &&
+                            (0, l.jsx)(ay, {
+                              name: "c-po-objBg",
+                              label: "Décor",
+                              opts: tZ.objBg,
+                              value: t.objBg || "scene",
+                              onChange: (e) => g("objBg", e),
+                            }),
+                          !y &&
+                            !b &&''')
+rep(r'''                          children: t.photoOnly
+                            ? "Joins ta photo, ou plusieurs photos du même sujet, à chaque planche : tout viendra d'elles, tel quel."
+                            : y
+                            ? "Joins ta photo à la planche : l'objet viendra d'elle. La description reste utile pour préciser."
+                            : b
+                              ? "Joins ta photo aux deux planches : l'animal viendra d'elle."
+                              : !sdBodyPhoto(t)
+                                ? "Joins ta photo à la planche tête : visage et cheveux viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps."
+                                : sdPhotoClothes(t) && !t.bodyRef
+                                  ? "Joins ta photo aux deux planches : visage, cheveux et habits viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps."
+                                  : "Joins ta photo aux deux planches : visage et cheveux viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps.",''', r'''                          children: t.photoOnly
+                            ? "Joins ta photo, ou plusieurs photos du même sujet, à chaque planche : tout viendra d'elles, tel quel."
+                            : sdPhotoHelp(t),''')
+rep(r'''                          t.photo &&
+                            !t.photoOnly &&
+                            "person" === t.mode &&
+                            (0, l.jsx)(ax, {
+                              checked: !1 !== t.photoClothes,''', r'''                          t.photo &&
+                            !t.photoOnly &&
+                            "person" === t.mode &&
+                            !t.bodyRef &&
+                            (0, l.jsx)(ax, {
+                              checked: !1 !== t.photoClothes,''')
+rep(r'''                        (0, l.jsxs)("b", {
+                          children: [
+                            y ? "Objet" : b ? "Animal" : "Personnage",
+                            " important : ouvre une nouvelle conversation GPT Image 2.5, vierge",
+                          ],
+                        }),
+                        ", avant de coller le premier prompt. Dans une conversation déjà utilisée, GPT peut reprendre des traits des images précédentes.",
+                        !y &&
+                          !sdBaby(t) &&
+                          (0, l.jsxs)(l.Fragment, {
+                            children: [
+                              " Pour enchaîner des ",
+                              b ? "animaux" : "personnages",
+                              " secondaires dans une même conversation, coche plutôt « Plusieurs ",
+                              b ? "animaux" : "personnages",
+                              " dans la même conversation GPT ».",
+                            ],
+                          }),''', r'''                        (0, l.jsx)("b", {
+                          children: y
+                            ? sdT("Objet important : ouvre une nouvelle conversation GPT Image 2.5, vierge", "Important object: open a new, empty GPT Image 2.5 conversation")
+                            : b
+                              ? sdT("Animal important : ouvre une nouvelle conversation GPT Image 2.5, vierge", "Important animal: open a new, empty GPT Image 2.5 conversation")
+                              : sdT("Personnage important : ouvre une nouvelle conversation GPT Image 2.5, vierge", "Important character: open a new, empty GPT Image 2.5 conversation"),
+                        }),
+                        ", avant de coller le premier prompt. Dans une conversation déjà utilisée, GPT peut reprendre des traits des images précédentes.",
+                        !y &&
+                          !sdBaby(t) &&
+                          (b
+                            ? sdT(" Pour enchaîner des animaux secondaires dans une même conversation, coche plutôt « Plusieurs animaux dans la même conversation GPT ».", " To chain secondary animals in one conversation, tick “Several animals in the same GPT conversation” instead.")
+                            : sdT(" Pour enchaîner des personnages secondaires dans une même conversation, coche plutôt « Plusieurs personnages dans la même conversation GPT ».", " To chain secondary characters in one conversation, tick “Several characters in the same GPT conversation” instead.")),''')
+rep(r'''(0, l.jsx)(aN, { obj: y, sd: "seedream" === t.model, baby: sdBaby(t) }),''', r'''(0, l.jsx)(aN, { obj: y, sd: "seedream" === t.model, baby: sdBaby(t), an: b }),''')
+rep(r'''                                                    : " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation du personnage.",''', r'''                                                    : y
+                                                      ? " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation de l'objet."
+                                                      : b
+                                                        ? " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation de l'animal."
+                                                        : " Ajouté aux planches créées. Pour une variante, change-le et recopie le prompt dans la conversation du personnage.",''')
+rep(r'''                                                  "Remplace ce qui est entre crochets. Précise toujours le côté ",
+                                                  y
+                                                    ? "de l'objet"
+                                                    : "du personnage",''', r'''                                                  "Remplace ce qui est entre crochets. Précise toujours le côté ",
+                                                  y
+                                                    ? "de l'objet"
+                                                    : b
+                                                      ? "de l'animal"
+                                                      : "du personnage",''')
+rep(r'''                        "aria-label": y
+                          ? "Nom de l'objet"
+                          : "Nom du personnage",
+                        placeholder: y ? "Nom de l'objet" : "Nom du personnage",''', r'''                        "aria-label": y
+                          ? "Nom de l'objet"
+                          : b
+                            ? "Nom de l'animal"
+                            : "Nom du personnage",
+                        placeholder: y ? "Nom de l'objet" : b ? "Nom de l'animal" : "Nom du personnage",''')
+rep(r'''!sdBaby(t) && B("body", "2", "Planche corps")''', r'''!sdBaby(t) && B("body", "2", nw() || sdChildHl(t) ? "Planche corps sans tête" : "Planche corps")''')
+rep(r'''                      ". Règle à gauche, copie les prompts à droite.",''', r'''                      ". Règle ta planche, puis copie les prompts.",''')
+rep(r'''                      ". Set things up on the left, copy the prompts on the right.",''', r'''                      ". Set up your sheet, then copy the prompts.",''')
+rep(r'''                    onChange: (e) => n((t) => ({ ...t, model: e, modelPick: 1 })),
+                    options: [
+                      ["gpt", "GPT Image 2.5"],
+                      ["seedream", "Seedream 5.0"],
+                    ],
+                  }),''', r'''                    onChange: (e) => n((t) => ({ ...t, model: e, modelPick: 1 })),
+                    options: [
+                      ["gpt", "GPT Image 2.5"],
+                      ["seedream", "Seedream 5.0"],
+                    ],
+                  }),
+                  !t.modelPick &&
+                    (0, l.jsx)("p", {
+                      className: "text-sm text-muted-foreground",
+                      style: { flexBasis: "100%" },
+                      children:
+                        "Modèle choisi automatiquement : Seedream 5.0 pour une personne, un enfant ou un bébé en style Photo sans photo de départ et pour les animaux, objets et lieux ; GPT Image 2.5 sinon. Choisis un modèle pour le garder.",
+                    }),''')
+rep(r'''                              "-mx-1 flex items-center gap-1 overflow-x-auto border-b pb-3",''', r'''                              "-mx-1 flex flex-wrap items-center gap-1 border-b pb-3",''')
+rep(r'''                                                  "Le corps de ta photo, sans aucun changement : les curseurs ci-dessous sont ignorés.",''', r'''                                                  "Le corps de ta photo, sans aucun changement : les réglages du corps sont ignorés.",''')
+rep(r'''                    "Ta tenue, ci-dessous : la planche corps garde la tenue de référence ; ta tenue sert à la retouche « Habiller avec ma tenue » (carte 3, Autres retouches).",''', r'''                    "Ta tenue, ci-dessous : la planche corps garde la tenue de référence ; ta tenue sert à la retouche « Habiller avec ma tenue » (carte 3, Choisir la retouche).",''')
+rep(r'''                      opts: tZ[i],
+                      values: t[a],''', r'''                      opts: sdOpts(t, i),
+                      values: t[a],''')
+rep(r'''                opts: tZ[i],
+                value:
+                  "absStyle" === a''', r'''                opts: sdOpts(t, i),
+                value:
+                  "absStyle" === a''')
+rep(r'''                              children: [
+                                "Plusieurs ",
+                                b ? "animaux" : "personnages",
+                                " dans la même conversation GPT",
+                              ],''', r'''                              children: b ? "Plusieurs animaux dans la même conversation GPT" : "Plusieurs personnages dans la même conversation GPT",''')
+rep(r'''            : sdBb
+              ? "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser."
+              : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",''', r'''            : sdRulesGpt(sdBb, sdAn, e),''')
+rep(r'''function aN({ obj: e, sd: sdM, baby: sdBb }) {''', r'''function aN({ obj: e, sd: sdM, baby: sdBb, an: sdAn }) {''')
+rep(r'''                      "flex-1 inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +''', r'''                      "flex-1 inline-flex items-center justify-center " +
+                      (U.length > 2 ? "min-w-0 gap-1.5 px-2 text-sm " : U.length > 1 ? "min-w-0 gap-1.5 px-3 text-sm " : "gap-2 px-4 ") +
+                      "rounded-full py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +''')
+rep(r'''                      o === e
+                        ? (0, l.jsx)(tB, { size: 17 })
+                        : (0, l.jsx)(tV, { size: 17 }),''', r'''                      U.length > 2
+                        ? null
+                        : o === e
+                          ? (0, l.jsx)(tB, { size: 17 })
+                          : (0, l.jsx)(tV, { size: 17 }),''')
+rep(r'''                    disabled: n || sdX,
+                    onClick: () => A(e, m[e]),''', r'''                    disabled: (n && "iter" !== e) || sdX,
+                    onClick: () => (n && "iter" === e ? (sdGoIter(), h("Choisis ou écris une retouche dans la carte 3.")) : A(e, m[e])),''')
+rep(r'''                      "rounded-full py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +''', r'''                      "rounded-full py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
+                      (n && "iter" === e ? "opacity-45 " : "") +''')
+rep(r'''                                                    children: sdFittedWarn(t),''', r'''                                                    children: sdCoverNote(t) ? null : sdFittedWarn(t),''')
+rep(r'''                                              t.bodyRef &&
+                                                sdMineTenue(t) &&''', r'''                                              t.bodyRef &&
+                                                sdCoverNote(t) &&
+                                                (0, l.jsx)("p", {
+                                                  className:
+                                                    "mt-3 text-sm text-muted-foreground",
+                                                  children: sdCoverNote(t),
+                                                }),
+                                              t.bodyRef &&
+                                                sdMineTenue(t) &&''')
+rep(r'''                          !y &&
+                            !k &&
+                            !(t.photo && t.photoOnly) &&
+                            (0, l.jsxs)("button", {''', r'''                          !y &&
+                            !k &&
+                            !(t.photo && t.photoOnly) &&
+                            !("person" === t.mode && !sdChild(t) && (ae.person || []).every((x) => !z(t, x))) &&
+                            (0, l.jsxs)("button", {''')
+# The photo-only house decor control uses the same staging as the supplied build.
+rep(r'''Reproduce exactly its architecture, layout, furniture, materials, colors, wear, light and time of day. " +
+                      ar +
+                      " The only change is the viewing angles. No people.\n\nLAYOUT:\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid, separated by narrow gaps of neutral grey. " +''', r'''" +
+                      (sdHouseGrey()
+                        ? "Reproduce exactly its architecture, materials, colors and wear. " +
+                          ar +
+                          " The only changes are the viewing angles and the setting: " +
+                          sdHouseBg().replace(/\n$/, "") +
+                          " Its light: neutral daylight from the upper left. No people."
+                        : "Reproduce exactly its architecture, layout, furniture, materials, colors, wear, light and time of day. " +
+                          ar +
+                          " The only change is the viewing angles. No people.") +
+                      "\n\nLAYOUT:\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid, separated by narrow gaps of neutral grey. " +''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
