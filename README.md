@@ -46,12 +46,14 @@ A head sheet for the face, a body sheet for the body, both added to Seedance 2.5
 ## What's inside
 
 - **One role per image.** For a person, a head sheet for the face and a body sheet for the body. For an animal, one sheet of the whole animal, with optional head close-ups made from it. For an object or a place, one image per view; an object can also have its three views side by side in one image (a triptych). Each reference does one job.
-- **People, animals, objects and places.** Vehicles on their wheels, clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and a house exterior or an interior, by day and by night.
+- **People, animals, objects and places.** Cars on their wheels, boats on a cradle, aircraft on the ground, other vehicles staged by their kind; clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and a house exterior or an interior, by day and by night.
 - **Children and babies.** Separate, dressed reference prompts: head and body for children aged 3–12, one sheet for a nine-month-old baby. Adult body settings stay out of these modes.
 - **Choose the clothes from a photo.** Keep the photo's clothes, or use the Outfit tab for both the head and body sheets. Existing saved outfits are preserved. Sheet layout only keeps the whole photo as it is.
+- **Describe an outfit once.** Use one text for clothes and accessories on both sheets and the own-outfit retouch. Switching it off restores your individual garment choices.
+- **Face character.** Rugged, Menacing, Kind or Angelic guides traits left on Auto, while your manual choices and Beauty keep priority. Available for adults without a source photo.
 - **Choose your views.** Pick 1–4 separate views for an object or place. Existing saves keep their usual views; the object triptych remains available. Houses also have a plain grey floor and backdrop option.
 - **Fine control where it matters.** Age shown through visible signs, facial structure, skin realism, separate sliders for muscle volume and definition, outfits with wear and dirt, scars and marks pinned to a side and a spot.
-- **Edits that preserve the reference.** Retouch an approved sheet, dress it in the outfit you choose, or combine head and body. Prompts ask to preserve proportions; check the generated result.
+- **Edits that preserve the reference.** Choose an applicable retouch for an approved sheet, dress it in the outfit you choose, or combine head and body. Editing a preset keeps its operation and images. The mobile Retouch button opens help when no change is set. Prompts ask to preserve proportions; check the generated result.
 - **Image integration.** Prepare a prompt to insert an asset into a still photo, matching its camera, light, shadows and texture. Add the two images in your image generator.
 - **A cast, not just a character.** Name several characters in one GPT Image conversation. Each prompt points to its own character and keeps the others out.
 - **Two image models.** Prompts written for GPT Image 2.5 or Seedream 5.0, with a length counter that warns you when a prompt gets long enough for the model to skip parts of it.

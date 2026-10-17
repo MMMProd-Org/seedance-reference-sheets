@@ -111,14 +111,17 @@ with sync_playwright() as p:
     prompt = page.locator("pre").first.inner_text()
     assert len(prompt) > 200 and "16:9" in prompt, f"no prompt shown: {prompt[:120]!r}"
 
-    # Deselecting a retouch preset clears its text, so the Retouch card is disabled again.
+    # Dress applies to a headless body. Deselecting it clears its text; Free retouch then disables the card.
+    page.get_by_role("switch", name="Headless body sheet", exact=True).click()
+    open_folds(page)
+    page.get_by_role("button", name="Free retouch", exact=True).click()
     preset = page.get_by_role("button", name="Dress", exact=True)
     change = page.locator("#sd-iter")
-    hint = page.get_by_text("Open “Other retouches” and pick or write a retouch.", exact=True)
+    hint = page.get_by_text("Pick or write a retouch below.", exact=True)
 
-    def open_retouches():  # picking a preset folds "Other retouches"
+    def open_retouches():
         if not page.locator("#sd-iter").is_visible():
-            page.get_by_text("Other retouches", exact=True).click()
+            page.get_by_text("Choose the retouch", exact=True).click()
 
     open_retouches()
     expect(hint).to_be_visible()
@@ -134,6 +137,8 @@ with sync_playwright() as p:
     assert change.input_value().rstrip(". ") in page.locator('pre[data-out="iter"]').text_content()
     preset.click()
     expect(change).to_have_value("")
+    expect(page.get_by_role("button", name="Combine head and body", exact=True)).to_have_attribute("aria-pressed", "true")
+    page.get_by_role("button", name="Free retouch", exact=True).click()
     expect(hint).to_be_visible()
     open_retouches()
     expect(preset).to_have_attribute("aria-pressed", "false")
@@ -163,6 +168,7 @@ with sync_playwright() as p:
         expect(retouch).to_contain_text(kept)
         expect(retouch).not_to_contain_text(dropped)
     change.fill("")
+    page.get_by_role("switch", name="Headless body sheet", exact=True).click()
 
     found = {}
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
@@ -184,7 +190,7 @@ with sync_playwright() as p:
                 several = page.get_by_text(re.compile(r"^Several (characters|animals) in the same GPT conversation"))
                 several.click()
                 untranslated(page, f"{model} / {subject} / several, no name", found)
-                name = page.get_by_label("Character name")
+                name = page.get_by_label("Animal's name" if subject == "Animal" else "Character name")
                 name.fill("Q7")  # one letter: never reported as untranslated
                 untranslated(page, f"{model} / {subject} / several, named", found)
                 name.fill("")
@@ -244,8 +250,8 @@ with sync_playwright() as p:
     headless.get_by_role("tab", name=re.compile(r"^Body")).click()
     headless.get_by_text(re.compile(r"^Headless body sheet")).first.click()
     join = headless.get_by_role("button", name="Combine head and body", exact=True)
-    if not headless.locator("#sd-iter").is_visible():  # a default preset folds "Other retouches"
-        headless.get_by_text("Other retouches", exact=True).click()
+    if not headless.locator("#sd-iter").is_visible():  # the default preset starts folded
+        headless.get_by_text("Choose the retouch", exact=True).click()
     expect(join).to_have_attribute("aria-pressed", "true")
     # its prompt is built while the change is empty, and the help says so
     expect(headless.get_by_text("The body is kept and the head is added. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
@@ -623,17 +629,18 @@ with sync_playwright() as p:
     # Seedream retouch: the operation is explicit. A join rewritten without image 2 is flagged and "Free retouch"
     # leaves it; a precision added to "Add the heads" keeps its two images.
     op = clipboard_page(browser, errors)
+    op.get_by_role("switch", name="Headless body sheet", exact=True).click()
     open_folds(op)
     op.get_by_role("button", name="Combine head and body", exact=True).click()
-    open_folds(op)  # picking a preset folds "Other retouches"
+    open_folds(op)
     change = op.locator("#sd-iter")
     change.fill("make the backdrop darker")
     expect(op.get_by_text(re.compile(r"^Your text no longer mentions image 2"))).to_be_visible()
     op.get_by_role("button", name="Free retouch", exact=True).click()
     retouch = [t for t in prompts(op) if "make the backdrop darker" in t]
     assert retouch and retouch[0].startswith("Edit image 1"), retouch
-    assert "1: the sheet to retouch" in op.locator("body").inner_text()
-    op.get_by_role("button", name="Add the heads (extended canvas)", exact=True).click()
+    assert "1. the sheet to retouch" in op.locator("body").inner_text()
+    op.get_by_role("button", name="Add the heads", exact=True).click()
     open_folds(op)
     change.fill(change.input_value().replace("copied from the head reference sheet", "copied from the approved head reference sheet") + ", the hair a little longer")
     prompts(op)
@@ -791,12 +798,12 @@ with sync_playwright() as p:
         mode: 'person', headless: true, sdShapeRef: true}))""")
     pet.reload()
     pet.evaluate(HOLD_CLIPBOARD)  # the reload dropped it
-    expect(pet.get_by_text("Other retouches", exact=True)).to_be_attached()  # the person's cards were drawn
+    expect(pet.get_by_text("Choose the retouch", exact=True)).to_be_attached()  # the person's cards were drawn
     pet.get_by_role("radio", name="Animal", exact=True).click()
     open_folds(pet)
     text = pet.locator("body").inner_text()
     assert pet.locator("h3").all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator("h3").all_inner_texts()
-    for word in ("Other retouches", "shape guide", "bust shape", "Your three steps", "Combine head and body"):
+    for word in ("Choose the retouch", "shape guide", "bust shape", "Your three steps", "Combine head and body"):
         assert word not in text, word
     assert "The animal sheet: char_" in text
     copy = pet.get_by_role("button", name="Copy for Seedream 5.0")
@@ -927,7 +934,7 @@ with sync_playwright() as p:
         whole.close()
 
     # "Free retouch" is an operation of its own: it clears a preset's text left as it is (a text the user wrote stays, as
-    # checked above) and, empty, copies nothing, not even the default join: its Copy buttons are off, on the card and the bar.
+    # checked above) and, empty, copies nothing: the card is disabled and the mobile button opens help.
     free = saved_page("headless: true, bodyRef: true", viewport={"width": 390, "height": 844})
     open_folds(free)
     free.get_by_role("button", name="Combine head and body", exact=True).click()
@@ -937,7 +944,12 @@ with sync_playwright() as p:
     assert saved.get("sdIterOp") == "free" and not saved.get("sdIter"), saved
     assert not any("Combine these two reference sheets" in t for t in prompts(free))
     expect(free.get_by_role("button", name="Copy for Seedream 5.0").nth(2)).to_be_disabled()
-    expect(free.locator("div.fixed button", has_text=re.compile(r"^Retouch$"))).to_be_disabled()
+    mobile_retouch = free.locator("div.fixed button", has_text=re.compile(r"^Retouch$"))
+    expect(mobile_retouch).to_be_enabled()
+    mobile_retouch.click()
+    expect(free.get_by_role("status")).to_contain_text("Choose or write a retouch in card 3.")
+    assert free.evaluate("window.writes.length") == 0
+    assert free.locator("#sd-card-iter details").filter(has=free.locator("summary", has_text="Choose the retouch")).evaluate("d => d.open")
     free.locator("#sd-iter").fill("make the backdrop darker")
     free.locator("#sd-iter").fill("")
     assert free.evaluate(f"{SAVED}.sdIterOp") == "free"

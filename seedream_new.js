@@ -206,11 +206,12 @@ function sdPresetDressMine() {
   var p = sdPos(),
     o = rq(Object.assign({}, e, { bodyRef: !1 }), function () {
       return t6(nR()) + ". " + nx();
-    });
+    }),
+    fr = rq(Object.assign({}, e, { bodyRef: !1 }), sdFreeText);
   return (
     "the outfit is replaced by this outfit, identical in all four views: " +
     o +
-    " Fully dressed in it in every view. " +
+    (fr ? " Dressed in exactly this outfit in every view, with nothing added or left out. " : " Fully dressed in it in every view. ") +
     t6(p) +
     " body stays exactly as in image 1 under the clothes: the same build, proportions and posture; the " +
     ("m" === e.pres ? "chest" : "bust") +
@@ -292,6 +293,39 @@ function sdPlaceViewTxt() {
 function sdObjViewTxt() {
   var c = e.objCat;
   return ["front view", "vehicle" === c ? "rear view" : "back view", "three-quarter front view", "exact left side view", "exact right side view", "clothing" === c ? "the garment laid flat, seen from directly above" : "top view, seen from directly above", "three-quarter rear view from the opposite corner: its back and its other side both show, camera slightly above it"];
+}
+/* v113: one "Véhicule" category for every vehicle: its presentation follows the kind written in the description, then in the real model's name:
+   a boat on a cradle, an aircraft on its landing gear, a two-wheeler upright, a tracked vehicle on its tracks, a car or truck on its wheels, and
+   a few other vehicles (carriage, sled, train, cable car, quad, kart...) in their normal parked position. The kind named first wins (a "SUV with a
+   bike rack" is a car), the longer name when two start at the same word ("flying boat", "tank truck"). Nothing recognized: the car text of v112
+   and before, or with a photo the normal parked position. */
+var SD_VEH = [
+  ["water", /(?<!(space|air|star|mother|rocket) )\bships?\b|\b(\w*boats?|yachts?|dinghy|dinghies|canoes?|kayaks?|ferry|ferries|submarines?|trawlers?|catamarans?|trimarans?|gondolas?|rafts?|jet[- ]?skis?|(steam|war|battle|flag|cargo|container|cruise|pirate|sail|sailing|merchant|tall) ?ships?|galleons?|schooners?|frigates?|aircraft carriers?|porte-avions?|bateaux?|navires?|voiliers?|barques?|canots?|sous-marins?|peniches?|chalutiers?|paquebots?|vedettes?|zodiacs?)\b/],
+  ["air", /\b(air ?planes?|aeroplanes?|war ?planes?|planes?|aircrafts?|airliners?|jetliners?|biplanes?|gliders?|seaplanes?|flying boats?|helicopters?|helicos?|gyrocopters?|autogyros?|airships?|blimps?|zeppelins?|space ?ships?|star ?ships?|mother ?ships?|rocket ?ships?|space rockets?|spacecrafts?|space shuttles?|drones?|avions?|helicopteres?|planeurs?|hydravions?|dirigeables?|vaisseaux?|fusees?|navettes? spatiales?|boeing|airbus|cessna|concorde|learjet|gulfstream|antonov|sukhoi|embraer|sikorsky|eurocopter)\b|\bjets?\b(?![- ]?(black|age|inspired|style|set|stream|skis?)\b)/],
+  ["two", /\b(motorcycles?|motorbikes?|motor bikes?|scooters?|mopeds?|bicycles?|push ?bikes?|bikes?|e-bikes?|dirt bikes?|motocross|vespa|harley|ducati|kawasaki|trottinettes?|motos?|velos?|vtt|velomoteurs?|mobylettes?|cyclomoteurs?)\b/],
+  ["track", /\b(battle tanks?|army tanks?|military tanks?|tank destroyers?|bulldozers?|excavators?|snowmobiles?|motoneiges?|half-tracks?|tracked|chars?|chenilles?|pelleteuses?)\b|(?<!(fuel|gas|petrol|water|oil|diesel|septic|fish|full|empty) )(?<!-)\btanks?\b(?![- ](tops?|trucks?|cars?|caps?)\b)/],
+  ["car", /\b(cars?|race ?cars?|hyper ?cars?|super ?cars?|sports? cars?|sedans?|saloons?|hatchbacks?|coupes?|convertibles?|suvs?|pick-?ups?|trucks?|tank(er)? trucks?|lorry|lorries|vans?|minivans?|minibus(es)?|buses|bus|jeeps?|limousines?|limos?|taxis?|cabs?|roadsters?|station wagons?|estate cars?|4x4|voitures?|camions?|camionnettes?|fourgons?|fourgonnettes?|berlines?|citadines?|cabriolets?|autobus|autocars?)\b/],
+  ["gen", /\b(horse-drawn|carriages?|carts?|wagons?|sleds?|sledges?|sleighs?|hovercrafts?|trains?|locomotives?|trams?|tramways?|trolleys?|cable cars?|gondola lifts?|ski lifts?|quad bikes?|quads?|atvs?|go-?karts?|karts?|caleches?|charrettes?|traineaux?|luges?)\b/],
+];
+function sdVehKind() {
+  var x = (t5(e.objDesc) + " " + ("real" === e.objBrand ? t5(e.objModel) : "")).trim(),
+    n = x.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[‘’]/g, "'"),
+    best = null;
+  SD_VEH.forEach(function (k) {
+    var m = k[1].exec(n);
+    m && (!best || m.index < best.i || (m.index === best.i && m[0].length > best.l)) && (best = { k: k[0], i: m.index, l: m[0].length });
+  });
+  return best ? best.k : e.photo ? "gen" : "car";
+}
+function sdVehicle() {
+  return {
+    water: "The boat sits upright and level on a low, plain grey cradle on the seamless grey studio floor, the whole hull visible down to the keel, with a soft contact shadow; no water around it; hatches and covers closed.",
+    air: "The aircraft stands level on the seamless grey studio floor on its landing gear, skids or floats, with a soft contact shadow; doors, hatches and canopy closed, rotors and propellers at rest.",
+    two: "The vehicle stands upright on its wheels on the seamless grey studio floor, front wheel pointing straight ahead, with a soft contact shadow; no rider.",
+    track: "The vehicle stands level on its tracks on the seamless grey studio floor, with a soft contact shadow; all hatches closed.",
+    car: "The vehicle stands on its wheels on the seamless grey studio floor, wheels pointing straight ahead, all doors, hood and trunk closed, with a soft contact shadow.",
+    gen: "The vehicle stands in its normal parked position on the seamless grey studio floor, with a soft contact shadow; doors, hatches and covers closed.",
+  }[sdVehKind()];
 }
 function sdPlaceThumb(t0, g, h, cls) {
   var obj = !sdIsPlace(t0),
@@ -655,6 +689,134 @@ function sdBodyPhoto(t) {
 /* v112: the body sheet needs the photo, person or animal (an animal's body always comes from its photo) */
 function sdBodyPhotoAny(t) {
   return sdBodyPhoto(t) || ("animal" === t.mode && !!t.photo);
+}
+/* v114 (UI audit): options a child is never offered */
+var SD_CHILD_OPT_OFF = { hairColor: ["saltpepper", "grey", "white"], hairStyleSel: ["receding"], shoesOpts: ["heels"] };
+function sdOpts(t, i) {
+  var off = sdChild(t) && SD_CHILD_OPT_OFF[i];
+  return off
+    ? tZ[i].filter(function (o) {
+        return off.indexOf(o[0]) < 0;
+      })
+    : tZ[i];
+}
+function sdChildOpts(t) {
+  var o = null,
+    set = function (k, v) {
+      o = o || Object.assign({}, t);
+      o[k] = v;
+    };
+  SD_CHILD_OPT_OFF.hairColor.indexOf(t.hairColor) >= 0 && set("hairColor", tJ.hairColor);
+  SD_CHILD_OPT_OFF.hairStyleSel.indexOf(t.hairStyleSel) >= 0 && set("hairStyleSel", tJ.hairStyleSel);
+  (t.shoesSel || []).indexOf("heels") >= 0 &&
+    set(
+      "shoesSel",
+      t.shoesSel.filter(function (x) {
+        return "heels" !== x;
+      }),
+    );
+  return o || t;
+}
+/* v114 (UI audit): the GPT line of the rules panel by type (it spoke of characters and retouches for an object or an animal; GPT has no retouch card) */
+function sdRulesGpt(baby, animal, obj) {
+  return obj
+    ? "Une conversation GPT par objet ou par lieu permet de regrouper ses références."
+    : animal
+      ? "Une conversation GPT par animal permet de regrouper ses références. Pour des animaux secondaires dans une même conversation, coche « Plusieurs animaux dans la même conversation GPT »."
+      : baby
+        ? "Une conversation GPT par personnage permet de regrouper ses références."
+        : "Une conversation GPT par personnage permet de regrouper ses références. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».";
+}
+/* v114 (UI audit): the help under "Partir d'une photo" (not "Mise en planche seulement"): "lieu" for a house or an interior, no advice to turn on
+   "Garder le corps tel quel" when it is on */
+function sdPhotoHelp(t) {
+  if ("object" === t.mode) return sdIsPlace(t) ? "Joins ta photo à la planche : le lieu viendra d'elle. La description reste utile pour préciser." : "Joins ta photo à la planche : l'objet viendra d'elle. La description reste utile pour préciser.";
+  if ("animal" === t.mode) return "Joins ta photo aux deux planches : l'animal viendra d'elle.";
+  var body = t.bodyAsIs ? " Son corps aussi, avec « Garder le corps tel quel »." : " Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps.";
+  return [
+    !sdBodyPhoto(t)
+      ? "Joins ta photo à la planche tête : visage et cheveux viendront d'elle."
+      : sdPhotoClothes(t) && !t.bodyRef
+        ? "Joins ta photo aux deux planches : visage, cheveux et habits viendront d'elle."
+        : "Joins ta photo aux deux planches : visage et cheveux viendront d'elle.",
+    body,
+  ];
+}
+/* v114 (review of the audit): with the head, the Seedream body does not read the reference outfit choice (fixed fitted top and leggings, or the
+   dressed sheet); said under the choice */
+function sdCoverNote(t) {
+  if (!(sdNat(t) && "person" === t.mode && !sdChild(t) && t.bodyRef && !t.headless)) return "";
+  return sdUseBodyImg()
+    ? "Avec la tête, Seedream n'utilise pas ce choix : le corps et sa tenue viennent de ta planche habillée (« Le corps vient de », carte 2). Il sert à la planche corps sans tête."
+    : "m" === t.pres
+      ? "Avec la tête, Seedream n'utilise pas ce choix : le corps porte un haut de sport sans manches et un collant de course bleu cobalt. Il sert à la planche corps sans tête."
+      : "Avec la tête, Seedream n'utilise pas ce choix : le corps porte un haut court ajusté sans manches et un legging bleu cobalt. Il sert à la planche corps sans tête.";
+}
+/* v114 (review): the mobile bar's "Retouche" with nothing to copy explains and shows card 3 instead of doing nothing */
+function sdGoIter() {
+  sdIterOpen = !0;
+  var c = document.getElementById("sd-card-iter");
+  c && c.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+/* v114 (UI audit): the "Mise en planche seulement" box by type: what the sheets keep from the photo and which settings still count */
+function sdPhotoOnlyText(t) {
+  /* GPT: the "Plusieurs ... dans la même conversation GPT" switch still counts (the prompts then name the character) */
+  var gpt = "seedream" !== t.model;
+  return "animal" === t.mode
+    ? gpt
+      ? " Les prompts mettent la photo en planche (l'animal entier en quatre vues, gros plans de tête en option) sur fond gris, sous une lumière de studio, sans rien modifier d'autre : race, pelage, marques et accessoires restent ceux de la photo. Seuls comptent ici le type de corps, qui règle les vues et la pose, et « Plusieurs animaux dans la même conversation GPT »."
+      : " Les prompts mettent la photo en planche (l'animal entier en quatre vues, gros plans de tête en option) sur fond gris, sous une lumière de studio, sans rien modifier d'autre : race, pelage, marques et accessoires restent ceux de la photo. Seul compte ici le type de corps, qui règle les vues et la pose."
+    : gpt
+      ? " Les prompts mettent la photo en planche (tête et corps en quatre vues) sur fond gris, sous une lumière de studio, sans rien modifier d'autre : visage, cheveux, maquillage, tenue et marques restent ceux de la photo. Seuls comptent ici le cadrage du corps sans tête et « Plusieurs personnages dans la même conversation GPT »."
+      : " Les prompts mettent la photo en planche (tête et corps en quatre vues) sur fond gris, sous une lumière de studio, sans rien modifier d'autre : visage, cheveux, maquillage, tenue et marques restent ceux de la photo. Seul compte ici le cadrage du corps sans tête.";
+}
+/* v113 "Tenue en un seul texte" (Tenue tab): the whole outfit typed once replaces every choice of the tab (pieces, accessories, colors, wear) for the
+   head neckline and the body, in both engines and in "Habiller avec ma tenue". Never for a child or a baby (sdG clears it), never with the photo's
+   clothes, never while the reference outfit dresses the body (nv). Empty: a plain everyday outfit, never the hidden choices. */
+function sdFreeOn() {
+  return "person" === e.mode && !sdChild(e) && !sdPhotoClothes() && !nv() && !!e.outfitFree;
+}
+function sdFreeText() {
+  if (!sdFreeOn()) return "";
+  var x = String(e.outfitText || "")
+    .replace(/[«»]/g, "")
+    .replace(/^[\s,;:\-–•*]+/, "")
+    .replace(/[\s,;]*\n[\s,;\-–•*]*/g, "; ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[\s.;,:!?…]+$/, "");
+  /* "random" alone is not an outfit: the plain one, as for an empty text */
+  return /^(random|au hasard|hasard|al[ée]atoire)$/i.test(x) ? "" : x;
+}
+/* the closing "no text" line of a prompt keeps the logos and prints the free outfit names */
+function sdFreeNoText(s) {
+  return sdFreeText() ? String(s).replace(/\.$/, ", except any logo or print this outfit description names.") : s;
+}
+/* the Tenue tab box: the switch, then the text */
+function sdFreeBox(t, g, L) {
+  return (0, l.jsxs)("div", {
+    className: "my-4 rounded-2xl border p-4 " + (t.outfitFree ? "border-[hsl(var(--tape))]" : ""),
+    children: [
+      (0, l.jsx)(ax, { checked: !!t.outfitFree, onChange: (v) => g("outfitFree", v), children: "Tenue en un seul texte" }),
+      (0, l.jsx)("p", {
+        className: "mt-2 text-sm text-muted-foreground",
+        children: t.outfitFree
+          ? t.bodyRef
+            ? "Ton texte remplace tous les choix de cet onglet pour la retouche « Habiller avec ma tenue » ; la planche corps garde la tenue de référence. Il part tel quel dans le prompt : écris-le en anglais de préférence. Vide : une tenue simple, unie."
+            : "Ton texte remplace tous les choix de cet onglet, pour la tête et le corps, et part tel quel dans le prompt : écris-le en anglais de préférence. Vide : une tenue simple, unie."
+          : "Pour décrire toute la tenue d'un coup, sans cocher chaque pièce.",
+      }),
+      t.outfitFree &&
+        (0, l.jsx)("textarea", {
+          id: "c-outfitText",
+          "aria-label": "Tenue en un seul texte",
+          className: L + " min-h-[96px] resize-y",
+          placeholder: "ex. black leather biker jacket worn open over a white cotton t-shirt, straight dark blue jeans, black leather ankle boots, silver ring on the right hand",
+          value: t.outfitText || "",
+          onChange: (ev) => g("outfitText", ev.target.value),
+        }),
+    ],
+  });
 }
 /* a garment chosen in the Tenue tab (top, bottom, shoes), for sessions saved before v111 */
 function sdGarmentSet(t) {
@@ -1358,7 +1520,7 @@ function sdRndBtn(t, g) {
               "aria-hidden": !0,
               className: "transition-transform duration-200 " + (t.sdRndOpen ? "rotate-180" : ""),
             }),
-            "Tenue au hasard selon l'âge",
+            "Tenue par ambiance",
           ],
         }),
         t.sdRndOpen &&
@@ -1422,8 +1584,8 @@ function sdRndBtn(t, g) {
                   : (0, l.jsx)("p", {
                       className: "mt-3 text-sm text-muted-foreground",
                       children: sdT(
-                        "Choisis une ambiance : la tenue s'adapte à l'âge (" + (+t.age || 30) + " ans).",
-                        "Pick a mood: the outfit fits the age (" + (+t.age || 30) + ").",
+                        "La tenue tirée s'adapte à l'âge (" + (+t.age || 30) + " ans).",
+                        "The outfit drawn fits the age (" + (+t.age || 30) + ").",
                       ),
                     }),
               }),
@@ -1481,9 +1643,14 @@ function sdForteDetail(x) {
 }
 function sdG(t) {
   sdChild(t) && ((t.photo || t.photoOnly) && (t = Object.assign({}, t, { photo: !1, photoOnly: !1 })), (t = sdChildClean(t)));
+  /* v114 (UI audit): grey hair, a receding hairline and heels are neither offered to nor sent for a child (a saved value falls back to the default) */
+  sdChild(t) && (t = sdChildOpts(t));
+  /* v113: never the free outfit for a child or a baby */
+  sdChild(t) && (t.outfitFree || t.outfitText) && (t = Object.assign({}, t, { outfitFree: !1, outfitText: "" }));
   t = sdForteParts(t);
   /* "several in the same GPT conversation" names the subject within a GPT conversation (its toggle is hidden in Seedream: P13) */
   "seedream" === t.model && t.multiChar && (t = Object.assign({}, t, { multiChar: !1 }));
+  t = sdIterNorm(t);
   return sdAutoBust(sdShift(sdRndOutfit(!sdNat(t) && ("tanga" === t.refCover || "brief" === t.refCover || "sport" === t.refCover || "fitted" === t.refCover) ? Object.assign({}, t, { refCover: "sport" === t.refCover || "fitted" === t.refCover ? "short" : "swim" }) : t)));
 }
 function sdIris() {
@@ -1570,7 +1737,9 @@ function sdSlim() {
 /* New and saved face signatures must ignore the same clothing-only instructions. */
 function sdSigWithoutOutfit(sig) {
   return sig
+    .replace(/^Clothing and accessories of this outfit,[^\n]*(?:\n|$)/gm, "")
     .replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "")
+    .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), except any logo or print this outfit description names\.$/gm, "$1.")
     .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), besides any logo or print on the clothing taken from the photo\.$/gm, "$1.");
 }
 /* "same", "changed", or "legacy": a signature saved before v90 has no corpulence class; when everything it does hold
@@ -1704,6 +1873,7 @@ function sdNeck() {
       " shows."
     );
   }
+  if (sdFreeText()) return "Only the parts of this outfit that a head close-up shows, identical in every panel: the neckline at the bottom edge, and anything worn at the neck, on the head or on the face: " + sdFreeText() + ".";
   return (
     "At the bottom edge of each panel only the neckline of " +
     (nL() || "a plain crew-neck top in a solid neutral color") +
@@ -1716,7 +1886,7 @@ function sdHead() {
     pr =
       0 === e.looks
         ? "In profile: the lips just behind the line from nose tip to chin, " +
-          ("auto" === e.jaw ? ("m" === e.pres ? "a strong, projected chin, " : "a gently projected chin, ") : "") +
+          ("auto" === e.jaw && !sdCharOn() ? ("m" === e.pres ? "a strong, projected chin, " : "a gently projected chin, ") : "") +
           "a clean jaw-to-neck line."
         : "",
     s =
@@ -1756,8 +1926,9 @@ function sdHead() {
     (sdIris() ? " " + sdIris() : "") +
     (sdOrigin() ? " " + sdOrigin() : "") +
     "\n";
-  var f = sdFace();
+  var f = sdCharFace(sdFace());
   f && (s += f + "\n");
+  sdChar() && (s += sdChar() + "\n");
   s += sdLooks() + (pr ? " " + pr : "") + "\n";
   var mk = rg(!0);
   mk && (s += "Distinctive marks, each on the stated side: " + mk + ".\n");
@@ -1773,8 +1944,8 @@ function sdHead() {
   s +=
     sdSkinHead() +
     (e.looks >= 2
-      ? " Accurate, neutral colors and sharp detail, not airbrushed, not a 3D render. " + (sdLetters() ? SD_LETTERS : "No text, labels, scale bars, markings or watermark.")
-      : " Natural colors, fine film grain, not airbrushed, not a 3D render. " + (sdLetters() ? SD_LETTERS : "No text, labels or watermark."));
+      ? " Accurate, neutral colors and sharp detail, not airbrushed, not a 3D render. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text, labels, scale bars, markings or watermark.")
+      : " Natural colors, fine film grain, not airbrushed, not a 3D render. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text, labels or watermark."));
   return s;
 }
 function sdLegs(hl) {
@@ -2193,7 +2364,9 @@ function sdOutfit() {
       ". The outfit is identical in all four views. " +
       nx() +
       (/\s$/.test(nx()) || !nx() ? "" : " ") +
-      "Fully dressed in this outfit in every panel; the body shapes above read through the fit of the clothes."
+      (sdFreeText()
+        ? "Dressed in exactly this outfit in every panel, with nothing added or left out; the body shapes above read through the fit of the clothes."
+        : "Fully dressed in this outfit in every panel; the body shapes above read through the fit of the clothes.")
     );
   if (!nw())
     return "Outfit, the same in every view: " + sdHeadOutfit() + ". Opaque, plain, no logos.";
@@ -2294,7 +2467,12 @@ function sdIterText() {
     c +
     ".\nKeep everything this change does not touch exactly as in image 1" +
     (keep.length ? ": " + sdList(keep) : "") +
-    "; nothing else grows, shrinks, lifts or slims. No text or watermark."
+    "; nothing else grows, shrinks, lifts or slims. " +
+    ("dressMine" === e.sdIterOp && !String(e.sdIter || "").trim()
+      ? rq(Object.assign({}, e, { bodyRef: !1 }), function () {
+          return sdFreeNoText("No text or watermark.");
+        })
+      : "No text or watermark.")
   );
 }
 /* v94: lettering asked in the person's marks field (a tattoo reading a word, a name, a date): the general "No text" would forbid it */
@@ -2304,11 +2482,11 @@ function sdLetters() {
 var SD_LETTERS = "No captions, labels, panel numbers or watermark added to the image; the only lettering is the one the marks above describe.";
 /* clothing: the ending of a person whose clothing is taken from the source photo, whose own logos and prints stay */
 function sdNoTextGpt(d, clothing) {
-  return sdLetters()
+  return sdFreeNoText(sdLetters()
     ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe" +
         (clothing ? ", besides any logo or print on the clothing taken from the photo" : "") +
         "."
-    : d;
+    : d);
 }
 /* v101 "Front" (forehead height): the chosen value replaces the random forehead of the face; Auto keeps the random draw.
    With a fringe the forehead is mostly hidden, so the prompt says so instead of asking for a visible forehead. */
@@ -2382,33 +2560,84 @@ function sdAnimalHead() {
     ". This is what makes it recognizable: do not average it toward a typical example of its " + w + "."
   );
 }
+/* v114 (UI audit): "Assembler", "Habiller" and "Ajouter les têtes" start from a headless body sheet, so card 3 offers them only with "Planche corps
+   sans tête"; "Habiller avec ma tenue" and "Retouche libre" always. A saved choice that is not offered any more counts as a free retouche of its text,
+   in the card, the bar, the copy message and the prompt alike (sdIterNorm, also applied in sdG). */
+function sdHlRaw(t) {
+  return "person" === t.mode && !t.child && !!t.headless && (!!(t.photo && t.photoOnly) || !(t.photo && t.bodyAsIs));
+}
+function sdOpOk(t, op) {
+  return "join" === op || "dress" === op || "heads" === op ? sdHlRaw(t) : !0;
+}
+function sdIterNorm(t) {
+  var op = t.sdIterOp;
+  if (!op || "free" === op) return t;
+  /* a value no version wrote (corrupted or edited by hand): its text as a free retouche */
+  if (!SD_OPS.some(function (o) {
+    return o[0] === op;
+  }))
+    return Object.assign({}, t, { sdIterOp: "free" });
+  if (sdOpOk(t, op)) return t;
+  /* "Assembler" and "Ajouter les têtes" need the headless body and the head sheet: without "sans tête", nothing chosen (the saved text comes back
+     with "sans tête"); "Habiller" is a one-image edit: its text stays, as a free retouche */
+  return "dress" === op ? Object.assign({}, t, { sdIterOp: "free" }) : Object.assign({}, t, { sdIterOp: "", sdIter: "" });
+}
+var SD_OPS = [
+  ["join", "Assembler tête et corps", "Assembler"],
+  ["dress", "Habiller", "Habiller"],
+  ["dressMine", "Habiller avec ma tenue", "Ma tenue"],
+  ["heads", "Ajouter les têtes", "Têtes"],
+  ["free", "Retouche libre", "Retouche"],
+];
+var sdIterOpen = null;
 function sdOp(t) {
-  return "free" === t.sdIterOp ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : "dressMine" === t.sdIterOp ? "dressMine" : nw() ? "join" : "";
+  t = sdIterNorm(t);
+  return "free" === t.sdIterOp ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : "dressMine" === t.sdIterOp ? "dressMine" : sdHlRaw(t) ? "join" : "";
+}
+/* the free retouche is the active one: chosen, or a text typed with no preset */
+function sdFreeIter(t) {
+  t = sdIterNorm(t);
+  return "free" === t.sdIterOp || ("" === sdOp(t) && !!String(t.sdIter || "").trim());
+}
+function sdIterOff(t) {
+  t = sdIterNorm(t);
+  return !String(t.sdIter || "").trim() && "dressMine" !== t.sdIterOp && (!sdHlRaw(t) || "free" === t.sdIterOp);
+}
+function sdIterTitle(t) {
+  var op = sdOp(t);
+  return op
+    ? SD_OPS.filter(function (o) {
+        return o[0] === op;
+      })[0][1]
+    : sdFreeIter(t)
+      ? "Retouche libre"
+      : "Retouche (facultatif)";
 }
 function sdIterBlock(t, g, B, L) {
   sdCur = { t: t, g: g, L: L };
-  var op = sdOp(t),
-    title = { join: "Assembler tête et corps", dress: "Habiller", dressMine: "Habiller avec ma tenue", heads: "Ajouter les têtes" }[op] || (nw() ? "Retouche" : "Retouche (facultatif)");
-  return B("iter", "3", title, !String(t.sdIter || "").trim() && "dressMine" !== t.sdIterOp && (!nw() || "free" === t.sdIterOp), "Ouvre « Autres retouches » et choisis ou écris une retouche.");
+  return B("iter", "3", sdIterTitle(t), sdIterOff(t), "Choisis ou écris une retouche ci-dessous.");
 }
 function sdBarItems(t) {
+  t = sdIterNorm(t);
   var op = "free" === t.sdIterOp && !String(t.sdIter || "").trim() ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : "dressMine" === t.sdIterOp ? "dressMine" : "join";
   if (sdChild(t))
     return [
       ["head", "Tête", !1],
       ["body", "Corps", !1],
     ];
-  return [
-    ["head", "Tête", !1],
-    ["body", "Corps", !1],
-    ["iter", { join: "Assembler", dress: "Habiller", dressMine: "Habiller", heads: "Têtes" }[op] || "Retouche", "free" === t.sdIterOp && !String(t.sdIter || "").trim()],
-  ];
+  /* with a body sheet with its head, card 3 is optional: in the bar only once a retouche is set */
+  var lab = (SD_OPS.filter(function (o) {
+      return o[0] === (op || (sdFreeIter(t) ? "free" : ""));
+    })[0] || [0, 0, "Retouche"])[2],
+    it = ["iter", lab, sdIterOff(t)];
+  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdHlRaw(t) || !sdIterOff(t) ? [it] : []);
 }
 /* options shown inside a card, folded: what you rarely need stays out of the way */
-function sdFold(label, children, open) {
+function sdFold(label, children, open, onToggle) {
   return (0, l.jsxs)("details", {
     className: "mt-3 rounded-xl bg-muted px-3 py-2 text-sm",
     open: !!open,
+    onToggle: onToggle,
     children: [(0, l.jsx)("summary", { className: "cursor-pointer font-semibold", children: label }), (0, l.jsx)("div", { className: "mt-2 grid gap-3", children: children })],
   });
 }
@@ -2430,7 +2659,7 @@ function sdCardExtra(k) {
               value: useImg ? "img" : "text",
               onChange: (v) => g("sdBodyImg", "img" === v),
               options: [
-                ["img", "Ma planche habillée"],
+                ["img", "Ma planche habillée (retouche « Habiller »)"],
                 ["text", "Mes réglages"],
               ],
             }),
@@ -2443,6 +2672,8 @@ function sdCardExtra(k) {
       sdHeadWarn(t, "body"),
       nw() &&
         (0, l.jsx)("p", { className: "mt-3 text-sm text-muted-foreground", children: "Recommence jusqu'à ce que le corps te convienne." }, "again"),
+      /* v114: not offered when the body comes from the dressed sheet (it would have no effect) */
+      !useImg &&
       (0, l.jsx)(
         "div",
         {
@@ -2472,40 +2703,35 @@ function sdCardExtra(k) {
       ),
     ];
   if ("iter" === k) {
-    var op = sdOp(t);
+    var op = sdOp(t),
+      fr = sdFreeIter(t),
+      tn = sdIterNorm(t),
+      pre = { join: sdPresetJoin(), dress: sdPresetDress(), heads: sdPresetHeads(), dressMine: "" };
     return [
       sdHeadWarn(t, "iter"),
       (0, l.jsx)(
         "div",
         {
           children: sdFold(
-            "Autres retouches",
+            "Choisir la retouche",
             [
               (0, l.jsx)(
                 "div",
                 {
                   className: "flex flex-wrap gap-2",
-                  children: [
-                    ["join", "Assembler tête et corps", sdPresetJoin()],
-                    ["dress", "Habiller", sdPresetDress()],
-                    ["dressMine", "Habiller avec ma tenue", ""],
-                    ["heads", "Ajouter les têtes (canevas agrandi)", sdPresetHeads()],
-                    ["free", "Retouche libre", null],
-                  ].map(function (b) {
-                    /* a preset picked with its text is removed by a second click; "join", shown as the
-                       default for a headless body while the text is empty, is filled in instead.
-                       "Retouche libre" is an operation of its own (empty, it copies nothing, never the default join):
-                       it clears the text a preset put in the box (sdIterPre, even if a setting has changed that
-                       preset since), and keeps a text the user wrote or edited */
-                    var on = "free" === b[0] ? "" === op : op === b[0],
-                      picked = on && (!!String(t.sdIter || "").trim() || "dressMine" === b[0]),
-                      left = !!String(t.sdIter || "").trim() && t.sdIter === t.sdIterPre;
+                  children: SD_OPS.filter(function (b) {
+                    return sdOpOk(t, b[0]);
+                  }).map(function (b) {
+                    var on = "free" === b[0] ? fr : op === b[0],
+                      picked = on && (!!String(tn.sdIter || "").trim() || "dressMine" === b[0]),
+                      left = !!String(tn.sdIter || "").trim() && tn.sdIter === t.sdIterPre;
+                    /* Leaving a preset keeps personal edits, including after its generated text changes. */
                     return (0, l.jsxs)(
                       "button",
                       {
                         type: "button",
                         "aria-pressed": on,
-                        onClick: () => (null === b[2] ? (left && g("sdIter", ""), g("sdIterOp", "free")) : (g("sdIter", picked ? "" : b[2]), g("sdIterOp", picked ? "" : b[0]), g("sdIterPre", picked ? "" : b[2]))),
+                        onClick: () => ((sdIterOpen = !0), "free" === b[0] ? (left && g("sdIter", ""), g("sdIterOp", "free")) : (g("sdIter", picked ? "" : pre[b[0]]), g("sdIterOp", picked ? "" : b[0]), g("sdIterPre", picked ? "" : pre[b[0]]))),
                         className:
                           "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
                           (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
@@ -2532,7 +2758,11 @@ function sdCardExtra(k) {
                         "dress" === op
                           ? "m" === t.pres ? "Même corps, avec un haut de sport sans manches et un collant de course." : "Même corps, avec un haut court et un legging."
                           : "dressMine" === op
-                            ? "Même corps, habillé avec la tenue de l'onglet Tenue (le texte suit tes choix ; rien de coché : une tenue simple de tous les jours). Joins ta planche corps validée, sans tête ou déjà assemblée avec la tête. Tant que « Planche corps sans tête » est coché, les accessoires de tête (chapeau, lunettes) ne sont pas ajoutés."
+                            ? (t.bodyRef
+                              ? sdT("Même corps, habillé avec la tenue de l'onglet Tenue (rien de coché : une tenue simple de tous les jours).", "Same body, dressed in the outfit of the Outfit tab (nothing ticked: a simple everyday outfit).")
+                              : sdT("Pour changer la tenue d'un corps déjà validé : change l'onglet Tenue.", "To change the outfit of a body you already approved: change the Outfit tab.")) +
+                              sdT(" Joins ta planche corps validée, sans tête ou déjà assemblée avec la tête. Le texte suit l'onglet Tenue : tu le vois dans « Détails et prompt ».", " Add your approved body sheet, headless or already combined with the head. The text follows the Outfit tab: you can see it in “Details and prompt”.") +
+                              (nw() ? sdT(" Tant que « Planche corps sans tête » est coché, les accessoires de tête (chapeau, lunettes) ne sont pas ajoutés.", " While “Headless body sheet” is ticked, head accessories (hat, glasses) are not added.") : "")
                           : "heads" === op
                             ? "Agrandis d'abord ta planche habillée de 25 % vers le haut, fond gris."
                             : "join" === op
@@ -2559,13 +2789,22 @@ function sdCardExtra(k) {
                   id: "sd-iter",
                   className: L + " min-h-[88px] resize-y",
                   placeholder: sdT("ex. biceps et triceps plus dessinés", "e.g. sharper biceps and triceps"),
-                  value: t.sdIter || "",
-                  onChange: (ev) => (g("sdIter", ev.target.value), ev.target.value.trim() || "free" === t.sdIterOp || g("sdIterOp", "")),
+                  value: tn.sdIter || "",
+                  onChange: (ev) => {
+                    var v = ev.target.value,
+                      op2 = tn.sdIterOp || "";
+                    /* an edited preset stays that retouche, its text copied as written (v113); emptied, a preset is unset, while the free retouche and
+                       "Habiller avec ma tenue" stay; typing saves the normalized retouche, so the text is not lost */
+                    v.trim() || "free" === op2 || "dressMine" === op2 || (op2 = "");
+                    g("sdIter", v);
+                    op2 !== (t.sdIterOp || "") && g("sdIterOp", op2);
+                  },
                 },
                 "ta",
               ),
             ],
-            "" === op,
+            "" === op || !!sdIterOpen,
+            (ev) => (sdIterOpen = ev.currentTarget.open),
           ),
         },
         "more",
@@ -2589,6 +2828,7 @@ function sdCard({ k: e, n: t, title: n, rows: r, text: a, disabled: o, disabledH
     }
   }, [d]);
   return (0, l.jsxs)("div", {
+    id: "sd-card-" + e,
     className: "rounded-2xl border bg-card p-4",
     children: [
       (0, l.jsxs)("div", {
@@ -2631,6 +2871,7 @@ function sdCard({ k: e, n: t, title: n, rows: r, text: a, disabled: o, disabledH
         children: [c ? (0, l.jsx)(tB, { size: 18 }) : (0, l.jsx)(tV, { size: 18 }), c ? "Copié" : D ? sdT("Copier pour ", "Copy for ") + D : "Copier le prompt"],
       }),
       o && i && (0, l.jsx)("p", { className: "mt-2 text-center text-sm text-muted-foreground", children: i }),
+      !o && sdWords(a) > 600 && (0, l.jsx)("p", { className: "mt-2 text-sm font-semibold text-destructive", children: sdT(sdNum(sdWords(a)) + " mots : plus de 600, le modèle risque d'en ignorer une partie.", sdNum(sdWords(a)) + " words: over 600, the model may skip some of it.") }),
       sdCardExtra(e),
       (0, l.jsxs)("details", {
         className: "mt-3 text-sm",
@@ -2825,7 +3066,7 @@ function sdBody() {
       : d || nv()
         ? "Soft key light from slightly above and in front, gentle fill: soft shadows on the muscles"
         : "Soft, even studio light") +
-    ". Long lens at hip height. Natural colors, fine film grain, not a 3D render. Five fingers per hand. " + (sdLetters() ? SD_LETTERS : "No text or watermark.");
+    ". Long lens at hip height. Natural colors, fine film grain, not a 3D render. Five fingers per hand. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text or watermark.");
   var kp = [
     t1("shoulders", e.shoulders),
     "m" === e.pres ? "" : ["a very narrow waist", "a narrow waist", "an average waist", "a wide waist", "a very wide waist"][e.waist] || "",
@@ -3179,18 +3420,22 @@ function sdOnlyHelp(t) {
     " " +
       ("house" === t.objCat || "interior" === t.objCat
         ? sdT(
-            "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
-            "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
+            "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et les vues choisies restent au choix.",
+            "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the category and the selected views can still be chosen.",
           )
         : "clothing" === t.objCat
           ? sdT(
-              "Les prompts reprennent le vêtement de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni, la lumière de studio égale et, si tu coches « Sur mannequin invisible », la présentation. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie, le format et « Sur mannequin invisible » restent au choix.",
-              "The prompts take the garment in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop, the even studio light and, if you tick “On an invisible mannequin”, the presentation change. Other settings are ignored while this option is on; only the category, the format and “On an invisible mannequin” can still be chosen.",
+              "Les prompts reprennent le vêtement de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni, la lumière de studio égale et, si tu coches « Sur mannequin invisible », la présentation. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie, les vues choisies et « Sur mannequin invisible » restent au choix.",
+              "The prompts take the garment in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop, the even studio light and, if you tick “On an invisible mannequin”, the presentation change. Other settings are ignored while this option is on; only the category, the selected views and “On an invisible mannequin” can still be chosen.",
             )
           : sdT(
-            "Les prompts reprennent l'objet de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni et la lumière de studio égale. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et le format restent au choix.",
-            "The prompts take the object in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop and the even studio light change. Other settings are ignored while this option is on; only the category and the format can still be chosen.",
+            "Les prompts reprennent l'objet de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni et la lumière de studio égale. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et les vues choisies restent au choix.",
+            "The prompts take the object in your photo and change nothing in it (shape, proportions, materials, colors, markings, wear); only the viewpoint, the plain grey backdrop and the even studio light change. Other settings are ignored while this option is on; only the category and the selected views can still be chosen.",
           )),
+    "house" === t.objCat && sdT(
+      " Avec le décor « Sol et fond gris neutre », la maison est posée sur un sol gris, sous une lumière de jour neutre.",
+      " With the “Neutral grey floor and backdrop” setting, the house stands on a grey floor in neutral daylight.",
+    ),
   ];
 }
 function sdObjBar() {
@@ -3438,11 +3683,87 @@ var SD_CANON_M = [
 ];
 function sdCanonFace(txt, t) {
   if (0 !== t.looks || "m" !== t.pres || "person" !== t.mode || t.photo || "string" != typeof txt) return txt;
+  /* v114 (review): with "Angélique" or "Gentil", the defined jaw of Canon keeps soft corners */
+  var soft = "ange" === sdCharOn() || "gentil" === sdCharOn();
   return txt.replace(/(^|\n)((?:Face structure|Individual details)[^\n]*)/g, function (m0, a, line) {
     SD_CANON_M.forEach(function (p) {
-      line = line.split(p[0]).join("\u0000" + p[1] + "\u0000");
+      line = line.split(p[0]).join("\u0000" + (soft && ("a soft, rounded jaw" === p[0] || "a narrow, tapering jaw" === p[0]) ? "a clearly defined jaw with softly rounded corners" : p[1]) + "\u0000");
     });
     return a + line.replace(/\u0000/g, "");
+  });
+}
+/* v114 "Caractère" (Visage tab): the look of the face, readable at rest with the neutral expression of the sheets: "Gueule" (rugged, weathered, full of
+   character), "Méchant", "Gentil", "Angélique". Adult person, no photo source, both engines. The traits drawn at random (features left on Auto, the
+   "Face structure" line only) are moved toward the character (SD_CHAR_SWAP), never the features the user set; the "Beauté" transforms (sdPlainFace,
+   sdCanonFace, the Looks line) run after it, so the beauty slider keeps the last word. No real person is named. */
+var SD_CHAR = {
+  gueule:
+    "a rugged, weathered face full of character: angular bone structure, a heavy brow, deep-set, narrowed eyes with a steady gaze, prominent cheekbones, a hard jaw, deeper facial lines than usual for the age",
+  mechant:
+    "a menacing, cold face, the face of a film villain: a hard, piercing stare under low brows, narrowed eyes, a thin, tight-lipped mouth, sharp, hard features; unsettling even when still",
+  gentil:
+    "a kind, warm, trustworthy face: soft, open features, gentle eyes with a warm, friendly gaze, relaxed brows, a soft mouth whose corners sit naturally a little upward",
+  ange: "an angelic, innocent face: soft, delicate features, clear, wide-open eyes with a pure, gentle gaze, smooth contours, a calm, serene look",
+};
+var SD_CHAR_SWAP = {
+  gueule: [
+    ["a round face", "a square face"], ["a heart-shaped face", "a long, rectangular face"], ["an oval face", "a square face"],
+    ["full, rounded cheeks", "lean cheeks with slight hollows"], ["soft cheeks of medium fullness", "lean cheeks with slight hollows"],
+    ["wide cheekbones with full cheeks", "high, prominent cheekbones"], ["softly rounded cheekbones", "high, prominent cheekbones"], ["flat cheekbones and a smooth mid-face", "high, prominent cheekbones"],
+    ["a soft, rounded jaw", "an angular jaw with visible corners"], ["a narrow, tapering jaw", "an angular jaw with visible corners"],
+    ["a small, rounded chin", "a strong, square chin"], ["a gently projected, rounded chin", "a strong, well-projected chin"], ["a slightly receding chin", "a strong, square chin"], ["a pointed chin", "a square chin"],
+    ["large eyes", "medium-sized eyes"], ["round eyes", "deep-set eyes"], ["prominent eyes with a visible upper lid", "deep-set eyes"], ["upturned, cat-like eyes", "hooded eyes with a heavy upper lid"],
+    ["fine, light eyebrows", "thick, straight eyebrows"], ["thin, high-arched eyebrows", "low, heavy eyebrows close to the eyes"], ["full, softly arched eyebrows", "thick, straight eyebrows"],
+    ["very full lips", "lips of medium fullness"], ["an upturned nose tip", "a slightly downturned nose tip"], ["a softly lifted nose tip", "a slightly downturned nose tip"],
+  ],
+  mechant: [
+    ["large eyes", "small eyes"], ["round eyes", "deep-set eyes"], ["prominent eyes with a visible upper lid", "deep-set eyes"],
+    ["full, softly arched eyebrows", "angled eyebrows with a sharp peak"], ["fine, light eyebrows", "low, heavy eyebrows close to the eyes"], ["thin, high-arched eyebrows", "angled eyebrows with a sharp peak"],
+    ["very full lips", "thin lips"], ["full lips", "thin lips"], ["full, rounded cheeks", "lean cheeks with slight hollows"], ["soft cheeks of medium fullness", "lean cheeks with slight hollows"],
+    ["a soft, rounded jaw", "an angular jaw with visible corners"], ["a small, rounded chin", "a pointed chin"], ["a gently projected, rounded chin", "a pointed chin"], ["a round face", "a diamond-shaped face"],
+  ],
+  gentil: [
+    ["angled eyebrows with a sharp peak", "full, softly arched eyebrows"], ["low, heavy eyebrows close to the eyes", "full, softly arched eyebrows"],
+    ["small eyes", "medium-sized eyes"], ["thin lips", "lips of medium fullness"], ["lean cheeks with slight hollows", "soft cheeks of medium fullness"],
+    ["an angular jaw with visible corners", "a soft, rounded jaw"], ["a wide jaw", "a soft, rounded jaw"], ["a strong, square chin", "a gently projected, rounded chin"],
+    ["a prominent, forward chin", "a gently projected, rounded chin"], ["a square chin", "a gently projected, softly square chin"], ["hooded eyes with a heavy upper lid", "softly hooded eyes"], ["upturned, cat-like eyes", "almond-shaped eyes"],
+    ["a strong, well-projected chin", "a gently projected, rounded chin"],
+  ],
+  ange: [
+    ["low, heavy eyebrows close to the eyes", "fine, light eyebrows"], ["angled eyebrows with a sharp peak", "full, softly arched eyebrows"], ["thick, straight eyebrows", "full, softly arched eyebrows"],
+    ["small eyes", "large eyes"], ["deep-set eyes", "round eyes"], ["hooded eyes with a heavy upper lid", "round eyes"], ["thin lips", "full lips"],
+    ["an angular jaw with visible corners", "a soft, rounded jaw"], ["a wide jaw", "a soft, rounded jaw"], ["a strong, square chin", "a small, rounded chin"], ["a prominent, forward chin", "a small, rounded chin"], ["a square chin", "a small, rounded chin"],
+    ["a strong, well-projected chin", "a small, rounded chin"], ["a cleft chin", "a small, rounded chin"], ["a gently projected, softly square chin", "a gently projected, rounded chin"], ["a softly square face", "an oval face"],
+    ["a square face", "an oval face"], ["a long, rectangular face", "an oval face"], ["a face wider at the jaw than at the forehead", "a heart-shaped face"],
+    ["lean cheeks with slight hollows", "soft cheeks of medium fullness"], ["a bulbous nose tip", "a rounded nose tip"], ["a high nose bridge with a visible bump", "a softly scooped nose bridge"],
+    ["an aquiline nose bridge", "a straight nose bridge"], ["a broad nose", "a nose of medium width"],
+  ],
+};
+function sdCharOn() {
+  return "person" === e.mode && !sdChild(e) && !e.photo && "string" === typeof SD_CHAR[e.faceChar] ? e.faceChar : "";
+}
+function sdChar() {
+  var c = sdCharOn();
+  return c
+    ? "Character of the face, readable at rest: " +
+        SD_CHAR[c] +
+        ". The features above and the looks below take precedence; the character shows in the gaze and overall look."
+    : "";
+}
+function sdCharFace(txt) {
+  var c = sdCharOn();
+  if (!c || "string" != typeof txt) return txt;
+  return txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
+    SD_CHAR_SWAP[c].forEach(function (p) {
+      line = line.split(p[0]).join("\u0000" + p[1] + "\u0000");
+    });
+    line = line.replace(/\u0000/g, "");
+    /* a trait moved onto one already drawn appears once */
+    SD_CHAR_SWAP[c].forEach(function (p) {
+      var i = line.indexOf(p[1]), j = line.lastIndexOf(", " + p[1]);
+      i >= 0 && j > i && (line = line.slice(0, j) + line.slice(j + 2 + p[1].length));
+    });
+    return a + line;
   });
 }
 /* settings the user chose that pull a "plain" face toward beauty */
@@ -3583,7 +3904,7 @@ function sdWrap(t, m) {
   for (k in m) o[k] = m[k];
   o.head = sdCanonFace(sdPlainFace(sdAdult(sdHead()), t.looks), t);
   o.body = sdAdult(sdBody());
-  o.iter = String(t.sdIter || "").trim() || "dressMine" === t.sdIterOp ? sdAdult(sdIterText()) : nw() && "free" !== t.sdIterOp ? sdAdult(sdPresetJoin()) : "";
+  o.iter = String(e.sdIter || "").trim() || "dressMine" === e.sdIterOp ? sdAdult(sdIterText()) : nw() && "free" !== e.sdIterOp ? sdAdult(sdPresetJoin()) : "";
   return o;
 }
 function sdLen(s, sd) {
@@ -3674,7 +3995,7 @@ function sdRows(t, m, R, q) {
       "À savoir",
       (0, l.jsx)("span", {
         children:
-          "Ce prompt redessine le corps : la poitrine peut changer. Pour garder ton corps validé, utilise plutôt la Retouche : « Habiller », agrandis le canevas de 25 % vers le haut, puis « Ajouter les têtes ». N'ajoute jamais une image en maillot à côté d'un visage.",
+          "Ce prompt redessine le corps : la poitrine peut changer. Pour garder un corps validé, fais-le sans tête (« Planche corps sans tête » dans Corps), puis « Assembler tête et corps » en carte 3. N'ajoute jamais une image en maillot à côté d'un visage.",
       }),
     ]);
   o.iter = [
@@ -3685,10 +4006,10 @@ function sdRows(t, m, R, q) {
         : "heads" === sdIterOpEff(e)
         ? "1 : ta planche habillée, agrandie de 25 % vers le haut. 2 : la planche tête."
         : "dress" === sdIterOpEff(e)
-          ? "1 : ta planche corps sans tête validée"
+          ? "1. ta planche corps sans tête validée"
           : "dressMine" === sdOp(e)
-          ? "1 : ta planche corps validée, sans tête ou assemblée"
-          : "1 : la planche à retoucher",
+          ? "1. ta planche corps validée, sans tête ou assemblée"
+          : "1. la planche à retoucher",
     ],
     ["Format", "Identique à l'image 1"],
     [N, "Même nom + _v2, _v3…"],
