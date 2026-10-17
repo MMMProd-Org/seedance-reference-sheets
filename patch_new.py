@@ -1561,6 +1561,176 @@ rep(r"""function aN({ obj: e, sd: sdM }) {""", r"""function aN({ obj: e, sd: sdM
 rep(r"""            : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",""", r"""            : sdBb
               ? "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser."
               : "Une conversation GPT par personnage permet de regrouper ses références. Pour chaque retouche, joins la planche à utiliser. Pour des personnages secondaires dans une même conversation, coche « Plusieurs personnages dans la même conversation GPT ».",""")
+# P60 (v111) person from a photo: "Utiliser les habits de la photo" (on by default) for the head and the body; off, the Tenue tab comes back and
+# is used for both, unset parts plain (never from the photo); a session saved with a photo and a chosen outfit keeps that outfit (box off)
+rep(r"""function nj() {
+  return (""", r"""function nj() {
+  if (sdPhotoClothes()) return !1;
+  return (""")
+rep(r"""  var n = nd("colorSel", "colorOpts").length ? "" : " in a solid neutral color";
+  return e.photo
+    ? "top" === t""", r"""  var n = nd("colorSel", "colorOpts").length ? "" : " in a solid neutral color";
+  return sdPhotoClothes()
+    ? "top" === t""")
+rep(r"""  if (!nj())
+    return e.photo
+      ? "exactly as in the attached photo;""", r"""  if (!nj())
+    return sdPhotoClothes()
+      ? "exactly as in the attached photo;""")
+rep(r"""  if ("person" !== e.mode || !e.photo || nv()) return "";
+  if (!nj()) return "all";""", r"""  if ("person" !== e.mode || !sdPhotoClothes() || nv()) return "";
+  if (!nj()) return "all";""")
+rep(r"""  return "person" === e.mode && e.photo && !nv() && !nj();""", r"""  return "person" === e.mode && sdPhotoClothes() && !nv();""")
+rep(r"""  var t = nh("topSel", "topOpts", "top");
+  return t.length ? t.join(", ") : nN("top");""", r"""  var t = sdPhotoClothes() ? [] : nh("topSel", "topOpts", "top");
+  return t.length ? t.join(", ") : nN("top");""")
+rep(r"""              (!e.photo || nh("topSel", "topOpts", "top").length || nv()""", r"""              (!sdPhotoClothes() || nv()""")
+rep(r"""      !e.photo ||
+      nv() ||
+      nh("topSel", "topOpts", "top").length
+        ? sdNoTextGpt(nY)""", r"""      !sdPhotoClothes() ||
+      nv()
+        ? sdNoTextGpt(nY)""")
+rep(r"""            (!!n || "tenue" !== t || !e.bodyRef) &&""", r"""            (!!n || "tenue" !== t || !e.bodyRef) &&
+            !("tenue" === t && sdPhotoClothes(e)) &&""")
+rep(r"""                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",
+                            }),""", r"""                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",
+                            }),
+                          t.photo &&
+                            !t.photoOnly &&
+                            "person" === t.mode &&
+                            (0, l.jsx)(ax, {
+                              checked: !1 !== t.photoClothes,
+                              onChange: (e) => g("photoClothes", e),
+                              disabled: k,
+                              children: "Utiliser les habits de la photo",
+                            }),""")
+rep(r"""    placeViews: [],
+    objViews: [],""", r"""    placeViews: [],
+    objViews: [],
+    photoClothes: !0,""")
+rep(r"""                              : "Joins ta photo aux deux planches : visage et cheveux viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps.",""", r"""                              : !sdBodyPhoto(t)
+                                ? "Joins ta photo à la planche tête : visage et cheveux viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps."
+                                : sdPhotoClothes(t) && !t.bodyRef
+                                  ? "Joins ta photo aux deux planches : visage, cheveux et habits viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps."
+                                  : "Joins ta photo aux deux planches : visage et cheveux viendront d'elle. Pour garder aussi son corps, active « Garder le corps tel quel » dans Corps.",""")
+rep(r"""    sdChild(t) && ((t.photo = !1), (t.photoOnly = !1));""", r"""    sdChild(t) && ((t.photo = !1), (t.photoOnly = !1));
+    if (!("photoClothes" in e)) {
+      var personPhoto = "person" === t.mode
+        ? t.photo || (sdChild(t) && t.childPhotoBak > 0)
+        : t.modeCfg && t.modeCfg.person && t.modeCfg.person.photo;
+      t.photoClothes = !(personPhoto && sdGarmentSet(t));
+    }""")
+rep(r"""                                              "Rien de coché : la tenue de ta photo est gardée telle quelle. Pour régler son usure, choisis une tenue ici, ou décris-la dans Signes, état du moment.",""", r"""                                              "Les habits de ta photo sont gardés, pour la tête et le corps. Pour choisir une tenue ici, décoche « Utiliser les habits de la photo » en haut ; pour régler leur usure, décris-la dans Signes, état du moment.",""")
+rep(r"""                                              !(t.bodyRef && "tenue" === w.id && !sdMineTenue(t) && !sdChild(t)),""", r"""                                              !(t.bodyRef && "tenue" === w.id && !sdMineTenue(t) && !sdChild(t)) &&
+                                              !("tenue" === w.id && sdPhotoClothes(t)),""")
+# P61 (v111, review) photo clothes: no hidden Tenue accessories on the head; the photo's clothing said to be ignored when it is not used;
+# the body card asks for the photo only when the body sheet uses it
+rep(r"""function nz() {
+  if (nv()) return "";""", r"""function nz() {
+  if (nv() || sdPhotoClothes()) return "";""")
+rep(r"""              "The attached photo is the only source for the face and hair: reproduce exactly the face, bone structure, eyes, eyebrows, nose, lips, jawline, skin tone and texture, hairline, hairstyle and hair color, with natural asymmetry. Do not beautify, age, de-age or restyle them.\n" +""", r"""              "The attached photo is the only source for the face and hair: reproduce exactly the face, bone structure, eyes, eyebrows, nose, lips, jawline, skin tone and texture, hairline, hairstyle and hair color, with natural asymmetry. Do not beautify, age, de-age or restyle them.\n" +
+              (nC() ? "" : "Its clothing is not used: the person wears only the clothing described below.\n") +""")
+rep(r"""                              "BODY:\nBody build, height and proportions exactly as in the attached photo, without any change.\n\n")""", r"""                              "BODY:\nBody build, height and proportions exactly as in the attached photo, without any change." +
+                              (nC() ? "" : " Only the body comes from the photo, not its clothing.") +
+                              "\n\n")""")
+rep(r"""                            t.photo ? "Ta photo. " : "",
+                            "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",""", r"""                            sdBodyPhoto(t) ? "Ta photo. " : "",
+                            "La planche tête : rien si elle est juste au-dessus dans la conversation, sinon ",""")
+# P62 (v112) Seedream open for every case (sdOk): the cases without a dedicated Seedream builder (sdNative) take their GPT prompt rewritten for
+# Seedream (sdGptSd); the Seedream-only parts (card 3 and its retouches, reference outfits with a cup size, headless hint, "Habiller avec ma tenue")
+# stay with the dedicated builder (sdNat); the engine of a session that never picked one is unchanged (sdAuto); copy messages name the photo;
+# GPT body: the photo is asked and named only when the body uses it (v111 regression for an animal from a photo)
+rep(r"""    t.modelPick || ("gpt" === e.model && (sdOk(t) || !("modelPick" in e)) ? (t.modelPick = 1) : (t.model = sdOk(t) ? "seedream" : "gpt"));""", r"""    t.modelPick || ("gpt" === e.model && (sdAuto(t) || !("modelPick" in e)) ? (t.modelPick = 1) : (t.model = sdAuto(t) ? "seedream" : "gpt"));""")
+rep(r"""        if (!t.modelPick && t.model !== (sdOk(t) ? "seedream" : "gpt")) {
+          n((x) => (x.modelPick ? x : { ...x, model: sdOk(x) ? "seedream" : "gpt" }));""", r"""        if (!t.modelPick && t.model !== (sdAuto(t) ? "seedream" : "gpt")) {
+          n((x) => (x.modelPick ? x : { ...x, model: sdAuto(x) ? "seedream" : "gpt" }));""")
+rep(r"""(sdChild(t) ? ((sdCur = { t: t, g: g, L: L }), null) : sdIterBlock(t, g, B, L)),""", r"""(sdChild(t) ? ((sdCur = { t: t, g: g, L: L }), null) : !sdNative(t) ? ((sdCur = null), null) : sdIterBlock(t, g, B, L)),""")
+rep(r"""                : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)""", r"""                : sdNat(t) && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? sdBarItems(t)""")
+rep(r'''                : "seedream" === t.model && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes images"''', r'''                : sdNat(t) && "person" === t.mode && t.headless && !sdChild(t) && !sdOff(t)
+                ? "Tes trois étapes, dans l'ordre"
+                : "Tes images"''')
+rep(r"""                                                        ? "seedream" === t.model && sdRevealOk(t)""", r"""                                                        ? sdNat(t) && sdRevealOk(t)""")
+rep(r"""                                                        : "seedream" === t.model
+                                                          ? (t.chest >= 4 ? [["sport",""", r"""                                                        : sdNat(t)
+                                                          ? (t.chest >= 4 ? [["sport",""")
+rep(r"""                    ? ("seedream" === t.model
+                        ? "Repère pour toi. En Seedream 5.0,""", r"""                    ? (sdNat(t)
+                        ? "Repère pour toi. En Seedream 5.0,""")
+rep(r"""                  "headless" === a &&
+                    "seedream" === t.model &&""", r"""                  "headless" === a &&
+                    sdNat(t) &&""")
+rep(r"""            sdMsg = "seedream" !== sdModel || "person" !== e.mode ? "" : "body" === t ? sdBodyCopyMsg(e) : "iter" === t ? sdIterCopyMsg(e) : "";""", r"""            sdMsg = "seedream" !== sdModel || "person" !== e.mode ? "" : "body" === t ? sdBodyCopyMsg(e) : "iter" === t ? sdIterCopyMsg(e) : sdSrcCopyMsg(e);""")
+rep(r"""                            sdBodyPhoto(t) ? "Ta photo. " : "",""", r"""                            sdBodyPhotoAny(t) ? "Ta photo. " : "",""")
+rep(r"""                          (e.photo
+                            ? " The attached photo shows the same " +""", r"""                          (sdBodyPhotoAny(e)
+                            ? " The attached photo shows the same " +""")
+# P63 (v112, user) no "Pas encore possible avec Seedream" card or GPT-only message left (Seedream takes every case);
+# "Mise en planche seulement": tooltip on hover or focus (what it keeps, what changes, what the unticked switch does)
+rep(r"""        sdX = sdOff(t),
+        sdM = sdMsg(t),
+""", r"""        sdX = sdOff(t),
+""")
+rep(r"""              disabledHint: sdX ? sdM : a,""", r"""              disabledHint: a,""")
+rep(r"""                                    "seedream" === t.model && sdX ? sdUnsup(t, n) : b ? B("body", "1", sdT("Planche de l'animal", "Animal sheet")) : B("head", "1", sdBaby(t) ? "Planche bébé" : "Planche tête"),""", r"""                                    b ? B("body", "1", sdT("Planche de l'animal", "Animal sheet")) : B("head", "1", sdBaby(t) ? "Planche bébé" : "Planche tête"),""")
+rep(r"""                          t.photo &&
+                            (0, l.jsx)(ax, {
+                              checked: !!t.photoOnly,
+                              onChange: (e) => g("photoOnly", e),
+                              disabled: k,
+                              children: y ? sdOnlyLabel(t) : "Mise en planche seulement",
+                            }),""", r"""                          t.photo &&
+                            sdTip(
+                              (0, l.jsx)(ax, {
+                                checked: !!t.photoOnly,
+                                onChange: (e) => g("photoOnly", e),
+                                disabled: k,
+                                children: y ? sdOnlyLabel(t) : "Mise en planche seulement",
+                              }),
+                              sdPhotoOnlyTip(t),
+                              "sd-tip-photoonly",
+                            ),""")
+# P63 review: GPT body card in "Mise en planche seulement": only the photo (its prompt uses no head sheet); header help for it;
+# "typical adult adult" for a neutral person (both engines) -> "typical adult person"
+rep(r"""                      children: sdChildHl(t)
+                        ? ["Rien d'obligatoire. Tu peux joindre la planche tête (", R(rU("tete")), ") pour reprendre le teint et les cheveux sous le cou."]
+                        : [
+                            sdBodyPhotoAny(t) ? "Ta photo. " : "",""", r"""                      children: sdChildHl(t)
+                        ? ["Rien d'obligatoire. Tu peux joindre la planche tête (", R(rU("tete")), ") pour reprendre le teint et les cheveux sous le cou."]
+                        : t.photo && t.photoOnly && !sdChild(t)
+                        ? ["Ta photo"]
+                        : [
+                            sdBodyPhotoAny(t) ? "Ta photo. " : "",""")
+rep(r'''                      t.photo &&
+                        (0, l.jsx)("p", {
+                          className: "mt-3 text-sm text-muted-foreground",
+                          children: y
+                            ? "Joins ta photo à la planche : l'objet viendra d'elle. La description reste utile pour préciser."''', r'''                      t.photo &&
+                        (0, l.jsx)("p", {
+                          className: "mt-3 text-sm text-muted-foreground",
+                          children: t.photoOnly
+                            ? "Joins ta photo, ou plusieurs photos du même sujet, à chaque planche : tout viendra d'elles, tel quel."
+                            : y
+                            ? "Joins ta photo à la planche : l'objet viendra d'elle. La description reste utile pour préciser."''')
+rep(r"""                                      (i =
+                                        "m" === e.pres
+                                          ? "man"
+                                          : "f" === e.pres
+                                            ? "woman"
+                                            : "adult"),""", r"""                                      (i =
+                                        "m" === e.pres
+                                          ? "man"
+                                          : "f" === e.pres
+                                            ? "woman"
+                                            : "person"),""")
+# The repository's separate object cards keep their own attachment rows.
+rep(r"""? "seedream" === t.model && sdX
+                                ? sdUnsup(t, n)
+                                : sdObjCards(B)""", r"""? sdObjCards(B)""")
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

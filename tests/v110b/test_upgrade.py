@@ -1,4 +1,4 @@
-"""Acceptance checks for the v110b integration, using the existing Playwright dependency.
+"""Acceptance checks for the owner's integrations, using the existing Playwright dependency.
 
     python tests/v110b/test_upgrade.py [path/to/built.html]
 """
@@ -396,6 +396,212 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(self.page.locator("h3").all_text_contents(), ["View 1: light"])
         self.assertIn("view toward the main light source", self.prompts()[0])
         self.assertNotIn("main windows", self.prompts()[0])
+
+    def test_v112_photo_clothes_switch(self):
+        for model in ("gpt", "seedream"):
+            with self.subTest(model=model):
+                page = self.load(model=model, photo=True, photoClothes=True, topSel=["hoodie"],
+                                 bottomSel=["jeans"], accSel=["cap"], acc="red bandana")
+                switch = page.get_by_role("switch", name="Use the clothes in the photo", exact=True)
+                expect(switch).to_be_checked()
+                head, body = self.prompts()
+                self.assertIn("the top from the attached photo", head)
+                self.assertNotRegex(head + body, r"hoodie|jeans|baseball cap|bandana")
+                page.get_by_role("button", name="Random character", exact=True).click()
+                self.assertEqual(self.state()["topSel"], ["hoodie"])
+                self.assertTrue(self.state()["photoClothes"])
+                page.get_by_role("tab", name=re.compile(r"^Outfit")).click()
+                expect(page.get_by_text(re.compile("The clothes in your photo are kept"))).to_be_visible()
+                expect(page.get_by_role("button", name="Random outfit", exact=True)).to_have_count(0)
+                switch.click()
+                self.assertFalse(self.state()["photoClothes"])
+                head, body = self.prompts()
+                self.assertIn("hoodie", head.lower())
+                self.assertIn("hoodie, jeans", body.lower())
+                self.assertIn("baseball cap", head)
+                self.assertIn("Its clothing is not used", head)
+                self.assertNotIn("taken from the photo", head + body)
+                page.reload()
+                expect(switch).not_to_be_checked()
+                self.assertEqual(self.state()["topSel"], ["hoodie"])
+
+    def test_v112_photo_clothes_migration(self):
+        cases = [({}, True), ({"topSel": ["hoodie"]}, False), ({"bottom": "green trousers"}, False),
+                 ({"shoesSel": ["sneakers"]}, False), ({"accSel": ["cap"]}, True),
+                 ({"photo": False, "topSel": ["hoodie"]}, True)]
+        for extra, expected in cases:
+            with self.subTest(extra=extra):
+                self.load(model="gpt", **{"photo": True, **extra})
+                self.assertIs(self.state().get("photoClothes"), expected)
+                for key, value in extra.items():
+                    self.assertEqual(self.state()[key], value)
+                self.page.reload()
+                self.page.locator("header").wait_for()
+                self.assertIs(self.state()["photoClothes"], expected)
+        page = self.load(photo=True, photoClothes=False, top="my green coat", sdIter="Keep my red shoes.")
+        types = page.get_by_role("radiogroup", name="Type", exact=True)
+        types.get_by_role("radio", name="Animal", exact=True).click()
+        types.get_by_role("radio", name="Person", exact=True).click()
+        self.assertIn("photoClothes", self.state())
+        self.assertFalse(self.state()["photoClothes"])
+        self.assertEqual(self.state()["top"], "my green coat")
+        self.assertEqual(self.state()["sdIter"], "Keep my red shoes.")
+        page.get_by_role("button", name="New character", exact=True).click()
+        page.get_by_role("button", name="Confirm: delete this character", exact=True).click()
+        self.assertTrue(self.state()["photoClothes"])
+
+    def test_v112_inactive_photo_save_migration(self):
+        for extra, expected in [({"mode": "animal", "photo": False, "modeCfg": {"person": {"photo": True}}}, False),
+                                ({"mode": "animal", "photo": True, "modeCfg": {"person": {"photo": False}}}, True),
+                                ({"child": True, "childPhotoBak": 1}, False)]:
+            with self.subTest(extra=extra):
+                page = self.load(topSel=["hoodie"], **extra)
+                self.assertIs(self.state()["photoClothes"], expected)
+                page.get_by_role("radiogroup", name="Type", exact=True).get_by_role("radio", name="Person", exact=True).click()
+                self.assertIs(self.state()["photoClothes"], expected)
+                self.assertEqual(self.state()["topSel"], ["hoodie"])
+
+    def test_v112_photo_clothes_defaults_and_overrides(self):
+        for model in ("gpt", "seedream"):
+            for extra in ({}, {"topSel": ["hoodie"]}):
+                with self.subTest(model=model, extra=extra):
+                    self.load(model=model, photo=True, photoClothes=False, **extra)
+                    head, body = self.prompts()
+                    self.assertIn("Its clothing is not used", head)
+                    self.assertIn("plain straight trousers" if extra else "simple realistic everyday outfit", body.lower())
+                    self.assertNotIn("taken from the photo", head + body)
+            self.load(model=model, photo=True, photoClothes=True, bodyRef=True)
+            self.assertNotIn("its clothes will come from it", self.page.locator("header").inner_text())
+            self.assertNotIn("Exactly as in the attached photo", self.prompts()[1])
+            self.load(model=model, photo=True, photoClothes=False, bodyAsIs=True, topSel=["hoodie"])
+            self.assertIn("Only the body comes from", self.prompts()[1])
+
+    def test_v112_seedream_new_cases(self):
+        cases = [{"style": style, **kind} for style in ("3d", "2d")
+                 for kind in ({}, {"child": True}, {"child": True, "baby": True})]
+        cases += [{"photo": True}, {"photo": True, "photoOnly": True},
+                  {"style": "3d", "headless": True, "bodyRef": True, "sdShapeRef": True}]
+        for extra in cases:
+            with self.subTest(extra=extra):
+                page = self.load(multiChar=True, name="Lena", **extra)
+                expect(page.get_by_text("Not available with Seedream yet", exact=True)).to_have_count(0)
+                texts = self.prompts()
+                self.assertEqual(len(texts), 1 if extra.get("baby") else 2)
+                self.assertNotRegex("\n".join(texts), r"conversation|this message|GENERATION LIMIT|regenerate|Lena|undefined|NaN")
+                for button in page.get_by_role("button", name="Copy for Seedream 5.0", exact=True).all():
+                    expect(button).to_be_enabled()
+                if extra.get("child"):
+                    lead = "3D animated feature film character image" if extra["style"] == "3d" else "2D animation character model sheet illustration"
+                    self.assertTrue(all(t.startswith(lead) for t in texts))
+                    self.assertNotRegex("\n".join(texts), r"photograph|film grain|not a 3D render|tanga|cleavage")
+                    if extra.get("baby"):
+                        self.assertIn("full-length cotton sleepsuit", texts[0])
+                else:
+                    self.assertNotIn("Retouch (optional)", page.locator("h3").all_text_contents())
+
+    def test_v112_person_photo_references_and_copies(self):
+        cases = [({}, True), ({"photoClothes": False}, False),
+                 ({"photoClothes": False, "bodyAsIs": True}, True),
+                 ({"photoClothes": True, "bodyRef": True}, False),
+                 ({"photoOnly": True, "bodyRef": True}, None)]
+        for extra, photo2 in cases:
+            with self.subTest(extra=extra):
+                page = self.load(photo=True, **extra)
+                head, body = self.prompts()
+                body_card = page.locator('pre[data-out="body"]').locator("xpath=ancestor::div[contains(@class, 'bg-card')][1]")
+                if photo2 is None:
+                    self.assertNotIn("head sheet", body)
+                    expect(body_card).to_contain_text("Your photo or photos")
+                else:
+                    self.assertIn("Image 1 is this character's head sheet", body)
+                    self.assertEqual("Image 2 is a photo" in body, photo2)
+                    self.assertEqual("; 2. your photo." in body_card.inner_text(), photo2)
+                page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
+                buttons = page.get_by_role("button", name="Copy for Seedream 5.0", exact=True).element_handles()
+                buttons[0].click()
+                expect(page.get_by_role("status")).to_contain_text("your photo or photos" if photo2 is None else "your photo as image 1")
+                buttons[1].click()
+                expect(page.get_by_role("status")).to_contain_text("your photo or photos" if photo2 is None else "head sheet")
+                self.assertEqual(page.evaluate("window.copied"), [head, body])
+                if photo2 is not None:
+                    self.assertEqual("your photo as image 2" in page.get_by_role("status").inner_text(), photo2)
+
+    def test_v112_photo_only_gpt_card_and_neutral_wording(self):
+        page = self.load(model="gpt", photo=True, photoOnly=True, bodyRef=True)
+        self.prompts()
+        card = page.locator('pre[data-out="body"]').locator("xpath=ancestor::div[contains(@class, 'bg-card')][1]")
+        text = card.inner_text().split("Hide the prompt")[0]
+        self.assertIn("Your photo", text)
+        self.assertNotIn("head sheet", text)
+        for model in ("gpt", "seedream"):
+            self.load(model=model, style="3d", pres="x")
+            texts = "\n".join(self.prompts())
+            self.assertIn("typical adult person", texts)
+            self.assertNotIn("adult adult", texts)
+        for sex in ("f", "m"):
+            self.load(style="3d", pres=sex, age=18)
+            self.assertTrue(all("18-year-old adult" in t for t in self.prompts()))
+
+    def test_v112_existing_automatic_engines(self):
+        for extra, model in [({"mode": "object"}, "seedream"),
+                             ({"mode": "animal", "photo": True}, "seedream"),
+                             ({"style": "photo"}, "seedream"),
+                             ({"style": "3d"}, "gpt"), ({"photo": True}, "gpt"),
+                             ({"child": True, "style": "2d"}, "gpt")]:
+            with self.subTest(extra=extra):
+                self.load(modelPick=0, **extra)
+                self.assertEqual(self.state()["model"], model)
+                self.page.reload()
+                self.page.locator("header").wait_for()
+                self.assertEqual(self.state()["model"], model)
+
+    def test_v112_photo_controls_languages_keyboard_mobile(self):
+        for language in ("en", "fr"):
+            for extra in ({}, {"mode": "animal"}, {"mode": "object", "objCat": "house"},
+                          {"mode": "object", "objCat": "interior"}, {"mode": "object", "objCat": "vehicle"}):
+                with self.subTest(language=language, extra=extra):
+                    page = self.load(uiLang=language, photo=True, **extra)
+                    page.set_viewport_size({"width": 390, "height": 844})
+                    label = "Sheet layout only" if language == "en" else "Mise en planche seulement"
+                    if extra.get("mode") == "object":
+                        place = extra["objCat"] in ("house", "interior")
+                        label = (("Keep the place in the photo as is" if place else "Keep the object in the photo as is")
+                                 if language == "en" else ("Garder le lieu de la photo tel quel" if place else "Garder l'objet de la photo tel quel"))
+                    control = page.get_by_role("switch", name=label, exact=True)
+                    tip = page.locator("#sd-tip-photoonly")
+                    expect(tip).to_have_css("visibility", "hidden")
+                    control.focus()
+                    expect(tip).to_have_css("visibility", "visible")
+                    expect(tip).to_contain_text("Ticked:" if language == "en" else "Coché :")
+                    self.assertNotRegex(tip.text_content(), r"GPT|conversation")
+                    control.press("Space")
+                    self.assertTrue(self.state()["photoOnly"])
+                    clothes = page.get_by_role("switch", name="Use the clothes in the photo" if language == "en" else "Utiliser les habits de la photo", exact=True)
+                    expect(clothes).to_have_count(0)
+                    control.press("Space")
+                    if extra.get("mode", "person") == "person":
+                        expect(clothes).to_be_checked()
+                        clothes.focus()
+                        clothes.press("Space")
+                        self.assertFalse(self.state()["photoClothes"])
+                    else:
+                        expect(clothes).to_have_count(0)
+
+    def test_v112_mobile_person_copies(self):
+        for extra in ({"style": "3d", "headless": True}, {"photo": True},
+                      {"photo": True, "photoOnly": True, "bodyRef": True}):
+            with self.subTest(extra=extra):
+                page = self.load(**extra)
+                page.set_viewport_size({"width": 320, "height": 844})
+                texts = self.prompts()
+                bar = page.locator("div.fixed.inset-x-0.bottom-0")
+                buttons = bar.get_by_role("button")
+                expect(buttons).to_have_count(2)
+                self.assertNotIn("Your three steps", bar.inner_text())
+                page.evaluate("() => { window.copied = []; navigator.clipboard.writeText = async text => { window.copied.push(text); }; }")
+                for i in range(2):
+                    buttons.nth(i).click()
+                    self.assertEqual(page.evaluate("window.copied"), texts[:i + 1])
 
 
 if __name__ == "__main__":

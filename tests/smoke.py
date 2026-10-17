@@ -606,13 +606,14 @@ with sync_playwright() as p:
     assert heads[0] == heads[1]
     assert not errors, errors
 
-    # Seedream does not start from a photo: its notice sends to card 3, the retouch card, by the name it shows.
+    # Seedream can start from a photo; returning to the dedicated builder restores its retouch card.
     msg = clipboard_page(browser, errors)
     msg.get_by_role("radio", name="Seedream 5.0", exact=True).click()
     msg.get_by_text("Start from a photo", exact=True).click()
-    notice = msg.get_by_text(re.compile(r"^Seedream doesn't start from a photo\.")).first
-    expect(notice).to_be_visible()
-    assert notice.inner_text().endswith("and use card 3 (Retouch)."), notice.inner_text()
+    assert msg.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+    assert len(prompts(msg)) == 2
+    for button in msg.get_by_role("button", name="Copy for Seedream 5.0", exact=True).all():
+        expect(button).to_be_enabled()
     msg.get_by_text("Start from a photo", exact=True).click()
     cards = [h for h in msg.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
     assert cards[2].startswith("Retouch"), cards
@@ -809,12 +810,15 @@ with sync_playwright() as p:
     pet.evaluate("() => window.writes[1]()")
     pet.wait_for_function("(b) => b.innerText.startsWith('Copied')", arg=close)  # the copy has been handled
     assert not pet.evaluate(f"{SAVED}.sdHeadSig"), pet.evaluate(f"{SAVED}.sdHeadSig")
-    # People in 3D or 2D are still for GPT only.
+    # People in 3D and 2D now have usable Seedream sheets.
     flat = clipboard_page(browser, errors)
-    flat.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1, mode: 'person', style: '3d'}))")
-    flat.reload()
-    expect(flat.get_by_text("Not available with Seedream yet", exact=True)).to_be_visible()
-    expect(flat.get_by_text("Seedream does not do people in 3D or 2D yet. For this style, switch to GPT Image 2.5.").first).to_be_visible()
+    for style in ("3d", "2d"):
+        flat.evaluate("style => localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1, mode: 'person', style}))", style)
+        flat.reload()
+        assert flat.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+        texts = prompts(flat)
+        assert len(texts) == 2 and all(texts)
+        assert not re.search(r"conversation|GENERATION LIMIT|this message", "\n".join(texts))
     assert not errors, errors
 
     # Checks from the owner's second v95 line (the tests/ui_*.py scripts of its build chain), in English.

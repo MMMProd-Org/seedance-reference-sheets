@@ -48,6 +48,7 @@ A head sheet for the face, a body sheet for the body, both added to Seedance 2.5
 - **One role per image.** For a person, a head sheet for the face and a body sheet for the body. For an animal, one sheet of the whole animal, with optional head close-ups made from it. For an object or a place, one image per view; an object can also have its three views side by side in one image (a triptych). Each reference does one job.
 - **People, animals, objects and places.** Vehicles on their wheels, clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and a house exterior or an interior, by day and by night.
 - **Children and babies.** Separate, dressed reference prompts: head and body for children aged 3–12, one sheet for a nine-month-old baby. Adult body settings stay out of these modes.
+- **Choose the clothes from a photo.** Keep the photo's clothes, or use the Outfit tab for both the head and body sheets. Existing saved outfits are preserved. Sheet layout only keeps the whole photo as it is.
 - **Choose your views.** Pick 1–4 separate views for an object or place. Existing saves keep their usual views; the object triptych remains available. Houses also have a plain grey floor and backdrop option.
 - **Fine control where it matters.** Age shown through visible signs, facial structure, skin realism, separate sliders for muscle volume and definition, outfits with wear and dirt, scars and marks pinned to a side and a spot.
 - **Edits that preserve the reference.** Retouch an approved sheet, dress it in the outfit you choose, or combine head and body. Prompts ask to preserve proportions; check the generated result.
@@ -64,9 +65,13 @@ Each release is the whole app as one HTML file, so any version can be kept and o
 | Step | Model | Coverage |
 | --- | --- | --- |
 | Reference sheets | GPT Image 2.5 | Adults, children, babies, animals, objects, places |
-| Reference sheets | Seedream 5.0 | Adults, children and babies (photo style), animals, objects, places |
+| Reference sheets | Seedream 5.0 | Adults, children and babies in photo, 3D and 2D styles; adults from a source photo; animals, objects, places |
 | Still image integration | GPT Image 2.5 / Seedream 5.0 | Compositing prompt for a base photo and an asset |
 | Video | Seedance 2.5 | Uses the sheets as image references |
+
+For a person from a photo or in 3D/2D, select Seedream explicitly: the automatic model choice stays the same.
+The new person prompts adapt the existing GPT wording to Seedream's image references. Their generated images
+remain to be tested; longer prompts keep the visible length warning.
 
 ## What works, written down
 
