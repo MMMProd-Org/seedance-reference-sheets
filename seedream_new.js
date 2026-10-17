@@ -13,21 +13,19 @@ function sdNum(n) {
   return n.toLocaleString("en" === sdLang ? "en-US" : "fr-FR");
 }
 /* ===== Seedream 5.0 : constructeurs de prompts (Personne, Photo, sans photo de départ, création) ===== */
-var SD_MSG = "Seedream ne fait pas encore les personnes en 3D ou en 2D. Pour ce style, passe sur GPT Image 2.5.";
-function sdMsg(t) {
-  /* translated here: the message is also shown in the prompt box, which the render-time translation skips */
-  return sdTr(
-    t && "person" === t.mode && t.photo
-      ? "Seedream ne part pas d'une photo. Pour garder un corps existant, décoche « Partir d'une photo » et passe par la carte 3 (Retouche)."
-      : SD_MSG,
-  );
-}
-/* people: Seedream's own prompts, Photo style without a source photo; objects, places and animals: the GPT prompts, made self-contained (sdSolo) */
+/* New person cases reuse GPT prose; the existing person, animal and object builders keep their routing. */
 function sdOk(t) {
-  return (
-    !(t.locked && t.base && t.base.mode === t.mode) &&
-    ("person" !== t.mode || ("photo" === t.style && !t.photo))
-  );
+  return !0;
+}
+function sdNative(t) {
+  return "person" !== t.mode || sdChild(t) || (!t.photo && "photo" === t.style);
+}
+function sdNat(t) {
+  return "seedream" === t.model && sdNative(t);
+}
+/* Availability grows, but automatic engine choices and old GPT saves keep the published policy. */
+function sdAuto(t) {
+  return !(t.locked && t.base && t.base.mode === t.mode) && ("person" !== t.mode || ("photo" === t.style && !t.photo));
 }
 function sdOff(t) {
   return "seedream" === t.model && !sdOk(t);
@@ -73,10 +71,37 @@ function sdTip(control, text, id) {
   });
 }
 function sdPhotoTip(t) {
+  /* v112: by type (it showed the person text for an animal or an object); no line that contradicts the cards */
   return [
-    "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, et son corps avec « Garder le corps tel quel ».",
-    "Pas besoin pour le corps entier : ta planche tête suffit, ajoute-la comme image 1 dans le générateur.",
-    "seedream" === t.model ? "Disponible avec GPT Image 2.5 uniquement." : "Ajoute la photo à chaque planche dans ta conversation GPT.",
+    "animal" === t.mode
+      ? "Pour créer un animal d'après une photo : un vrai animal ou une image trouvée. Les planches reprennent l'animal de la photo, et tes réglages peuvent y ajouter des accessoires, un état du moment ou des éléments fantastiques."
+      : "object" === t.mode
+        ? "house" === t.objCat || "interior" === t.objCat
+          ? "Pour créer un lieu d'après une photo : les planches reprennent son architecture, son aménagement, ses matières et ses couleurs, et tes réglages choisissent la lumière et le moment."
+          : "Pour créer un objet d'après une photo : les planches reprennent sa forme, ses matières, ses couleurs et son usure, et tes marques, détails et état du moment s'y ajoutent."
+        : "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, ses habits avec « Utiliser les habits de la photo » (activé par défaut), et son corps avec « Garder le corps tel quel ».",
+    "Joins la photo là où une carte le demande.",
+  ].map(function (x, i) {
+    return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
+  });
+}
+function sdPhotoOnlyTip(t) {
+  var pl = "object" === t.mode && ("house" === t.objCat || "interior" === t.objCat);
+  return [
+    "person" === t.mode
+      ? "Coché : ta photo est reprise telle quelle, sans rien inventer ni retoucher (visage, cheveux, maquillage, corps, tenue, accessoires). Seuls changent les angles de vue, la pose, le fond gris et la lumière de studio."
+      : "animal" === t.mode
+        ? "Coché : ta photo est reprise telle quelle, sans rien inventer ni retoucher (race, pelage, marques, accessoires, corps). Seuls changent les angles de vue, la pose, le fond gris et la lumière de studio."
+        : pl
+          ? "Coché : ta photo est reprise telle quelle, sans rien inventer ni retoucher (architecture, aménagement, matières, couleurs, usure), avec sa lumière et son moment, sans version de nuit. Seuls changent les angles de vue" + ("house" === t.objCat ? ", et aussi le décor et la lumière avec « Sol et fond gris neutre »." : ".")
+          : "Coché : ta photo est reprise telle quelle, sans rien inventer ni retoucher (forme, matières, couleurs, usure, marques). Seuls changent les angles de vue, le fond gris et la lumière de studio.",
+    "person" === t.mode
+      ? "Décoché : la photo donne le visage et les cheveux, et tu choisis si elle donne aussi les habits et le corps."
+      : "animal" === t.mode
+        ? "Décoché : la photo donne l'animal, et tes réglages peuvent y ajouter des accessoires, un état du moment ou des éléments fantastiques."
+        : pl
+          ? "Décoché : la photo donne le lieu, et tes réglages choisissent la lumière et le moment."
+          : "Décoché : la photo donne l'objet, et tes marques, détails et état du moment s'y ajoutent.",
   ].map(function (x, i) {
     return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
   });
@@ -103,7 +128,11 @@ function sdIterCopyMsg(t) {
 }
 function sdBodyCopyMsg(t) {
   if (sdChildHl(t)) return "";
-  if (nw())
+  /* v112: a GPT prompt rewritten for Seedream (sdGptSd): "Mise en planche seulement" takes only the photos; otherwise the head sheet is
+     image 1, then the photo when the body needs it (sdBodyPhotoAny); no shape guide */
+  var gp = !sdNative(t);
+  if (gp && an()) return sdT("Copié. Dans Seedream, ajoute ta photo ou tes photos.", "Copied. In Seedream, add your photo or photos.");
+  if (nw() && !gp)
     return t.sdShapeRef
       ? sdT("Copié. Dans Seedream, ajoute ton image guide comme image 1.", "Copied. In Seedream, add your shape guide as image 1.")
       : "";
@@ -124,6 +153,16 @@ function sdBodyCopyMsg(t) {
       "Copié. Ta planche tête vient d'une version précédente de l'outil : refais-la seulement si tu as changé la corpulence depuis, sinon ajoute-la comme image 1.",
       "Copied. Your head sheet comes from an earlier version of the tool: make it again only if you changed the build since, otherwise add it as image 1.",
     );
+  if (gp)
+    return sdBodyPhotoAny(t)
+      ? sdT(
+          "Copié. Dans Seedream, ajoute la planche tête (" + f + ") comme image 1 et ta photo comme image 2.",
+          "Copied. In Seedream, add the head sheet (" + f + ") as image 1 and your photo as image 2.",
+        )
+      : sdT(
+          "Copié. Dans Seedream, ajoute la planche tête (" + f + ") comme image 1.",
+          "Copied. In Seedream, add the head sheet (" + f + ") as image 1.",
+        );
   return sdUseBodyImg()
     ? sdT(
         "Copié. Dans Seedream, ajoute la planche tête (" + f + ") comme image 1 et ta planche habillée comme image 2.",
@@ -138,6 +177,14 @@ function sdBodyCopyMsg(t) {
           "Copié. Dans Seedream, ajoute la planche tête (" + f + ") comme image 1.",
           "Copied. In Seedream, add the head sheet (" + f + ") as image 1.",
         );
+}
+/* v112: message after copying a head or object prompt made from a photo in Seedream */
+function sdSrcCopyMsg(t) {
+  return "seedream" === t.model && t.photo && !sdChild(t)
+    ? an()
+      ? sdT("Copié. Dans Seedream, ajoute ta photo ou tes photos.", "Copied. In Seedream, add your photo or photos.")
+      : sdT("Copié. Dans Seedream, ajoute ta photo comme image 1.", "Copied. In Seedream, add your photo as image 1.")
+    : "";
 }
 /* "Habiller": the same outfit text as the with-head body prompt (sdHeadOutfit), so the dressed sheet used as image 2 matches that prompt */
 function sdPresetDress() {
@@ -543,6 +590,10 @@ function sdChildBuild() {
 }
 var SD_CHILD_LIMIT =
   "GENERATION LIMIT:\nProduce one image. Panels whose widths differ by more than about 10% are a missed requirement. If a requirement is clearly missed, regenerate at most three times (four images in total), fixing the most visible miss first and changing the image clearly each time. A generation stopped by the safety filter does not count: retry it once unchanged; after two stops in total, deliver the best image so far, say so and stop. Then deliver the best attempt and stop: no variations.";
+/* v112: the child and baby Seedream sheets in 3D or 2D open with that style instead of "Studio photograph" (Photo: unchanged) */
+function sdChildLead() {
+  return "photo" === e.style ? "Studio photograph" : "3d" === e.style ? "3D animated feature film character image" : "2D animation character model sheet illustration";
+}
 function sdChildRender(gpt) {
   return "photo" === e.style
     ? gpt
@@ -563,7 +614,7 @@ function sdChildHead(gpt) {
       "A natural, ordinary child's face with the soft features of that age and the slight asymmetry of a real face, no makeup.\n";
   if (!gpt)
     return (
-      "Studio photograph, 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin mid-grey gaps: an identity reference sheet of one fictional child character for a family film, the same child in all four panels.\n" +
+      sdChildLead() + ", 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin mid-grey gaps: an identity reference sheet of one fictional child character for a family film, the same child in all four panels.\n" +
       "Top left: front view, looking straight into the lens. Top right: three-quarter view, " + p + " face turned toward the left edge of the frame. Bottom left: exact profile facing the left edge of the frame, showing the left side of " + p + " face. Bottom right: back view, the back of " + p + " head seen straight from behind, no face visible" + sdBackHair() + ".\n" + sdChildCrop(0) +
       id + "\n" +
       "Calm, natural expression, mouth closed.\n\n" +
@@ -591,6 +642,31 @@ function sdChildHead(gpt) {
 function sdChildHl(t) {
   return sdChild(t) && !!t.childHeadless;
 }
+/* v111 "Utiliser les habits de la photo" (person from a photo, on by default): the clothes of the photo for the head and the body, the Tenue tab
+   set aside; off: the Tenue tab is used for both, and what it leaves unset is a plain default, never taken from the photo */
+function sdPhotoClothes(t) {
+  t = t || e;
+  return "person" === t.mode && !!t.photo && (!!t.photoOnly || !1 !== t.photoClothes);
+}
+/* the body sheet needs the photo: its body kept as is, or its clothes (not replaced by the reference outfit) */
+function sdBodyPhoto(t) {
+  return "person" === t.mode && !!t.photo && (!!t.photoOnly || !!t.bodyAsIs || (sdPhotoClothes(t) && !t.bodyRef));
+}
+/* v112: the body sheet needs the photo, person or animal (an animal's body always comes from its photo) */
+function sdBodyPhotoAny(t) {
+  return sdBodyPhoto(t) || ("animal" === t.mode && !!t.photo);
+}
+/* a garment chosen in the Tenue tab (top, bottom, shoes), for sessions saved before v111 */
+function sdGarmentSet(t) {
+  return (
+    ["topSel", "bottomSel", "shoesSel"].some(function (k) {
+      return (t[k] || []).length;
+    }) ||
+    ["top", "bottom", "shoes"].some(function (k) {
+      return !!t5(t[k]);
+    })
+  );
+}
 /* who the person is, for a head copy that ends after a switch: 0 adult, 1 child, 2 baby */
 function sdKind(t) {
   return sdChild(t) ? (t.baby ? 2 : 1) : 0;
@@ -604,7 +680,7 @@ function sdChildBodyHl(gpt, body, out, st) {
     skin = "Skin tone on the hands, arms and neck: " + t7("skin") + "." + (["shoulder", "long", "vlong"].indexOf(e.hairLen) >= 0 ? " The part of the hair that falls below the neck shows: " + ne() + "." : "");
   if (!gpt)
     return (
-      "Studio photograph, 16:9, four equal vertical panels with thin grey gaps: a body and costume reference turnaround of one fictional child character for a family film, framed from the neck down, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
+      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a body and costume reference turnaround of one fictional child character for a family film, framed from the neck down, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
       crop + "\n\n" +
       body + " " + skin + "\n\n" + out + (st ? " Current state: " + st + "." : "") + "\n\n" +
       "Neutral, relaxed standing pose, feet slightly apart, arms relaxed at the sides, hands visible.\n\n" +
@@ -631,7 +707,7 @@ function sdChildBody(gpt) {
   if (e.childHeadless) return sdChildBodyHl(gpt, body, out, st);
   if (!gpt)
     return (
-      "Studio photograph, 16:9, four equal vertical panels with thin grey gaps: a full-body costume reference turnaround of one fictional child character for a family film, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
+      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a full-body costume reference turnaround of one fictional child character for a family film, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
       "Whole figure in every panel, hair to feet, same scale and floor line, with some grey space above the head and below the feet.\n" +
       "Image 1 is this child's head reference sheet: copy face, hair and skin tone exactly; ignore its layout and clothing.\n" +
       "Hair exactly as in image 1: " + ne() + ", the same in every panel.\n\n" +
@@ -744,7 +820,7 @@ function sdBabySheet(gpt) {
     bot = "Bottom row, the whole baby sitting upright on the grey floor, left to right: front view; exact left side view, facing the left edge of the frame; back view. Same scale and floor line in these three panels, with some grey space around the baby.";
   if (!gpt)
     return (
-      "Studio photograph, 16:9 landscape, six equal panels in a 3 by 2 grid separated by thin mid-grey gaps: an identity and body reference sheet of one fictional baby character for a family film, the same baby in all six panels.\n" +
+      sdChildLead() + ", 16:9 landscape, six equal panels in a 3 by 2 grid separated by thin mid-grey gaps: an identity and body reference sheet of one fictional baby character for a family film, the same baby in all six panels.\n" +
       top + "\n" + bot + "\n\n" +
       id + "\n" + out + "\n\n" +
       "Calm, content expression, mouth closed. Sitting steadily, hands resting on the legs.\n\n" +
@@ -964,7 +1040,7 @@ function sdIntegTool(t, n, h) {
   });
 }
 function sdMineTenue(t) {
-  return "seedream" === t.model && sdOk(t);
+  return sdNat(t);
 }
 /* outfit of the with-head body sheet and of "Habiller": fitted top and leggings */
 function sdHeadOutfit() {
@@ -1040,13 +1116,14 @@ function sdCov() {
   if ("m" === e.pres && "onepiece" === c) return "swim";
   return c;
 }
+/* v112: the Seedream reference outfits only with the dedicated Seedream builder (sdNat); a GPT prompt rewritten for Seedream keeps the GPT ones */
 function sdShownCover(t) {
   var c = t.refCover;
-  if ("fitted" === c) return "seedream" === t.model && "m" !== t.pres ? (t.chest >= 4 ? "fitted" : "sport") : "short";
-  if ("sport" === c) return "seedream" === t.model && "m" !== t.pres ? "sport" : "short";
-  if (("swim" === c || "short" === c) && "seedream" === t.model && "m" !== t.pres) return "sport";
-  if ("tanga" === c) return "seedream" === t.model && "m" !== t.pres ? (sdRevealOk(t) ? "tanga" : "sport") : "swim";
-  if ("brief" === c) return "seedream" === t.model && "m" === t.pres && sdRevealOk(t) ? "brief" : "swim";
+  if ("fitted" === c) return sdNat(t) && "m" !== t.pres ? (t.chest >= 4 ? "fitted" : "sport") : "short";
+  if ("sport" === c) return sdNat(t) && "m" !== t.pres ? "sport" : "short";
+  if (("swim" === c || "short" === c) && sdNat(t) && "m" !== t.pres) return "sport";
+  if ("tanga" === c) return sdNat(t) && "m" !== t.pres ? (sdRevealOk(t) ? "tanga" : "sport") : "swim";
+  if ("brief" === c) return sdNat(t) && "m" === t.pres && sdRevealOk(t) ? "brief" : "swim";
   return "m" === t.pres && "onepiece" === c ? "swim" : c;
 }
 /* "random" in a free outfit field: the tool picks one concrete, age-appropriate item (seeded by the face, so the
@@ -1407,7 +1484,7 @@ function sdG(t) {
   t = sdForteParts(t);
   /* "several in the same GPT conversation" names the subject within a GPT conversation (its toggle is hidden in Seedream: P13) */
   "seedream" === t.model && t.multiChar && (t = Object.assign({}, t, { multiChar: !1 }));
-  return sdAutoBust(sdShift(sdRndOutfit("seedream" !== t.model && ("tanga" === t.refCover || "brief" === t.refCover || "sport" === t.refCover || "fitted" === t.refCover) ? Object.assign({}, t, { refCover: "sport" === t.refCover || "fitted" === t.refCover ? "short" : "swim" }) : t)));
+  return sdAutoBust(sdShift(sdRndOutfit(!sdNat(t) && ("tanga" === t.refCover || "brief" === t.refCover || "sport" === t.refCover || "fitted" === t.refCover) ? Object.assign({}, t, { refCover: "sport" === t.refCover || "fitted" === t.refCover ? "short" : "swim" }) : t)));
 }
 function sdIris() {
   if (t5(e.eyeColorCustom))
@@ -1490,10 +1567,17 @@ function sdLean() {
 function sdSlim() {
   return +e.fat <= 1;
 }
+/* New and saved face signatures must ignore the same clothing-only instructions. */
+function sdSigWithoutOutfit(sig) {
+  return sig
+    .replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "")
+    .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), besides any logo or print on the clothing taken from the photo\.$/gm, "$1.");
+}
 /* "same", "changed", or "legacy": a signature saved before v90 has no corpulence class; when everything it does hold
    still matches, only that class is unknown, so the tool says so instead of announcing a changed face */
 function sdSigState(saved) {
   if (!saved) return "none";
+  saved = sdSigWithoutOutfit(saved);
   var cur = as();
   if (saved === cur) return "same";
   var x = sdSigExtra();
@@ -1726,7 +1810,7 @@ function sdLegs(hl) {
 }
 /* warning under the outfit choice: fitted top with a "Très généreuse" bust in Seedream */
 function sdFittedWarn(t) {
-  return "seedream" === t.model && "m" !== t.pres && t.chest >= 4 && "fitted" === sdShownCover(t)
+  return sdNat(t) && "m" !== t.pres && t.chest >= 4 && "fitted" === sdShownCover(t)
     ? (0, l.jsx)("p", {
         className: "mt-3 text-sm font-semibold text-destructive",
         children: sdT(
@@ -2306,23 +2390,6 @@ function sdIterBlock(t, g, B, L) {
   var op = sdOp(t),
     title = { join: "Assembler tête et corps", dress: "Habiller", dressMine: "Habiller avec ma tenue", heads: "Ajouter les têtes" }[op] || (nw() ? "Retouche" : "Retouche (facultatif)");
   return B("iter", "3", title, !String(t.sdIter || "").trim() && "dressMine" !== t.sdIterOp && (!nw() || "free" === t.sdIterOp), "Ouvre « Autres retouches » et choisis ou écris une retouche.");
-}
-/* F. a case Seedream cannot do yet: one clear card with the way out */
-function sdUnsup(t, n) {
-  return (0, l.jsxs)("div", {
-    className: "rounded-2xl border bg-card p-4",
-    children: [
-      (0, l.jsx)("h3", { className: "text-lg font-bold leading-tight", children: "Pas encore possible avec Seedream" }),
-      (0, l.jsx)("p", { className: "mt-2 text-sm", children: sdMsg(t) }),
-      (0, l.jsx)("button", {
-        type: "button",
-        onClick: () => n((s) => ({ ...s, model: "gpt", modelPick: 1 })),
-        className:
-          "mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-bold tape-chip hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        children: "Passer sur GPT Image 2.5",
-      }),
-    ],
-  });
 }
 function sdBarItems(t) {
   var op = "free" === t.sdIterOp && !String(t.sdIter || "").trim() ? "" : String(t.sdIter || "").trim() ? sdIterOpEff(t) : "dressMine" === t.sdIterOp ? "dressMine" : "join";
@@ -3470,18 +3537,49 @@ function sdSolo(m) {
             .replace(/the image just above in this conversation \(or attached\)|the image just above(?=\.)/g, "the attached day view");
   return o;
 }
+/* shortcut: adapt the existing person prose; add a dedicated builder only if render tests show a layout failure. */
+function sdGptSdText(x, body, photo2) {
+  var s = String(x || "")
+    .replace(/\n\nGENERATION LIMIT:[\s\S]*$/, "")
+    .replace(/^This is a new[^\n]* from earlier images in this conversation\.\n/gm, "")
+    .replace(/,? never (?:a|an|any|anything)\b[^.;\n]*? from earlier images in this conversation/g, "");
+  if (!body) return s;
+  s = s
+    .replace(
+      /The head sheet \((four head close-ups: front, three-quarter, profile and back of the head on a grey backdrop)\) is the identity anchor: match its ([^.]*) exactly\. If a head sheet is attached to this message, it is the anchor and overrides every earlier image in this conversation; otherwise use the most recent head sheet [^.;]*, and ignore every other (animal|person)\./,
+      function (z, n, w, a) {
+        return "Image 1 is this " + ("animal" === a ? "animal" : "character") + "'s head sheet (" + n + "): it is the identity anchor; match its " + w + " exactly.";
+      },
+    )
+    .replace(
+      "The head sheet (four head close-ups: front, three-quarter, profile and back of the head on a grey backdrop) belongs to this character, but the head itself is outside the frame here:",
+      "Image 1 is this character's head sheet (four head close-ups: front, three-quarter, profile and back of the head on a grey backdrop), but the head itself is outside the frame here:",
+    )
+    .replace(/ If a head sheet is attached to this message, use it; otherwise use the most recent head sheet [^.]*\./, "");
+  if (!photo2) return s.replace(/ The attached photo shows the same (animal|person)\./, "");
+  s = s
+    .replace(/ The attached photo shows the same (animal|person)\./, " Image 2 is a photo of the same $1.")
+    .replace(/the attached photo(?:\(s\))?/g, "image 2")
+    .replace("areas the photos do not show", "areas image 2 does not show");
+  /* the headless body has no such sentence: image 2 is named after the head sheet */
+  return /Image 2 is a photo/.test(s) ? s : s.replace(/(REFERENCE:\n[^\n]*)/, "$1 Image 2 is a photo of the same person.");
+}
+function sdGptSd(t, m) {
+  var o = {}, k, po = an();
+  for (k in m) o[k] = "";
+  o.head = sdAdult(sdGptSdText(m.head, !1, !1));
+  o.body = sdAdult(sdGptSdText(m.body, !po, !po && sdBodyPhoto(t)));
+  return o;
+}
 function sdWrap(t, m) {
   if (sdChild(t) && ("seedream" !== t.model || sdOk(t))) return sdChildPrompts(t, m);
   var o = {},
     k;
-  if ("seedream" === t.model && !sdOk(t)) {
-    for (k in m) o[k] = sdMsg(t);
-    return o;
-  }
   if ("seedream" !== t.model || "person" !== t.mode) {
     o = sdAnimalSplit(t, sdObjSplit(t, sdGptPost(t, m)));
     return "seedream" === t.model ? sdSolo(o) : o;
   }
+  if (!sdNative(t)) return sdGptSd(t, sdGptPost(t, m));
   for (k in m) o[k] = m[k];
   o.head = sdCanonFace(sdPlainFace(sdAdult(sdHead()), t.looks), t);
   o.body = sdAdult(sdBody());
@@ -3521,6 +3619,31 @@ function sdRows(t, m, R, q) {
   var F = "16:9, à choisir dans Seedream",
     J = "Images à ajouter",
     N = "Nom du fichier";
+  /* v112: a GPT prompt rewritten for Seedream (sdGptSd): the photo(s) for a head sheet; the head sheet (image 1), then the
+     photo when the body needs it (image 2); "Mise en planche seulement" (an()): only the photos */
+  if (!sdNative(t)) {
+    var P = t.photo ? (an() ? "Ta photo ou tes photos" : "Ta photo") : "Aucune image";
+    o.head = [
+      [J, P],
+      ["Format", F],
+      [N, R(rU("tete"))],
+      ["Longueur", sdLen(m.head, !0)],
+    ];
+    o.body = [
+      [
+        J,
+        an()
+          ? P
+          : (0, l.jsxs)("span", {
+              children: ["1. la planche tête (", R(rU("tete")), ")", sdBodyPhoto(t) ? " ; 2. ta photo." : "."],
+            }),
+      ],
+      ["Format", F],
+      [N, R(rU("corps"))],
+      ["Longueur", sdLen(m.body, !0)],
+    ];
+    return o;
+  }
   o.head = [
     [J, "Aucune image"],
     ["Format", F],
