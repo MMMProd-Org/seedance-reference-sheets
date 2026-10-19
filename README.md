@@ -1,5 +1,7 @@
 <h1 align="center">Seedance Reference Sheets</h1>
 
+<p align="center"><strong>Create characters who feel real.</strong></p>
+
 <p align="center">
   <a href="https://github.com/MMMProd-Org/seedance-reference-sheets/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/MMMProd-Org/seedance-reference-sheets/ci.yml?branch=main&style=flat-square&color=111111&label=CI" alt="CI"></a>
   <a href="https://github.com/MMMProd-Org/seedance-reference-sheets/releases"><img src="https://img.shields.io/github/v/release/MMMProd-Org/seedance-reference-sheets?style=flat-square&color=111111&label=release" alt="Latest release"></a>
@@ -8,30 +10,42 @@
 </p>
 
 <p align="center">
-  <img src="docs/hero.svg" width="880" alt="Same face. Every shot. Set a character up with sliders, copy the prompt, get a clean sheet from GPT Image 2.5 or Seedream 5.0. One HTML file, no install, no account, no API key.">
-</p>
-
-<p align="center">
-  <a href="https://mmmprod-org.github.io/seedance-reference-sheets/"><strong>Open the app</strong></a> &middot;
+  <a href="https://mmmprod-org.github.io/seedance-reference-sheets/"><strong>Create your character</strong></a> &middot;
   <a href="https://github.com/MMMProd-Org/seedance-reference-sheets/releases">Download a version</a> &middot;
   <a href="https://github.com/MMMProd-Org/seedance-reference-sheets/issues/new/choose">Report an issue</a>
 </p>
 
 ---
 
-You ask a video model for "a woman in a red coat". Five shots later, you have met five different women.
+If your AI portraits keep coming back with flawless skin and a model-perfect face, give the model a more individual person to work with.
 
-Seedance 2.5 can hold a character steady, but only from clean references: the same light, a plain grey backdrop, matching views, nothing invented from one view to the next. Writing the prompts for sheets like that is where the hours go.
+**Seedance Reference Sheets helps you describe characters who feel real:** visible age, skin texture, facial proportions, natural asymmetry and distinctive marks. The aim is a person you could imagine meeting, with an appearance you choose.
 
-This app writes them. You move sliders. It writes. She stays herself.
+One HTML file turns your settings into ready-to-copy prompts for GPT Image 2.5 or Seedream 5.0. You generate the images in your chosen model, then use the sheets as references in Seedance 2.5.
+
+## Realism starts with the details
+
+- **Choose how idealised the face should be.** The Beauty control includes everyday and unconventional faces alongside more idealised looks.
+- **Give skin its texture.** Use the skin realism settings to ask for fine pores, uneven tone, small blemishes, redness or under-eye shadows.
+- **Make age visible.** Age is described through facial and skin cues, from youthful features to expression lines and wrinkles.
+- **Add individual features.** Shape facial proportions and describe freckles, scars or other marks, including their side and location.
+- **Shape the whole person.** Adjust body build and proportions, with separate controls for muscle volume and definition.
+
+These controls guide the image model. Check each generated sheet for the traits you asked for before using it as a reference.
 
 ## Before / after
+
+<p align="center">
+  <img src="docs/hero.svg" width="880" alt="Same face. Every shot. Set a character up with sliders, copy the prompt, get a clean sheet from GPT Image 2.5 or Seedream 5.0. One HTML file, no install, no account, no API key.">
+</p>
+
+Once you have designed the character, the next challenge is keeping them recognisable from shot to shot. Matching references give your video model a consistent starting point.
 
 <p align="center">
   <img src="docs/before-after.svg" width="880" alt="A prompt alone: five shots, five different women (brown bob, then blonde, then older, then a new fringe, then who is this?). With reference sheets: the same woman in all five shots.">
 </p>
 
-A head sheet for the face, a body sheet for the body, both added to Seedance 2.5 as references: every clip starts from the same person.
+A head sheet for the face, a body sheet for the body: give each clip the same character references in Seedance 2.5.
 
 ## How it works
 
