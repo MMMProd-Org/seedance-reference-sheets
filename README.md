@@ -23,6 +23,15 @@ If your AI portraits keep coming back with flawless skin and a model-perfect fac
 
 One HTML file turns your settings into ready-to-copy prompts for GPT Image 2.5 or Seedream 5.0. You generate the images in your chosen model, then use the sheets as references in Seedance 2.5.
 
+<p align="center">
+  <a href="docs/realistic-body-seedream-5.jpg">
+    <img src="docs/realistic-body-seedream-5.jpg" width="880" alt="Four views of an AI-generated body in a blue bikini, showing skin texture, natural folds and variations in skin tone.">
+  </a>
+</p>
+
+<p align="center"><strong>Body realism, down to the details.</strong><br>
+Example generated with <strong>Seedream 5.0</strong>. Look at the skin texture, natural folds and subtle variations in tone.</p>
+
 ## Realism starts with the details
 
 - **Choose how idealised the face should be.** The Beauty control includes everyday and unconventional faces alongside more idealised looks.
