@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-19 · Seedream 5.0 · Person, body reference · README example
+
+**LEAD.** The owner supplied [this four-view body sheet](realistic-body-seedream-5.jpg) and asked to highlight its body realism, identifying Seedream 5.0 as the image model. The image shows skin texture, natural folds and variations in tone; it is preserved unchanged for the README. Settings, the source prompt and the app release used were not provided; there is no before/after prompt comparison. This records one owner-selected example, not a general validation of every body setting or the current release. No prompt is changed.
+
 ## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · v114b integration
 
 **RULE.** Source: the owner's v114b ZIP, byte-identical rebuilt HTML and [unaltered lessons](sources/lecons_prompts_planches_seedance-v114b.md). Adult free outfit text replaces hidden garment choices on head/body and own-outfit retouches; empty/random text gives plain clothes. Named prints stay allowed. Vehicles use their described kind for staging, while this repository keeps its separate views and triptych. Face Character acts on Auto traits only, before Beauty; explicit traits, photo identity and children stay outside it. Auto/off keeps the established prompts.
