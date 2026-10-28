@@ -4540,6 +4540,8 @@ function sdFaceReset() {
 function sdLooksText(lv) {
   var p = sdPos(),
     lean = sdLean(),
+    /* port: with "Graisse : visage" (v156) set, the face's fat is the user's, not the body's: no "lean face, no fullness under the chin" */
+    leanTx = lean && !sdFaceFatLv() ? sdLeanText() : "",
     ang = +e.faceAngle > 2,
     fine = +e.featFine > 2,
     jaw = "strong" === e.jaw,
@@ -4552,7 +4554,7 @@ function sdLooksText(lv) {
       ", features slightly out of proportion with each other, " +
       lip +
       "hair without shine, no striking feature, with the asymmetry of a real face" +
-      (lean ? "; " + sdLeanText() : "") +
+      (leanTx ? "; " + leanTx : "") +
       "."
     );
   /* 3 = the user's reference photos of "quelconque" women, measured against the renders: wider nose (largest gap),
@@ -4574,7 +4576,7 @@ function sdLooksText(lv) {
       (feat ? feat + ", " : lean ? "plain, unremarkable features, nothing chiselled, " : "soft features with no definition, no sculpted cheekbones or jawline, ") +
       lip +
       "hair without shine; " +
-      (lean ? sdLeanText() + "; " : "") +
+      (leanTx ? leanTx + "; " : "") +
       "slightly uneven: " +
       p +
       " right eye a little smaller than " +
@@ -4591,7 +4593,7 @@ function sdLooksText(lv) {
       ", features that do not fit together, " +
       lip +
       "dull hair; " +
-      (lean ? sdLeanText() + "; " : "") +
+      (leanTx ? leanTx + "; " : "") +
       "strongly uneven: " +
       p +
       " right eye clearly smaller and lower than " +
@@ -6717,6 +6719,8 @@ var SD_FACEFAT_OFF = [
   ["slender cheeks", 1],
   ["slightly narrow cheeks", 1],
   ["soft cheeks of medium fullness", 2],
+  /* port: this repository's plain face (sdPlainFace) turns "full, rounded cheeks" into these for a lean body, and narrows a slim body's jaw */
+  ["cheeks of medium fullness", 2],
   ["soft, slightly flatter cheeks", 2],
   ["an angular jaw with visible corners", 2],
   ["a clearly defined jaw with visible corners", 2],
@@ -6729,6 +6733,7 @@ var SD_FACEFAT_OFF = [
   ["defined cheekbones", 3],
   ["a narrow, tapering jaw", 3],
   ["a narrow face", 3],
+  ["a jaw narrower than the cheekbones", 3],
 ];
 function sdFaceFatTrim(txt) {
   var v = sdFaceFatLv();
