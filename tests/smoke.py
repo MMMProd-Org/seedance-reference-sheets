@@ -1278,15 +1278,21 @@ with sync_playwright() as p:
     text = agent.evaluate(A3G)
     assert text.startswith("# Agent prompt: glutes without a bottom, 3D character\n"), text[:120]
     for want in ("Character sheet: build: slim; glutes: average.", "   - b. drop: none (grade 0); outside \"edge_band\", nothing moves.",
-                 "Gluteal ptosis grades (Gonzalez, Aesthetic Plastic Surgery 2006, 30(3):320-326; definitions read in a secondary source,"
-                 " Blaya 2020: TO VALIDATE)", "7. Out of scope: the genital area (neither modelled nor changed)", "V1 to V8 OK or FAILED",
-                 "Tanga or thong: it neither covers nor carries the mass of the glutes (a mechanical deduction, no published measure)"):
+                 "Gluteal ptosis grades (Gonzalez, Aesthet Plast Surg 2006, 30(3):320-326; definitions from a secondary source, Blaya 2020:"
+                 " TO VALIDATE), decided in this order: 4 = ptotic tissue on M; otherwise 3 = the crease past M by more than tol;", "7. Out of scope: the genital area (neither modelled nor changed)", "V1 to V8 OK or FAILED",
+                 "Tanga or thong: it neither covers nor carries the mass of the glutes (a mechanical deduction, no published measure)",
+                 # review: every landmark measurable, one decision order, no lift, the groups V5 names, H as the owner defined it
+                 "H = the height of the body's bounding box in the measuring state (constraint 8); 1 real mm = H / (CHARACTER_HEIGHT × 10)",
+                 "no vertex of the area risen by more than tol", "Requested grade: 0. A base at this grade or past it: no drop, do not lift it, report it.",
+                 "V5: vertices outside \"glute_region\" and \"edge_band\" (weight 0 in both)", "STOP and report, no global correction",
+                 "A required field empty or off the list: stop and ask"):
         assert want in text, (want, text[:1200])
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_BAS|GRADE_PTOSE_FESSIERE|FICHIER_SOURCE|nu_fesses|bande_bord|region_fessiere|À VALIDER"
                          r"|TANGA_STRING|CULOTTE_\w+|SHORT_\w+)\b", text), re.findall(r".{20}[àâçéèêëîïôùûüœ«»]", text)[:5]
     line = text.split("\n")[4]
-    assert line.endswith(" Glutes: at their height and in their shape, a short crease under each, on the inner side; the same size, the same"
-                         " skin and grain; the marks left by the bottom's edges erased."), line
+    assert line.endswith(" Glutes: at their current height and in their current shape, with no sag added; the same size, the same skin and"
+                         " grain; the marks left by the bottom's edges erased."), line
+    assert "the natural sag its size and muscle tone give it, never lifted." in line, line
     assert len(line.split()) < 600 and not re.search(r"\b[A-Z]{3,}_[A-Z_]+\b", line), line
     # every choice has its tooltip; a grade set by hand is saved, said "by hand", and its drop asked in the steps
     assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3g [data-a3d]')].every((b) => b.title)")

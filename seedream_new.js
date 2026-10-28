@@ -6988,9 +6988,9 @@ var SD_A3G_BOTTOMS = [
   ["TANGA_STRING", "Tanga ou string", "Tanga or thong", "Ne couvre ni ne porte la masse des fesses : elles sont déjà au repos.", "Neither covers nor carries the mass of the glutes: they are already at rest."],
   ["CULOTTE_CLASSIQUE", "Culotte classique", "Classic brief", "Culotte non gainante : couvre sans porter ; aucune mesure vérifiée de son effet.", "A non-shaping brief: covers without carrying; no verified measure of its effect."],
   ["SHORT_AJUSTE", "Short ajusté", "Fitted shorts", "Cycliste ou short de bain ajusté, en tissu fin, qui suit les hanches et les fesses sans les aplatir : maintien léger.", "Bike shorts or fitted swim shorts in thin fabric, that follow the hips and glutes without flattening them: light support."],
-  ["SHORT_COMPRESSION", "Short de compression", "Compression shorts", "Comprime les fesses : sans lui, elles reprennent leur forme au repos, jusqu'au grade de ptose.", "Compresses the glutes: without them, they take back their resting shape, down to the ptosis grade."],
-  ["CULOTTE_GAINANTE", "Culotte gainante", "Shaping brief", "Comprime et remonte les fesses : sans elle, elles reprennent leur forme au repos, jusqu'au grade de ptose.", "Compresses and lifts the glutes: without it, they take back their resting shape, down to the ptosis grade."],
-  ["CULOTTE_REMBOURREE", "Culotte rembourrée", "Padded brief", "Le rembourrage est au vêtement : un corps modelé dessus arrête l'agent ; sinon, chute jusqu'au grade de ptose.", "The padding is the garment's: a body modelled on it stops the agent; otherwise, a drop to the ptosis grade."],
+  ["SHORT_COMPRESSION", "Short de compression", "Compression shorts", "Comprime les fesses : leur détente sans lui n'est pas modélisée (aucune valeur sourcée) ; sillons et grade de ptose seulement.", "Compresses the glutes: their release without them is not modelled (no sourced value); grooves and ptosis grade only."],
+  ["CULOTTE_GAINANTE", "Culotte gainante", "Shaping brief", "Comprime et remonte les fesses : leur détente sans elle n'est pas modélisée (aucune valeur sourcée) ; sillons et grade de ptose seulement.", "Compresses and lifts the glutes: their release without it is not modelled (no sourced value); grooves and ptosis grade only."],
+  ["CULOTTE_REMBOURREE", "Culotte rembourrée", "Padded brief", "Le rembourrage est au vêtement : un corps modelé dessus arrête l'agent ; sinon, sillons et grade de ptose seulement.", "The padding is the garment's: a body modelled on it stops the agent; otherwise, grooves and ptosis grade only."],
   ["UNE_PIECE", "Une-pièce", "One-piece", "Couvre les fesses comme une culotte : passe d'abord le prompt poitrine, puis celui-ci sur son résultat.", "Covers the glutes as a brief does: run the bust prompt first, then this one on its result."],
   ["INCONNU", "Inconnu", "Unknown", "L'agent s'arrête et demande le type de bas avant de déformer quoi que ce soit.", "The agent stops and asks for the type of bottom before it deforms anything."],
 ];
@@ -7004,11 +7004,11 @@ var SD_A3G_GRADES = [
 ];
 /* the grade of each degree in plain words, for the context line an image model reads first (the same definitions) */
 var SD_A3G_LOOK = {
-  0: ["à leur hauteur et dans leur forme, un pli court sous chacune, côté intérieur", "at their height and in their shape, a short crease under each, on the inner side"],
+  0: ["à leur hauteur et dans leur forme actuelles, sans chute ajoutée", "at their current height and in their current shape, with no sag added"],
   1: ["un pli sous chaque fesse un peu plus long vers l'extérieur, sans que la fesse retombe dessus", "a crease under each glute slightly longer toward the outside, with no glute resting over it"],
   2: ["un pli sous chaque fesse jusqu'au milieu de l'arrière de la cuisse, le bas de la fesse retombant légèrement dessus côté intérieur", "a crease under each glute out to the middle of the back of the thigh, the lower glute resting slightly over it on the inner side"],
   3: ["un pli sous chaque fesse au-delà du milieu de l'arrière de la cuisse, le bas de la fesse retombant dessus côté intérieur", "a crease under each glute running past the middle of the back of the thigh, the lower glute resting over it on the inner side"],
-  4: ["le bas de chaque fesse retombant sur le pli jusqu'au milieu de l'arrière de la cuisse, un léger bourrelet dessous", "the lower part of each glute hanging over the crease out to the middle of the back of the thigh, a slight roll below it"],
+  4: ["le bas de chaque fesse retombant sur le pli jusqu'au milieu de l'arrière de la cuisse", "the lower part of each glute hanging over the crease out to the middle of the back of the thigh"],
 };
 var SD_A3G_TXT = {
   TANGA_STRING: ["un bas de maillot tanga ou un string", "a tanga bikini bottom or a thong"],
@@ -7107,13 +7107,6 @@ function sdA3gText() {
         fatW ? [tr("graisse des fessiers : ", "glute fat: ") + fatW[en ? 1 : 0]] : [],
       )
       .join(tr(" ; ", "; ")),
-    gradeDef = {
-      0: tr("0 : pas de pli, ou pli limité en dedans de T", "0: no crease, or a crease kept inside T"),
-      1: tr("1 : le pli dépasse T sans atteindre M", "1: the crease passes T without reaching M"),
-      2: tr("2 : le pli atteint M, tissu ptotique sur T", "2: the crease reaches M, ptotic tissue on T"),
-      3: tr("3 : le pli dépasse M, pas de tissu ptotique sur M", "3: the crease runs past M, no ptotic tissue on M"),
-      4: tr("4 : tissu ptotique sur M (sa hauteur h_M reportée)", "4: ptotic tissue on M (its height h_M reported)"),
-    },
     supp = {
       TANGA_STRING: tr(
         "Tanga ou string : il ne couvre ni ne porte la masse des fesses (déduction mécanique, aucune mesure publiée) ; le mesh est déjà au repos : chute seulement s'il ne remplit pas encore le grade demandé, jamais au-delà.",
@@ -7128,16 +7121,16 @@ function sdA3gText() {
         "Fitted shorts in thin fabric: light support; a minimal deformation to the requested grade, never further (no published measure: TO VALIDATE).",
       ),
       SHORT_COMPRESSION: tr(
-        "Short de compression : il comprimait les fesses : elles reprennent leur forme au repos jusqu'au grade demandé, sans plus (aucune mesure publiée : À VALIDER).",
-        "Compression shorts: they compressed the glutes: they take back their resting shape down to the requested grade, no further (no published measure: TO VALIDATE).",
+        "Short de compression : il comprimait les fesses ; leur détente n'est pas modélisée (aucune valeur sourcée) : sillons et grade seulement, signalé.",
+        "Compression shorts: they compressed the glutes; their release is not modelled (no sourced value): grooves and grade only, reported.",
       ),
       CULOTTE_GAINANTE: tr(
-        "Culotte gainante : elle comprimait et remontait les fesses : elles reprennent leur forme au repos jusqu'au grade demandé, sans plus (aucune mesure publiée : À VALIDER).",
-        "Shaping brief: it compressed and lifted the glutes: they take back their resting shape down to the requested grade, no further (no published measure: TO VALIDATE).",
+        "Culotte gainante : elle comprimait et remontait les fesses ; leur détente n'est pas modélisée (aucune valeur sourcée) : sillons et grade seulement, signalé.",
+        "Shaping brief: it compressed and lifted the glutes; their release is not modelled (no sourced value): grooves and grade only, reported.",
       ),
       CULOTTE_REMBOURREE: tr(
-        "Culotte rembourrée : le rembourrage est au vêtement, pas au corps ; un corps modelé dessus est une forme héritée (étape 3) ; sinon, chute jusqu'au grade demandé, sans plus (aucune mesure publiée : À VALIDER).",
-        "Padded brief: the padding is the garment's, not the body's; a body modelled on it is an inherited shape (step 3); otherwise, a drop to the requested grade, no further (no published measure: TO VALIDATE).",
+        "Culotte rembourrée : le rembourrage est au vêtement, pas au corps ; un corps modelé dessus est une forme héritée (étape 3) ; sinon, sillons et grade seulement, aucune valeur sourcée.",
+        "Padded brief: the padding is the garment's, not the body's; a body modelled on it is an inherited shape (step 3); otherwise, grooves and grade only, no sourced value.",
       ),
       UNE_PIECE: tr(
         "Maillot une pièce : il couvre les fesses comme une culotte classique ; FICHIER_SOURCE est le fichier \"_nu\" du prompt poitrine, maillot déjà masqué (sinon : arrête-toi et demande) ; chute seulement si le mesh ne remplit pas encore le grade demandé, jamais au-delà.",
@@ -7154,8 +7147,8 @@ function sdA3gText() {
     tr("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte ", "Adult " + ("x" === e.pres ? "androgynous" : "female") + " 3D character (" + age + " years old) for a video game. It currently wears ") +
       SD_A3G_TXT[bot][en ? 1 : 0] +
       tr(
-        ". Objectif : version nue des fesses, au repos, debout, fidèle à CE personnage : volume inchangé, et la chute naturelle de son volume et de son tonus, jamais remontées.",
-        ". Goal: a bare version of the glutes, at rest, standing, true to THIS character: volume unchanged, and the natural drop of its volume and muscle tone, never lifted.",
+        ". Objectif : version nue des fesses, au repos, debout, fidèle à CE personnage : volume inchangé, la chute naturelle que lui donnent sa taille et son tonus, jamais remontées.",
+        ". Goal: a bare version of the glutes, at rest, standing, true to THIS character: volume unchanged, the natural sag its size and muscle tone give it, never lifted.",
       ) +
       (onePiece
         ? tr(" Pars du résultat du prompt poitrine, maillot déjà retiré ; tout le reste reste tel quel.", " Start from the result of the bust prompt, the swimsuit already removed; everything else stays as it is.")
@@ -7167,7 +7160,7 @@ function sdA3gText() {
   );
   L.push(tr("Fiche du personnage : ", "Character sheet: ") + fiche + ".", "");
   L.push(
-    tr("Règle centrale : volume inchangé ; le bas retiré ne change les fesses qu'autant qu'il les portait ou les comprimait, puis seule la chute naturelle du grade demandé s'applique, vers le bas seulement. ", "Central rule: volume unchanged; removing the bottom changes the glutes only as much as it carried or compressed them, then only the natural drop of the requested grade applies, downward only. ") +
+    tr("Règle centrale : volume inchangé ; seuls changent les sillons laissés par le bas et, vers le bas seulement, la chute du grade demandé. ", "Central rule: volume unchanged; only the grooves left by the bottom change and, downward only, the drop of the requested grade. ") +
       supp,
     "",
   );
@@ -7179,47 +7172,48 @@ function sdA3gText() {
     (en ? "- CHARACTER_HEIGHT = " : "- TAILLE_PERSONNAGE = ") + hcm + " cm",
     "",
     tr(
-      "Champ requis vide : arrête-toi et demande, ne suppose rien. FICHIER_SOURCE peut être le fichier \"_nu\" du prompt poitrine : sa shape key \"nu_relache\" reste alors strictement inchangée.",
-      "A required field empty: stop and ask, assume nothing. SOURCE_FILE may be the \"_bare\" file of the bust prompt: its shape key \"bare_rest\" then stays strictly unchanged.",
+      "Champ requis vide ou hors liste : arrête-toi et demande, ne suppose rien. FICHIER_SOURCE peut être le fichier \"_nu\" du prompt poitrine : sa shape key \"nu_relache\" reste alors strictement inchangée.",
+      "A required field empty or off the list: stop and ask, assume nothing. SOURCE_FILE may be the \"_bare\" file of the bust prompt: its shape key \"bare_rest\" then stays strictly unchanged.",
     ),
     "",
   );
   L.push(tr("## CIBLES", "## TARGETS"), "");
+  /* review (an independent read of the generated text): every landmark measurable, the grades decided in one order, the never-lift rule
+     checked, H as the owner defined it */
   L.push(
     tr(
-      "Repères, par côté, vu de dos, en rest pose : pli = pli sous-fessier, ligne de courbure concave maximale entre fesse et cuisse ; T = verticale de la tubérosité ischiatique (os ou repère du rig, sinon vertex groups \"ischion_G\" et \"ischion_D\" ; absents : à mi-chemin entre le pli interfessier et M, au niveau du pli, signalé, À VALIDER) ; M = verticale du milieu de la cuisse, à mi-largeur médiale-latérale au niveau du pli ; tissu ptotique sur une verticale = dans la coupe sagittale à cet endroit, la fesse descend sous le fond du pli de plus de tol ; tol = 0,003 × H (H : taille en unités de scène).",
-      "Landmarks, per side, seen from behind, in rest pose: crease = the infragluteal fold, the line of maximum concave curvature between glute and thigh; T = the vertical through the ischial tuberosity (a rig bone or landmark, otherwise vertex groups \"ischium_L\" and \"ischium_R\"; missing: halfway between the intergluteal cleft and M, at the level of the crease, reported, TO VALIDATE); M = the vertical through the middle of the thigh, at half its medial-lateral width at the level of the crease; ptotic tissue on a vertical = in the sagittal section there, the glute goes down below the bottom of the crease by more than tol; tol = 0.003 × H (H: height in scene units).",
+      "Repères, par côté, en rest pose : H = hauteur de la boîte englobante du corps dans l'état de mesure (contrainte 8) ; 1 mm réel = H / (TAILLE_PERSONNAGE × 10) ; tol = 0,003 × H ; côtés : plan sagittal médian (os racine, sinon centre de la boîte). Pli sous-fessier : par coupe sagittale, le point de courbure concave maximale entre fesse et cuisse, retenu s'il est à plus de tol de la corde entre les points 0,03 × H au-dessus et au-dessous ; son extrémité latérale : la coupe retenue la plus latérale. Niveau de référence = le fond du pli, sinon le point le plus bas de la fesse. M = verticale du milieu de la cuisse à ce niveau ; T = verticale de la tubérosité ischiatique (os ou repère du rig, sinon vertex groups \"ischion_G\" et \"ischion_D\" ; absents : à mi-chemin entre le pli interfessier et M, signalé, À VALIDER). Tissu ptotique sur une verticale : dans sa coupe sagittale, la fesse descend de plus de tol sous le niveau de référence.",
+      "Landmarks, per side, in rest pose: H = the height of the body's bounding box in the measuring state (constraint 8); 1 real mm = H / (CHARACTER_HEIGHT × 10); tol = 0.003 × H; sides: the median sagittal plane (the root bone, otherwise the centre of the box). Crease (infragluteal fold): per sagittal section, the point of maximum concave curvature between glute and thigh, kept if it lies more than tol from the chord between the points 0.03 × H above and below; its lateral end: the most lateral section kept. Reference level = the bottom of the crease, otherwise the lowest point of the glute. M = the vertical through the middle of the thigh at that level; T = the vertical through the ischial tuberosity (a rig bone or landmark, otherwise vertex groups \"ischium_L\" and \"ischium_R\"; missing: halfway between the intergluteal cleft and M, reported, TO VALIDATE). Ptotic tissue on a vertical: in its sagittal section, the glute goes more than tol below the reference level.",
     ),
     "",
-    tr("Grades de ptose fessière (Gonzalez, Aesthetic Plastic Surgery 2006, 30(3):320-326 ; définitions lues dans une source secondaire, Blaya 2020 : À VALIDER) : ", "Gluteal ptosis grades (Gonzalez, Aesthetic Plastic Surgery 2006, 30(3):320-326; definitions read in a secondary source, Blaya 2020: TO VALIDATE): ") +
-      [0, 1, 2, 3, 4]
-        .map(function (k) {
-          return gradeDef[k];
-        })
-        .join(tr(" ; ", "; ")) +
-      ".",
+    tr(
+      "Grades de ptose fessière (Gonzalez, Aesthet Plast Surg 2006, 30(3):320-326 ; définitions de source secondaire, Blaya 2020 : À VALIDER), décidés dans cet ordre : 4 = tissu ptotique sur M ; sinon 3 = pli au-delà de M de plus de tol ; sinon 2 = pli qui atteint M à tol près, ou tissu ptotique sur T ; sinon 1 = pli au-delà de T de plus de tol ; sinon 0 (pas de pli, ou pli en dedans de T).",
+      "Gluteal ptosis grades (Gonzalez, Aesthet Plast Surg 2006, 30(3):320-326; definitions from a secondary source, Blaya 2020: TO VALIDATE), decided in this order: 4 = ptotic tissue on M; otherwise 3 = the crease past M by more than tol; otherwise 2 = the crease reaching M within tol, or ptotic tissue on T; otherwise 1 = the crease past T by more than tol; otherwise 0 (no crease, or a crease inside T).",
+    ),
     "",
     tr("Grade demandé : ", "Requested grade: ") +
-      gradeDef[gn] +
-      (manG ? tr(" (à la main)", " (by hand)") : tr(" (tiré des fessiers de la planche : choix de conception, À VALIDER)", " (from the sheet's glutes: a design choice, TO VALIDATE)")) +
-      tr(". Base qui le remplit : aucune chute ; base déjà à un grade plus élevé : ne la remonte pas, signale-le.", ". A base that meets it: no drop; a base already at a higher grade: do not lift it, report it."),
+      g +
+      tr(
+        ". Base à ce grade ou au-delà : aucune chute, ne la remonte pas, signale-le. Sinon : la plus petite chute qui le remplit (le grade porte la taille, le gras et le tonus).",
+        ". A base at this grade or past it: no drop, do not lift it, report it. Otherwise: the smallest drop that meets it (the grade carries the size, fat and muscle tone).",
+      ),
     "",
     tr(
-      "Forme : volume de chaque fesse à ±2 % ; P = projection maximale en arrière d'un plan frontal fixe, P_après ≤ P_avant + tol ; largeur vue de dos inchangée à tol près ; le bas de la fesse peut recouvrir le pli et toucher la cuisse sans la traverser ; pli interfessier inchangé.",
-      "Shape: volume of each glute within ±2%; P = the maximum backward projection from a fixed frontal plane, P_after ≤ P_before + tol; width seen from behind unchanged within tol; the lower glute may cover the crease and touch the thigh without going through it; the intergluteal cleft unchanged.",
+      "Forme : volume de chaque fesse à ±1 % sans chute, ±2 % avec chute (même zone, même fermeture avant et après) ; P = projection maximale en arrière d'un plan frontal fixe, |P_après - P_avant| ≤ tol ; largeur vue de dos à tol près ; aucun vertex de la zone ne monte de plus de tol ; le bas de la fesse peut recouvrir le pli, à 0,5 × tol au moins de la cuisse ; pli interfessier inchangé.",
+      "Shape: volume of each glute within ±1% without a drop, ±2% with one (the same area, the same closing before and after); P = the maximum backward projection from a fixed frontal plane, |P_after - P_before| ≤ tol; width seen from behind within tol; no vertex of the area rises by more than tol; the lower glute may cover the crease, at least 0.5 × tol from the thigh; the intergluteal cleft unchanged.",
     ),
     "",
     tr(
-      "Sillons du bas : b = 0,015 × H (demi-largeur de la bande de bord : un vertex en fait partie s'il est à moins de b d'une courbe de bord projetée sur la peau) ; sillon si l'écart au profil de référence dépasse p = 0,001 × H ; écart résiduel ≤ 0,25 × p. Seuils, T faute de repère et grade tiré des réglages : choix de conception.",
-      "Grooves of the bottom: b = 0.015 × H (half-width of the edge band: a vertex belongs to it if it is within b of an edge curve projected onto the skin); a groove if the gap to the reference profile exceeds p = 0.001 × H; residual gap ≤ 0.25 × p. Thresholds, T without a landmark and the grade taken from the settings: design choices.",
+      "Sillons du bas : b = 0,015 × H (demi-largeur de la bande autour des courbes de bord projetées sur la peau) ; sillon si l'écart au profil de référence dépasse p = 0,001 × H ; écart résiduel ≤ 0,25 × p. Seuils, ordre de décision et grade tiré des réglages : choix de conception.",
+      "Grooves of the bottom: b = 0.015 × H (half-width of the band around the edge curves projected onto the skin); a groove if the gap to the reference profile exceeds p = 0.001 × H; residual gap ≤ 0.25 × p. Thresholds, decision order and the grade taken from the settings: design choices.",
     ),
     "",
   );
   L.push("## DEFINITION OF DONE", "");
   L.push(
     tr(
-      "Shape key \"nu_fesses\" sur le corps ; à 1,0, V1 à V8 OK ; FICHIER_SOURCE intact ; rapport livré. Aucun sillon et grade déjà rempli : aucune shape key, le rapport le démontre ; c'est un résultat valide.",
-      "Shape key \"bare_glutes\" on the body; at 1.0, V1 to V8 OK; SOURCE_FILE untouched; report delivered. No groove and the grade already met: no shape key, the report shows it; this is a valid result.",
+      "Shape key \"nu_fesses\" sur le corps ; à 1,0, V1 à V8 OK ; FICHIER_SOURCE intact ; rapport livré. Aucun sillon et base au grade ou au-delà : aucune shape key, le rapport le démontre ; c'est un résultat valide.",
+      "Shape key \"bare_glutes\" on the body; at 1.0, V1 to V8 OK; SOURCE_FILE untouched; report delivered. No groove and a base at the grade or past it: no shape key, the report shows it; this is a valid result.",
     ),
     "",
   );
@@ -7227,7 +7221,7 @@ function sdA3gText() {
   L.push(
     tr("1. Blender avec Python (bpy, bmesh, mathutils) ; absent ou import raté : arrête-toi et signale.", "1. Blender with Python (bpy, bmesh, mathutils); missing or the import failing: stop and report."),
     tr("2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde \"_fesses\" (.blend), même dossier ; déformation dans \"nu_fesses\" ; forme de base intacte.", "2. Never overwrite SOURCE_FILE; save as \"_glutes\" (.blend), same folder; deformation in \"bare_glutes\"; base shape untouched."),
-    tr("3. Topologie, UV, vertex groups, poids de skinning et shape keys existants inchangés (\"nu_relache\" compris).", "3. Topology, UVs, vertex groups, skinning weights and existing shape keys unchanged (\"bare_rest\" included)."),
+    tr("3. Topologie, UV, vertex groups, poids de skinning et shape keys existants inchangés.", "3. Topology, UVs, vertex groups, skinning weights and existing shape keys unchanged."),
     tr("4. Rien au-delà des cibles : ni volume, ni largeur, ni projection, ni esthétique ; jamais de remontée.", "4. Nothing beyond the targets: no volume, width, projection or aesthetic change; never any lift."),
     tr("5. Aucune hypothèse silencieuse : vérifie axes avant et vertical, unité, objet corps, objet du bas, côtés, plis ; ambiguïté : demande.", "5. No silent assumption: check the forward and vertical axes, unit, body object, bottom object, sides, creases; ambiguity: ask."),
     tr(
@@ -7235,8 +7229,8 @@ function sdA3gText() {
       "6. Anatomical creases: the intergluteal cleft and the infragluteal fold are not garment grooves; an edge segment within b of either is not corrected, it is reported with a screenshot; in doubt: do not correct, report.",
     ),
     tr(
-      "7. Hors périmètre : zone génitale (ni modélisée ni modifiée), textures et UV, jiggle, rig, poitrine, autres zones. Géométrie absente ou simplifiée sous le bas : signale sans modéliser.",
-      "7. Out of scope: the genital area (neither modelled nor changed), textures and UVs, jiggle, rig, bust, other areas. Geometry missing or simplified under the bottom: report it without modelling.",
+      "7. Hors périmètre : zone génitale (ni modélisée ni modifiée), textures et UV, jiggle, rig, poitrine, autres zones.",
+      "7. Out of scope: the genital area (neither modelled nor changed), textures and UVs, jiggle, rig, bust, other areas.",
     ),
     tr("8. Même état de mesure avant et après (Rest Position, Subdivision et lissages coupés, shape keys à leur valeur) ; Mirror : édite la moitié réelle, mesure le mesh évalué.", "8. The same measuring state before and after (Rest Position, Subdivision and smoothing off, shape keys at their value); Mirror: edit the real half, measure the evaluated mesh."),
     tr("9. Paramètres libres (zone, décroissance, itérations, T faute de repère) : dans le rapport, À VALIDER.", "9. Free parameters (area, falloff, iterations, T without a landmark): in the report, TO VALIDATE."),
@@ -7261,30 +7255,30 @@ function sdA3gText() {
       "6. Grooves: along each kept curve, a sample every b/2; the surface profile in the plane perpendicular to the curve, a degree-3 polynomial fitted to the points between b and 2b from the curve, on both sides; signed gap = real surface minus polynomial within the band (negative: a dip; positive: a bulge); a groove if |gap| > p.",
     ),
     tr(
-      "7. Zone et mesures AVANT : vertex group \"region_fessiere\", des crêtes iliaques au pli sous-fessier plus 0,05 × H sur la cuisse, du sacrum à la face latérale de la hanche, des deux côtés ; poids 1 au centre, 0 au bord, sa limite à plus de b de toute courbe retenue. Par côté : V = volume des faces de poids > 0 (copie bmesh, bmesh.ops.holes_fill, bm.calc_volume()) ; P ; largeur ; pli, T, M ; grade de la base ; captures.",
-      "7. Area and measures BEFORE: vertex group \"glute_region\", from the iliac crests to the infragluteal fold plus 0.05 × H on the thigh, from the sacrum to the side of the hip, both sides; weight 1 at the centre, 0 at the edge, its limit more than b from any kept curve. Per side: V = volume of the faces of weight > 0 (a bmesh copy, bmesh.ops.holes_fill, bm.calc_volume()); P; width; crease, T, M; grade of the base; screenshots.",
+      "7. Zone et mesures AVANT : vertex group \"region_fessiere\", des crêtes iliaques au pli sous-fessier plus 0,05 × H sur la cuisse, du sacrum à la face latérale de la hanche, des deux côtés ; poids 0 à la limite, montant doucement jusqu'à 1 à 0,05 × H de la limite, qui passe à plus de b de toute courbe retenue. Par côté : V = volume des faces de poids > 0 (copie bmesh, bmesh.ops.holes_fill, bm.calc_volume()) ; P ; largeur ; pli, T, M ; grade de la base ; captures.",
+      "7. Area and measures BEFORE: vertex group \"glute_region\", from the iliac crests to the infragluteal fold plus 0.05 × H on the thigh, from the sacrum to the side of the hip, both sides; weight 0 at the limit, rising softly to 1 at 0.05 × H from the limit, which passes more than b from any kept curve. Per side: V = volume of the faces of weight > 0 (a bmesh copy, bmesh.ops.holes_fill, bm.calc_volume()); P; width; crease, T, M; grade of the base; screenshots.",
     ),
     tr("8. Déformation dans \"nu_fesses\" :", "8. Deformation in \"bare_glutes\":"),
     tr(
-      "   - a. sillons : chaque vertex de \"bande_bord\" vers le point le plus proche du profil ajusté, le long de sa normale, pondéré par son poids ; creux et bourrelets corrigés ; lissage dans la bande seulement, re-mesure, itération.",
-      "   - a. grooves: each vertex of \"edge_band\" toward the nearest point of the fitted profile, along its normal, weighted by its weight; dips and bulges corrected; smoothing within the band only, re-measure, iterate.",
+      "   - a. sillons : chaque vertex de \"bande_bord\" vers le point le plus proche du profil ajusté, interpolé entre les deux échantillons voisins, le long de sa normale, pondéré par son poids ; creux et bourrelets corrigés ; lissage dans la bande seulement, re-mesure, itération.",
+      "   - a. grooves: each vertex of \"edge_band\" toward the nearest point of the fitted profile, interpolated between the two neighbouring samples, along its normal, weighted by its weight; dips and bulges corrected; smoothing within the band only, re-measure, iterate.",
     ),
     gn
       ? tr(
-          "   - b. chute, seulement si la base est sous le grade " + g + " : descente de la masse, croissante vers le bas, et pli allongé vers l'extérieur jusqu'au grade, pas au-delà ; jamais de remontée ; volume à ±2 % (gonflement le long des normales) ; lissage dans la zone, re-mesure, itération.",
-          "   - b. drop, only if the base is below grade " + g + ": lowering of the mass, increasing downward, and the crease lengthened outward to the grade, no further; never any lift; volume within ±2% (inflating along the normals); smoothing in the area, re-measure, iterate.",
+          "   - b. chute, seulement si la base est sous le grade " + g + " : descente de la masse, croissante vers le bas, et pli allongé vers l'extérieur, la plus petite qui remplit le grade ; volume rendu par gonflement le long des normales, sans qu'aucun vertex monte de plus de tol ; lissage dans la zone, re-mesure, itération.",
+          "   - b. drop, only if the base is below grade " + g + ": lowering of the mass, increasing downward, and the crease lengthened outward, the smallest that meets the grade; volume given back by inflating along the normals, with no vertex rising by more than tol; smoothing in the area, re-measure, iterate.",
         )
       : tr("   - b. chute : aucune (grade 0) ; hors \"bande_bord\", rien ne bouge.", "   - b. drop: none (grade 0); outside \"edge_band\", nothing moves."),
-    tr("9. Mesures APRÈS : celles de l'étape 7, pli, T, M et grade re-détectés.", "9. Measures AFTER: those of step 7, the crease, T, M and the grade detected again."),
+    tr("9. Mesures APRÈS : celles de l'étape 7, pli, T, M et grade re-détectés ; profils de l'étape 6 ré-ajustés sur la forme finale.", "9. Measures AFTER: those of step 7, the crease, T, M and the grade detected again; the profiles of step 6 fitted again on the final shape."),
     tr("10. Vérifications, \"nu_fesses\" à 1,0 :", "10. Checks, \"bare_glutes\" at 1.0:"),
     tr("   - V1 : |écart résiduel| ≤ 0,25 × p sur tous les échantillons retenus.", "   - V1: |residual gap| ≤ 0.25 × p on every kept sample."),
     tr(
       "   - V2 : par côté, grade " + g + " vrai, ou celui de la base s'il était déjà plus élevé (signalé) ; pli, T, M, h_M et tol reportés ; base au grade ou au-delà : hors \"bande_bord\", vertices de la zone déplacés de 1e-6 unité de scène au plus.",
       "   - V2: per side, grade " + g + " true, or the base's grade if it was already higher (reported); crease, T, M, h_M and tol reported; a base at the grade or past it: outside \"edge_band\", the area's vertices moved by 1e-6 scene unit at most.",
     ),
-    tr("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par côté ; P_après ≤ P_avant + tol ; largeur à tol près.", "   - V3: |V_after - V_before| / V_before ≤ 0.02 for each side; P_after ≤ P_before + tol; width within tol."),
-    tr("   - V4 : vertices, arêtes, faces et UV en même nombre que la source. V5 : vertices de poids 0 déplacés de 1e-6 unité de scène au plus.", "   - V4: vertices, edges, faces and UVs in the same number as the source. V5: weight-0 vertices moved by 1e-6 scene unit at most."),
-    tr("   - V6 : aucune auto-intersection dans la zone, fesse / cuisse comprises (BVHTree.overlap, hors faces voisines), aucune normale inversée.", "   - V6: no self-intersection in the area, glute against thigh included (BVHTree.overlap, neighbouring faces excluded), no flipped normal."),
+    tr("   - V3 : par côté, |V_après - V_avant| / V_avant ≤ 0,01 sans chute, 0,02 avec ; |P_après - P_avant| ≤ tol ; largeur à tol près ; aucun vertex de la zone monté de plus de tol. Volume hors limite après l'étape 8 : le bas déformait plus que localement : ARRÊT et rapport, pas de correction globale.", "   - V3: per side, |V_after - V_before| / V_before ≤ 0.01 without a drop, 0.02 with one; |P_after - P_before| ≤ tol; width within tol; no vertex of the area risen by more than tol. Volume off the limit after step 8: the bottom deformed more than locally: STOP and report, no global correction."),
+    tr("   - V4 : vertices, arêtes, faces et UV en même nombre que la source. V5 : vertices hors de \"region_fessiere\" et de \"bande_bord\" (poids 0 dans les deux) déplacés de 1e-6 unité de scène au plus.", "   - V4: vertices, edges, faces and UVs in the same number as the source. V5: vertices outside \"glute_region\" and \"edge_band\" (weight 0 in both) moved by 1e-6 scene unit at most."),
+    tr("   - V6 : aucune auto-intersection dans la zone (BVHTree.overlap, hors faces voisines) ; fesse et cuisse à 0,5 × tol au moins l'une de l'autre ; aucune normale inversée.", "   - V6: no self-intersection in the area (BVHTree.overlap, neighbouring faces excluded); glute and thigh at least 0.5 × tol apart; no flipped normal."),
     tr("   - V7 : \"nu_relache\", s'il existe, aux coordonnées de la source ; la poitrine et tout ce qui est hors zone inchangés.", "   - V7: \"bare_rest\", if it exists, at the source's coordinates; the bust and everything outside the area unchanged."),
     tr(
       "   - V8 : rendus avant/après de dos, profil et trois-quarts arrière, même caméra et lumière ; avec armature, flexion de hanche sans artefact ; sinon INVÉRIFIABLE et pourquoi.",
@@ -7297,8 +7291,9 @@ function sdA3gText() {
   L.push(
     tr("1. Le .blend \"_fesses\" (seulement si \"nu_fesses\" a été créée) et le script deform_fesses.py, headless : `blender -b FICHIER_SOURCE -P deform_fesses.py`", "1. The \"_glutes\" .blend (only if \"bare_glutes\" was created) and the script deform_glutes.py, headless: `blender -b SOURCE_FILE -P deform_glutes.py`"),
     tr(
-      "2. rapport_fesses.md : H, b, p, tol, unité ; écart corps / bas ; segments de bord retenus ou exclus avec la raison ; écart maximal avant/après par segment retenu ; grade de la base et grade demandé ; par côté, mesures avant/après, ΔV % ; paramètres libres ; V1 à V8 OK ou KO avec valeurs ; anomalies relevées ; liste INVÉRIFIABLE.",
-      "2. report_glutes.md: H, b, p, tol, unit; body-to-bottom gap; edge segments kept or excluded with the reason; maximum gap before/after per kept segment; grade of the base and requested grade; per side, before/after measures, ΔV%; free parameters; V1 to V8 OK or FAILED with values; anomalies found; UNVERIFIABLE list.",
+      "2. rapport_fesses.md : H, b, p, tol, unité ; écart corps / bas ; segments de bord retenus ou exclus avec la raison ; écart maximal avant/après par segment retenu ; grade de la base et grade demandé ; par côté, mesures avant/après, ΔV % ; paramètres libres ; V1 à V8 OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, texture non peinte sous le bas, modificateurs gênants, détente non modélisée) ; liste INVÉRIFIABLE.",
+      "2. report_glutes.md: H, b, p, tol, unit; body-to-bottom gap; edge segments kept or excluded with the reason; maximum gap before/after per kept segment; grade of the base and requested grade; per side, before/after measures, ΔV%; free parameters; V1 to V8 OK or FAILED with values; anomalies (missing geometry, inherited shape, unpainted texture under the bottom, modifiers in the way, release not modelled); UNVERIFIABLE list.",
+
     ),
     tr("3. Captures PNG avant/après et cartes de poids de \"bande_bord\" et \"region_fessiere\".", "3. Before/after PNG screenshots and the weight maps of \"edge_band\" and \"glute_region\"."),
     "",
