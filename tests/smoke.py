@@ -1138,6 +1138,7 @@ with sync_playwright() as p:
                  "Names \"nipples\", \"areola_L\" or \"areola_R\" already taken (shape key or vertex group): stop and ask, rename nothing.",
                  "; the top hidden (hide_viewport, hide_render), not deleted; the bottom unchanged."):
         assert want in text, (want, text[-800:])
+    assert "swimsuit hidden" not in text, text  # step 1 once hid the whole swimsuit, the bottom with it
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
     # an image model given this text redrew the bottom (owner: "il ne faut pas que le prompt change le tanga"): only the top goes
     keep = " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is."
@@ -1235,9 +1236,9 @@ with sync_playwright() as p:
             set_lang(pg, label, code)
             text = pg.evaluate(A3D)
             assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
-            # a one-piece has no separate bottom to keep
-            kept = "Only the top is removed:" in text or "Seul le haut est retiré :" in text
-            assert kept != ("UNE_PIECE" in extra), (extra, code)
+            # a one-piece has no separate bottom to keep; the sentence is in the language picked, never in the other one
+            here, other = ("Only the top is removed:", "Seul le haut est retiré :")[:: 1 if code == "en" else -1]
+            assert (here in text) != ("UNE_PIECE" in extra) and other not in text, (extra, code)
         pg.close()
     assert not errors, errors
 
