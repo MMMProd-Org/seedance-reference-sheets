@@ -1078,6 +1078,63 @@ with sync_playwright() as p:
     agent.close()
     assert not errors, errors
 
+    # "3D agent" (v158) for an adult woman with a bust, never a man or a woman under 21. Its "Nipples" and "Areolas" choices: on
+    # Auto the prompt keeps both out of scope; a type set by hand gives its sourced target, its own shape key and check V11.
+    A3D = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
+    agent_state = "pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true, height: 160"
+    for state, shown in ((agent_state, True), ("pres: 'm', age: 26, chest: 2", False), ("pres: 'f', age: 20, chest: 2.5", False)):
+        pg = saved_page(state)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        assert (pg.locator("#sd-a3d").count() == 1) == shown, state
+        pg.close()
+    agent = saved_page(agent_state)
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    agent.locator("#sd-a3d summary").click()
+    text = agent.evaluate(A3D)
+    assert "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig" in text and "- NIPPLE =" not in text, text[-600:]
+    assert "V1 to V10 OK" in text and "V11" not in text
+    projecting = agent.get_by_role("button", name="Projecting", exact=True)
+    assert projecting.get_attribute("title") == "About 9 mm high above the areola."
+    assert agent.get_by_role("button", name="Big", exact=True).get_attribute("title") == (
+        "About 41 mm across: the area is marked for the texture, the mesh does not move for it.")
+    projecting.click()
+    agent.get_by_role("button", name="Big", exact=True).click()
+    assert agent.evaluate(f"[{SAVED}.a3dNip, {SAVED}.a3dAre]") == ["SAILLANT", "GRANDE"]
+    text = agent.evaluate(A3D)
+    for want in ("- NIPPLE = PROJECTING (", "- AREOLA = LARGE (", "- CHARACTER_HEIGHT = 160 cm", "areola LARGE: D_ar = 41 mm",
+                 "nipple PROJECTING: p = 9 mm", "d = 10 mm", "multiply them by H / 1600.", "Shape keys \"bare_rest\" and \"nipples\"",
+                 "   - V11: ", "V1 to V11 OK or FAILED", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
+                 "(the areola's color and grain included)",
+                 "A shape key or vertex group already named \"nipples\", \"areola_L\" or \"areola_R\": stop and ask, rename nothing."):
+        assert want in text, (want, text[-800:])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3D)
+    for want in ("- MAMELON = SAILLANT (", "- AREOLE = GRANDE (", "- TAILLE_PERSONNAGE = 160 cm", "aréole GRANDE : D_ar = 41 mm",
+                 "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
+                 "   - V11 : ", "V1 à V11 OK ou KO", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
+                 "(couleur et grain de l'aréole compris)",
+                 "Une shape key ou un vertex group déjà nommé \"mamelons\", \"areole_G\" ou \"areole_D\" : arrête-toi et demande, ne renomme rien."):
+        assert want in text, (want, text[-800:])
+    set_lang(agent, "English", "en")
+    agent.get_by_role("button", name="Umbilicated", exact=True).click()
+    areola_auto = agent.locator("[data-a3d='a3dAre:auto']")
+    assert areola_auto.inner_text() == "Auto (mesh)"
+    areola_auto.click()
+    text = agent.evaluate(A3D)
+    assert "nipple UMBILICATED: p < 0" in text and "- AREOLA = AUTO (" in text and "d = 10 mm" not in text and "D_ar = 41 mm" not in text and "D_ar = its diameter" in text, text[-800:]
+    # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
+    panel = "() => [...document.querySelectorAll('#sd-a3d summary, #sd-a3d p, #sd-a3d button')].map((n) => [n.textContent.trim(), n.title])"
+    en = agent.evaluate(panel)
+    set_lang(agent, "Français", "fr")
+    fr = agent.evaluate(panel)
+    set_lang(agent, "English", "en")
+    same = [a for pair in zip(en, fr) for a, b in zip(*pair) if a == b and re.search(r"[A-Za-zÀ-ÿ]{3,}", a)
+            and a not in SAME_IN_BOTH and not NEUTRAL.match(a)]
+    assert len(en) == len(fr) and not same, same
+    agent.close()
+    assert not errors, errors
+
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)
     for style, model in (("3D", "gpt"), ("Photo", "seedream")):
