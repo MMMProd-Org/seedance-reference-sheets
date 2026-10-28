@@ -1035,6 +1035,8 @@ with sync_playwright() as p:
     assert "V1 à V10 OK" in text and "V11" not in text
     projecting = agent.get_by_role("button", name="Projecting", exact=True)
     assert projecting.get_attribute("title") == "About 9 mm high above the areola."
+    assert agent.get_by_role("button", name="Big", exact=True).get_attribute("title") == (
+        "About 41 mm across: the area is marked for the texture, the mesh does not move for it.")
     projecting.click()
     agent.get_by_role("button", name="Big", exact=True).click()
     assert agent.evaluate(f"[{SAVED}.a3dNip, {SAVED}.a3dAre]") == ["SAILLANT", "GRANDE"]
@@ -1042,7 +1044,8 @@ with sync_playwright() as p:
     for want in ("- MAMELON = SAILLANT (", "- AREOLE = GRANDE (", "- TAILLE_PERSONNAGE = 160 cm", "aréole GRANDE : D_ar = 41 mm",
                  "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
                  "   - V11 : ", "V1 à V11 OK ou KO", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
-                 "(couleur et grain de l'aréole compris)"):
+                 "(couleur et grain de l'aréole compris)",
+                 "Une shape key ou un vertex group déjà nommé \"mamelons\", \"areole_G\" ou \"areole_D\" : arrête-toi et demande, ne renomme rien."):
         assert want in text, (want, text[-800:])
     agent.get_by_role("button", name="Umbilicated", exact=True).click()
     areola_auto = agent.locator("[data-a3d='a3dAre:auto']")
