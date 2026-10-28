@@ -6308,7 +6308,12 @@ var SD_A3D_LOOK = {
   rel: {
     PLATE: ["aréoles au ras de la peau du sein, sans marche ni bourrelet au bord", "areolas flush with the breast skin, with no step or ridge at their edge"],
     PLATEAU: ["aréoles surélevées en plateau au-dessus de la peau du sein, sans étranglement à leur base", "areolas raised as a plateau above the breast skin, with no constriction at their base"],
-    HERNIEE: ["aréoles bombées en dôme au-dessus de la peau du sein, un sillon de resserrement à leur base", "areolas domed above the breast skin, with a constricting groove at their base"],
+    /* owner's second render ("c'est déjà mieux mais toujours pas capable de faire un relief d'aréole bombée"): the dome said by what each
+       view shows, the side views first, where it stands out of the breast's outline */
+    HERNIEE: [
+      "aréoles bombées en dôme : sur chaque vue de profil, l'aréole dépasse nettement de la courbe du sein en un petit dôme distinct, le mamelon à son sommet, séparé du sein par un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli",
+      "domed areolas: in each side view the areola clearly stands out from the curve of the breast as a small, distinct dome with the nipple on top, set apart from the breast by a sharp crease at its base; from the front the areola looks swollen, ringed by the shadow of that crease",
+    ],
   },
   tub: { VISIBLES: ["petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles", "small round bumps (Montgomery tubercles) visible on the areolas"] },
 };

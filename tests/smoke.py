@@ -1146,7 +1146,9 @@ with sync_playwright() as p:
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
     context(text, " Nipples and areolas set by hand (see TARGETS): umbilicated nipples, drawn into a dip at the centre of the areola;"
-            " areola size unchanged; areolas domed above the breast skin, with a constricting groove at their base;"
+            " areola size unchanged; domed areolas: in each side view the areola clearly stands out from the curve of the breast as a small,"
+            " distinct dome with the nipple on top, set apart from the breast by a sharp crease at its base; from the front the areola looks"
+            " swollen, ringed by the shadow of that crease;"
             " small round bumps (Montgomery tubercles) visible on the areolas.")
     for want in ("- AREOLA_RELIEF = DOMED (", "- TUBERCLES = VISIBLE (", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
                  "tubercles VISIBLE: small round bumps on the areola",
@@ -1172,7 +1174,8 @@ with sync_playwright() as p:
     for want in ("- RELIEF_AREOLE = HERNIEE (", "- TUBERCULES = VISIBLES (", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
         assert want in text, (want, text[-800:])
     context(text, " Mamelons et aréoles réglés à la main (voir CIBLES) : mamelons inchangés ; taille des aréoles inchangée ;"
-            " aréoles bombées en dôme au-dessus de la peau du sein, un sillon de resserrement à leur base ;"
+            " aréoles bombées en dôme : sur chaque vue de profil, l'aréole dépasse nettement de la courbe du sein en un petit dôme distinct,"
+            " le mamelon à son sommet, séparé du sein par un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli ;"
             " petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles.")
     set_lang(agent, "English", "en")
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
