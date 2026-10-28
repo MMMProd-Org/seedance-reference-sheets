@@ -6200,6 +6200,46 @@ var SD_A3D_GRADES = [
   ["III", "III", "III"],
   ["PSEUDO", "Pseudo", "Pseudo"],
 ];
+/* Follow-up of v158 (user, 2026-10-28: "il existe différents types de mamelon : soit on laisse auto, rien ne change, on laisse le
+   skill faire, soit on oblige un type de mamelon en particulier"): "Mamelons" and "Aréoles", Auto by default. On Auto the prompt is
+   unchanged (both stay out of the agent's scope); a type set by hand brings them into its scope, geometry only, in their own shape key.
+   The areola's color stays texture work, out of scope: no source found for its tint relative to the skin. Sourced data, each with its
+   population and method (the targets per type are design choices on these data, marked "À VALIDER" in the prompt):
+   - Lee, Yang, Chung, Chung and Cho, "Anthropometric Measurement for the Nipple Areola Complex", Archives of Plastic Surgery 2008,
+     35(4):461-464: 225 Korean women in their 20s to 50s, sizes from a questionnaire; areola 30.93 ± 10.07 mm, nipple diameter
+     10.21 ± 4.14 mm, nipple height 6.54 ± 3.74 mm; the areola larger with age, marriage, delivery and lactation.
+   - Sanuki, Fukuma and Uchida, "Morphologic Study of Nipple-Areola Complex in 600 Breasts", Aesthetic Plastic Surgery 2009,
+     33(3):295-297: 300 adult women, calipers; areola 4.0 cm, nipple 1.3 cm, nipple height 0.9 cm (means, no SD in the abstract);
+     elevated plateau type without constriction in 60.2% of breasts, inverted nipples in 3.5%. Its other types are not defined in
+     the abstract, so no areola relief is offered.
+   - Demiröz, Türkmen, Yıldız and Dağhan, "Anthropometric breast measurements of young women with no history of pregnancy or surgery
+     in Turkey", Journal of Plastic Surgery and Hand Surgery 2021, 55(1):13-16: 88 women of 18 to 30, BMI 21.1 on average, one plastic
+     surgeon; nipple projection 4.0 ± 1.8 mm on the right (1 to 9), 3.9 ± 1.8 mm on the left (1 to 10).
+   - Park, Yoon and Kim, "The Prevalence of Congenital Inverted Nipple", Aesthetic Plastic Surgery 1999, 23(2):144-146: 1,625
+     unmarried Korean women of 19 to 26; inverted nipples in 3.26%, both sides in 86.79% of them, umbilicated in 96.23%. */
+var SD_A3D_NIPS = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas aux mamelons du maillage.", "The prompt leaves the mesh's nipples as they are."],
+  ["PLAT", "Plats", "Flat", "Environ 2 mm de haut au-dessus de l'aréole.", "About 2 mm high above the areola."],
+  ["MOYEN", "Moyens", "Average", "Environ 5 mm de haut au-dessus de l'aréole.", "About 5 mm high above the areola."],
+  ["SAILLANT", "Saillants", "Projecting", "Environ 9 mm de haut au-dessus de l'aréole.", "About 9 mm high above the areola."],
+  ["OMBILIQUE", "Ombiliqués", "Umbilicated", "Rentrés dans un creux au centre de l'aréole, la forme la plus fréquente des mamelons rentrés.", "Drawn into a dip at the centre of the areola, the most common form of inverted nipple."],
+];
+var SD_A3D_AREOLAS = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas aux aréoles du maillage.", "The prompt leaves the mesh's areolas as they are."],
+  ["PETITE", "Petites", "Small", "Environ 21 mm de diamètre.", "About 21 mm across."],
+  ["MOYENNE", "Moyennes", "Average", "Environ 31 mm de diamètre.", "About 31 mm across."],
+  /* "Big", not "Large": the page translates the French chip "Large" (a waist) into "Wide" */
+  ["GRANDE", "Grandes", "Big", "Environ 41 mm de diamètre.", "About 41 mm across."],
+];
+/* the target of each type, in real millimetres (design choices on the data above) */
+var SD_A3D_NIP_MM = { PLAT: 2, MOYEN: 5, SAILLANT: 9 },
+  SD_A3D_ARE_MM = { PETITE: 21, MOYENNE: 31, GRANDE: 41 };
+function sdA3dNip() {
+  return sdA3dManual("a3dNip", SD_A3D_NIPS) ? e.a3dNip : "AUTO";
+}
+function sdA3dAre() {
+  return sdA3dManual("a3dAre", SD_A3D_AREOLAS) ? e.a3dAre : "AUTO";
+}
 function sdA3dOn(t) {
   return "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && !t.photo && sdRevealOk(t);
 }
@@ -6276,6 +6316,11 @@ function sdA3dText() {
     asym = sdAsymOn() || "asym" === e.bustShape,
     manT = "auto" !== (e.a3dTop || "auto") && sdA3dManual("a3dTop", SD_A3D_TOPS),
     manG = "auto" !== (e.a3dGrade || "auto") && sdA3dManual("a3dGrade", SD_A3D_GRADES),
+    nip = sdA3dNip(),
+    are = sdA3dAre(),
+    nac = "AUTO" !== nip || "AUTO" !== are,
+    pd = "AUTO" === nip ? "" : "OMBILIQUE" === nip ? ", p" : ", p et d",
+    hcm = Math.round(+e.height || 170),
     forms = sdBustSel(e)
       .filter(function (x) {
         return "asym" !== x;
@@ -6325,7 +6370,7 @@ function sdA3dText() {
     L = [];
   L.push("# Prompt agent : poitrine sans haut, personnage 3D", "");
   L.push("## CONTEXTE", "");
-  L.push("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte actuellement " + SD_A3D_TOPTXT[top] + ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne.", "");
+  L.push("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte actuellement " + SD_A3D_TOPTXT[top] + ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne." + (nac ? " Mamelons et aréoles réglés à la main : " + ("AUTO" !== nip ? "mamelons " + nip : "mamelons du mesh gardés") + ", " + ("AUTO" !== are ? "aréoles " + are : "aréoles du mesh gardées") + " (voir CIBLES)." : ""), "");
   L.push("Fiche du personnage (planche de référence) : " + fiche + ".", "");
   L.push("Règle centrale : volume inchangé. Retirer le haut ne change la poitrine que dans la mesure où il la soutenait. " + supp + (methA ? "" : " La forme sans haut suit le grade, l'écartement et la forme réglés ci-dessous, jamais une forme moyenne. Une poitrine plus volumineuse se place plus bas au repos (Brown et al. 2012 ; Coltman, Steele, McGhee 2018, rapportés par Suh et Park 2022) : la planche le dit déjà par la taille et la forme réglées."), "");
   L.push("Méthode A : ratios mesurés avec et sans soutien-gorge (Zhong et al., IJERPH 2023, 20(5):3856 : 124 Chinoises de 18 à 25 ans, 20,5 ans en moyenne, IMC moyen 20,3, bonnets B et C, soutiens-gorge 3/4 à coques de 13 et 23 mm sans armature), fixés ; hors de cette population (âge, taille, type de haut), ratios À VALIDER" + (methA && (age < 18 || age > 25) ? " : ce personnage a " + age + " ans, hors de la plage de l'étude, à signaler dans le rapport" : "") + ". Méthode B : forme sans haut définie par un grade de ptose (classification de Regnault modifiée, définitions d'une source secondaire).", "");
@@ -6337,6 +6382,12 @@ function sdA3dText() {
   L.push("- ECARTEMENT = " + (methA ? "sans objet en méthode A (r_h)" : spread + " (NORMAL, ECARTEE, RAPPROCHEE, VERS_EXTERIEUR ou VERS_AVANT)"));
   L.push("- FORME = " + (cone ? "EN_OBUS" : high ? "HAUTE" : "AUTRE") + " (EN_OBUS, HAUTE ou AUTRE)");
   L.push("- ASYMETRIE = " + (asym ? "OUI" : "NON") + " (OUI ou NON)");
+  nac &&
+    L.push(
+      "- MAMELON = " + nip + " (AUTO, PLAT, MOYEN, SAILLANT ou OMBILIQUE ; " + ("AUTO" !== nip ? "choisi à la main" : "AUTO : le mamelon du mesh, inchangé") + ")",
+      "- AREOLE = " + are + " (AUTO, PETITE, MOYENNE ou GRANDE ; " + ("AUTO" !== are ? "choisie à la main" : "AUTO : l'aréole du mesh, inchangée") + ")",
+      "- TAILLE_PERSONNAGE = " + hcm + " cm (planche ; échelle des cibles en millimètres)",
+    );
   L.push("- SILLON_SOUS_MAMMAIRE = AUTO (ou nom du vertex group du sillon, requis en méthode B si le sillon n'est pas lisible sur le mesh)", "");
   L.push("Champ requis vide ou hors liste : arrête-toi et demande, ne suppose rien. Méthode A si TAILLE_POITRINE = B_C et TYPE_DE_HAUT = COQUES_EPAISSES ou COQUES_FINES ; sinon méthode B. Méthode retenue ici : " + (methA ? "A" : "B") + ".", "");
   L.push("## CIBLES", "");
@@ -6372,15 +6423,71 @@ function sdA3dText() {
   L.push("Cibles : " + profTarget + "." + (cone ? "" : " Forme de base déjà hors cibles (cône) : en méthode B, continue, l'étape 7f corrige ; en méthode A, arrête-toi et demande s'il faut passer en B."), "");
   L.push("Repère du seuil P/W : ordre de grandeur de population, pas une règle individuelle (projection de 4,0 ± 1,3 cm pour environ 540 cc chez 100 jeunes Malaisiennes, Shahlini 2014 ; base d'environ 13 cm dans une étude 3D Vectra ; aucune des deux cohortes n'a de poitrine très volumineuse). " + (cone ? "Ici, la forme « En obus » réglée sur la planche passe avant ce repère." : "0,6" === pw ? "Ici, la forme réglée sur la planche, plus projetée, le relève." : "Une forme plus projetée réglée sur la planche le relèverait."), "");
   L.push("Seuils ±0,01, ±2 %, tol" + (cone ? "" : ", " + pw + ", 120°") + (spread === "VERS_AVANT" && !methA ? ", 15°" : "") + " : choix de conception.", "");
+  if (nac) {
+    var nipSet = "AUTO" !== nip,
+      areSet = "AUTO" !== are,
+      nipMm = SD_A3D_NIP_MM[nip],
+      tg = [];
+    areSet &&
+      tg.push(
+        "aréole " + are + " : D_ar = " + SD_A3D_ARE_MM[are] + " mm (" +
+          { PETITE: "moyenne de Lee moins un écart-type", MOYENNE: "moyenne de Lee", GRANDE: "moyenne de Lee plus un écart-type, proche de la moyenne de Sanuki" }[are] + ")",
+      );
+    nipSet &&
+      tg.push(
+        "OMBILIQUE" === nip
+          ? "mamelon OMBILIQUE : p < 0, le sommet du mamelon sous le plan de l'aréole, au fond d'un creux central ; profondeur et ouverture du creux libres, À VALIDER (aucune mesure publiée trouvée)"
+          : "mamelon " + nip + " : p = " + nipMm + " mm (" + { PLAT: "moyenne de Demiröz moins un écart-type", MOYEN: "entre les moyennes de Demiröz et de Lee", SAILLANT: "moyenne de Sanuki" }[nip] + "), d = 10 mm (moyenne de Lee ; 13 mm chez Sanuki)",
+      );
+    L.push("Mamelons et aréoles (réglés à la main) : données publiées ; aucune de ces populations ne couvre à elle seule ce personnage.", "");
+    L.push(
+      "| Source | Population, méthode | Aréole, diamètre | Mamelon, diamètre | Mamelon, hauteur |",
+      "|---|---|---|---|---|",
+      "| Lee et al., Arch Plast Surg 2008 | 225 Coréennes de la vingtaine à la cinquantaine, mesures par questionnaire | 30,93 ± 10,07 mm | 10,21 ± 4,14 mm | 6,54 ± 3,74 mm |",
+      "| Sanuki et al., Aesthetic Plast Surg 2009 | 300 femmes adultes (600 seins), pied à coulisse | 40 mm (moyenne) | 13 mm (moyenne) | 9 mm (moyenne) |",
+      "| Demiröz et al., J Plast Surg Hand Surg 2021 | 88 Turques de 18 à 30 ans sans grossesse, un chirurgien | - | - | 4,0 ± 1,8 mm (1 à 10 mm) |",
+      "",
+    );
+    L.push("Mamelons rentrés : 3,26 % de 1 625 Coréennes de 19 à 26 ans, des deux côtés dans 86,79 % des cas, ombiliqués dans 96,23 % (Park et al., Aesthetic Plast Surg 1999) ; 3,5 % des seins chez Sanuki et al. Aréole plus grande avec l'âge, le mariage, les grossesses et l'allaitement (Lee et al.).", "");
+    L.push("Cibles, par côté (choix de conception sur ces données, À VALIDER) : " + tg.join(" ; ") + ". Mêmes cibles des deux côtés.", "");
+    L.push("Échelle : cibles pour une personne réelle de " + hcm + " cm (taille de la planche) ; en unités de scène, multiplie-les par H / " + hcm * 10 + ".", "");
+    L.push("Repères, par côté, sur \"nu_relache\" à 1,0 :");
+    L.push("- C : centre du mamelon : sommet du mamelon du mesh s'il est lisible (bosse locale), sinon BP.");
+    L.push(
+      areSet
+        ? "- Aréole : disque géodésique de diamètre D_ar centré sur C ; vertex groups \"areole_G\" et \"areole_D\" (poids 1 dedans, 0 dehors) pour les textures, rien n'est peint."
+        : "- Aréole : celle du mesh, inchangée ; D_ar = son diamètre, lu sur son relief ou son vertex group ; illisible : arrête-toi et demande.",
+    );
+    nipSet &&
+      L.push(
+        "- Plan de l'aréole : plan ajusté par moindres carrés sur les vertices situés entre 0,8 et 1,0 × D_ar / 2 de C.",
+        "- p : distance signée entre ce plan et le " + ("OMBILIQUE" === nip ? "fond du creux" : "sommet du mamelon") + ", le long de la normale du plan, négative sous le plan.",
+      );
+    nipMm && L.push("- d : diamètre du mamelon dans un plan parallèle à celui de l'aréole, à mi-hauteur de p.");
+    var tol2 = [nipMm ? "p ± 1 mm, d ± 2 mm" : "", areSet ? "D_ar ± 2 mm" : ""].filter(Boolean).join(", ");
+    L.push("");
+    tol2 && L.push("Tolérances : " + tol2 + " (réels, mis à l'échelle) : choix de conception.", "");
+  }
   L.push("## DEFINITION OF DONE", "");
-  L.push("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK ; FICHIER_SOURCE intact ; rapport livré.", "");
+  L.push(
+    (nac
+      ? "AUTO" !== nip
+        ? "Shape keys \"nu_relache\" et \"mamelons\" sur le corps ; à 1,0, V1 à V11 OK"
+        : "Shape key \"nu_relache\" et vertex groups des aréoles sur le corps ; à 1,0, V1 à V11 OK"
+      : "Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK") + " ; FICHIER_SOURCE intact ; rapport livré.",
+    "",
+  );
   L.push("## CONTRAINTES", "");
   L.push("1. Blender avec Python (bpy, bmesh, mathutils). Blender absent ou import raté : arrête-toi et signale.");
-  L.push("2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\" ; forme de base intacte.");
+  L.push("2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\"" + ("AUTO" !== nip ? ", celle des mamelons dans \"mamelons\"" : "") + " ; forme de base intacte.");
   L.push("3. Topologie (vertices, arêtes, faces), UV, vertex groups, poids de skinning et shape keys existants inchangés.");
   L.push("4. Rien au-delà des cibles : ni volume, ni taille de bonnet, ni esthétique.");
   L.push("5. Aucune hypothèse silencieuse : vérifie axe avant, axe vertical, unité, objet corps, côtés, sillon. Ambiguïté : demande.");
-  L.push("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.");
+  L.push(
+    nac
+      ? "6. Hors périmètre : textures et UV (couleur et grain de l'aréole compris), jiggle, rig, autres zones ; mamelons et aréoles : seulement ce que demandent MAMELON et AREOLE. Signale les problèmes sans les corriger."
+      : "6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.",
+  );
   L.push("7. État de mesure identique avant et après : armature en Rest Position, Subdivision et lissages désactivés, shape keys existantes à leur valeur. Demi-mesh avec Mirror : édite la moitié réelle, mesure sur le mesh évalué.");
   L.push("8. Paramètres libres (zone, décroissance, écartement en B, itérations) : listés dans le rapport, marqués À VALIDER.", "");
   L.push("## ÉTAPES", "");
@@ -6396,11 +6503,21 @@ function sdA3dText() {
   L.push("   - z_SMS (B) ; grade de la forme de base, reporté.");
   L.push("   - V : duplique les faces de poids > 0 dans un bmesh, bmesh.ops.holes_fill, bm.calc_volume().");
   L.push("   - Plan de paroi, P, W, A" + (cone ? "." : " ; règle de la forme de base hors cibles."));
-  L.push("7. Déformation, uniquement dans \"nu_relache\" :");
+  nac && L.push("   - Mamelons et aréoles du mesh : C, D_ar" + pd + ", reportés.");
+  L.push("7. Déformation, uniquement dans \"nu_relache\"" + ("AUTO" !== nip ? " (M : dans \"mamelons\")" : "") + " :");
   L.push("   - A : a. descente pondérée jusqu'à HU_cible (UBP reste au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.");
   methA || L.push("   - B : a. descente de la masse, croissante vers le bas, jusqu'à la condition du grade " + grade + " et pas au-delà ; aucune si la forme de base la remplit déjà" + (none ? "" : " ; le bas peut passer sous le sillon et toucher le thorax sans le traverser") + " ; b. écartement selon ECARTEMENT = " + spread + " ; c. " + orient + ".");
   L.push("   - Puis : d. volume ramené à ±2 % par gonflement le long des normales ; e. lissage limité à la zone, re-mesure, itération" + (cone ? "." : " ; f. si P_après / W > " + pw + " ou A_après < 120°, recule le sommet vers le plan de paroi, redistribue ce volume " + (methA ? "vers le bas et l'extérieur, reprends d et e." : (none ? "vers la base, sans faire descendre le mamelon ni vider le haut" : "vers le bas" + (noSpread ? "" : " et l'extérieur")) + ", reprends d et e ; en B, le grade reste vrai.")));
-  L.push("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6.");
+  nac &&
+    L.push(
+      "AUTO" !== nip
+        ? "   - M (mamelons et aréoles), en fin d'étape 7, dans une shape key \"mamelons\" distincte, calculée sur \"nu_relache\" à 1,0 et ajoutée à la base, pour pouvoir l'enlever seule : " +
+            ("OMBILIQUE" === nip ? "creux central, le mamelon au fond, le bord de l'aréole inchangé" : "mamelon remodelé autour de C à p et d visés, flancs nets, sommet arrondi") +
+            ("AUTO" !== are ? " ; vertex groups des aréoles au diamètre D_ar" : "") +
+            " ; seuls les vertices du disque de l'aréole bougent. Topologie inchangée : trop peu de vertices dans le disque pour porter la forme (moins de 3 anneaux d'arêtes dans d, seuil À VALIDER) : arrête-toi et signale, ne subdivise pas."
+        : "   - M (aréoles) : vertex groups des aréoles au diamètre D_ar, sur \"nu_relache\" à 1,0 ; aucune déformation, pas de shape key \"mamelons\".",
+    );
+  L.push("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6" + (nac ? " ; C, D_ar" + pd + ("AUTO" !== nip ? " avec \"mamelons\" à 1,0" : "") : "") + ".");
   L.push("9. Vérifications, \"nu_relache\" à 1,0 :");
   L.push("   - V1 : " + (methA ? "HU_après / HU_avant = 1 - r_v à ±0,01." : "condition du grade " + grade + " vraie par sein (reporte z_SMS, z_BP, z_bas, tol)."));
   L.push("   - V2 : " + (methA ? "WBB_après / WBB_avant = 1 + r_h à ±0,01." : noSpread ? "|WBB_après - WBB_avant| ≤ tol." : "WBB_après ≥ WBB_avant."));
@@ -6412,11 +6529,19 @@ function sdA3dText() {
   L.push("   - V8 : si armature : captures en rest pose, bras levés, buste penché, sans artefact ; sinon INVÉRIFIABLE avec la raison.");
   L.push("   - V9 : rendus avant/après de face, profil, trois-quarts, même caméra et même éclairage ; sur le profil, point le plus bas et sillon lisibles.");
   L.push("   - V10 : profil par sein : " + profTarget + ".");
+  nac &&
+    L.push(
+      "   - V11 : mamelons et aréoles, par côté : " +
+        ["AUTO" !== are ? "diamètre de \"areole_G\" et \"areole_D\" = D_ar à ± 2 mm mis à l'échelle" : "", "AUTO" === nip ? "" : "OMBILIQUE" === nip ? "p < 0, le fond du creux au centre de l'aréole" : "p et d à leur cible, à ± 1 mm et ± 2 mm mis à l'échelle", "AUTO" !== nip ? "\"mamelons\" à 0 : V1 à V10 inchangés ; dans \"mamelons\", vertices hors des disques des aréoles déplacés de 1e-6 unité de scène au plus" : ""]
+          .filter(Boolean)
+          .join(" ; ") +
+        ".",
+    );
   L.push("   Échec : corrige et recommence ; après 3 échecs sur un critère, arrête-toi et rapporte les valeurs.", "");
   L.push("## SORTIE", "");
   L.push("1. Fichier .blend suffixé \"_nu\".");
   L.push("2. Script deform_nu.py, headless : `blender -b FICHIER_SOURCE -P deform_nu.py`");
-  L.push("3. rapport_nu.md : méthode et raison ; " + (methA ? "" : "grade de la forme de base et grade demandé ; ") + "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à V10 OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE.");
+  L.push("3. rapport_nu.md : méthode et raison ; " + (methA ? "" : "grade de la forme de base et grade demandé ; ") + "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à " + (nac ? "V11" : "V10") + " OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE" + (nac ? " ; mamelons et aréoles : C, D_ar" + pd + " par côté, avant et après, avec cibles et écarts" : "") + ".");
   L.push("4. Captures PNG avant/après et carte de poids.", "");
   L.push("## INTERDITS", "");
   L.push((methA
@@ -6425,6 +6550,7 @@ function sdA3dText() {
       ? "Faire descendre le mamelon sous le sillon, faire passer le sein sous le sillon, vider le haut du sein ou l'écarter au-delà d'ECARTEMENT ; "
       : "Garder une forme soutenue (haut rond et plein, mamelon haut) en grade " + grade + " ; écarter au-delà d'ECARTEMENT ; ") +
     (cone ? "" : "livrer un profil en cône ou en obus ; ") +
+    (nac ? "toucher aux mamelons ou aux aréoles au-delà de MAMELON et AREOLE ; peindre une texture ; " : "") +
     "ramener la poitrine à une forme moyenne ; inventer un grade ou des ratios ; annoncer « terminé » sans rapport.");
   return L.join("\n");
 }
@@ -6480,6 +6606,7 @@ function sdA3dChips(t, set, k, T) {
               return o;
             });
           },
+          title: x[3] ? sdT(x[3], x[4]) : void 0,
           children: sdT(x[1], x[2]),
         },
         x[0],
@@ -6498,14 +6625,18 @@ function sdAgent3d(t, set) {
       (0, l.jsx)("p", {
         className: "mt-2",
         children: sdT(
-          "Prompt de l'agent Blender qui retire le haut du personnage 3D, rempli depuis la planche : taille, type de haut, grade de ptose tiré de « Forme de la poitrine », écartement, profil permis. Les choix Auto suivent la planche.",
-          "Prompt for the Blender agent that removes the top of the 3D character, filled from the sheet: size, type of top, ptosis grade from “Bust shape”, spacing, allowed profile. Auto follows the sheet.",
+          "Prompt de l'agent Blender qui retire le haut du personnage 3D, rempli depuis la planche : taille, type de haut, grade de ptose tiré de « Forme de la poitrine », écartement, profil permis. Les choix Auto suivent la planche ; pour les mamelons et les aréoles, Auto laisse ceux du maillage.",
+          "Prompt for the Blender agent that removes the top of the 3D character, filled from the sheet: size, type of top, ptosis grade from “Bust shape”, spacing, allowed profile. Auto follows the sheet; for the nipples and areolas, Auto keeps the mesh's own.",
         ),
       }),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Type de haut", "Type of top") }),
       sdA3dChips(t, set, "a3dTop", SD_A3D_TOPS),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Grade de ptose", "Ptosis grade") }),
       sdA3dChips(t, set, "a3dGrade", SD_A3D_GRADES),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Mamelons", "Nipples") }),
+      sdA3dChips(t, set, "a3dNip", SD_A3D_NIPS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Aréoles", "Areolas") }),
+      sdA3dChips(t, set, "a3dAre", SD_A3D_AREOLAS),
       (0, l.jsx)("textarea", { readOnly: !0, value: txt, rows: 8, className: "mt-2 w-full rounded-md border bg-card p-2 font-mono text-xs", "aria-label": sdT("Prompt de l'agent 3D", "3D agent prompt") }),
       (0, l.jsx)("button", {
         type: "button",
