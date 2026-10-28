@@ -6191,17 +6191,20 @@ function sdShapeName(k) {
    its ratios his own, marked "to validate" outside that population. Free thresholds are design choices, marked "À VALIDER", as in his
    prompt. The text is in a read-only field, never a <pre> (not a Seedream or GPT prompt); French in the French interface (his agent's
    language), English in the English one (sdA3dEnPass). */
+/* follow-up of v158 (user: "il faudra quand même faire des tooltips, parce qu'il y a des endroits pas compréhensibles : grade de
+   ptose ???"): each choice says in plain words what it is and what the agent does with it, the grades with the definitions the prompt
+   uses (Regnault, from Martinez and Chung, StatPearls 2023) */
 var SD_A3D_TOPS = [
-  ["auto", "Auto (planche)", "Auto (sheet)"],
-  ["COQUES_EPAISSES", "Coques épaisses", "Thick cups"],
-  ["COQUES_FINES", "Coques fines", "Thin cups"],
-  ["TRIANGLE_SOUPLE", "Triangle souple", "Soft triangle"],
-  ["MAILLOT_SOUPLE", "Haut de maillot souple", "Soft bikini top"],
-  ["HAUT_AMPLE", "Haut ample", "Loose top"],
-  ["HAUT_AJUSTE", "Haut ajusté", "Fitted top"],
-  ["UNE_PIECE_AJUSTEE", "Une-pièce ajusté", "Fitted one-piece"],
-  ["UNE_PIECE_GAINANTE", "Une-pièce gainant", "Shaping one-piece"],
-  ["INCONNU", "Inconnu", "Unknown"],
+  ["auto", "Auto (planche)", "Auto (sheet)", "Lu dans la tenue de la planche corps ; une tenue libre ou une planche habillée donnée en image : inconnu.", "Read from the body sheet's outfit; a free outfit or a dressed sheet given as an image: unknown."],
+  ["COQUES_EPAISSES", "Coques épaisses", "Thick cups", "Soutien-gorge ou haut à coques épaisses (23 mm dans l'étude citée). En bonnet B à C, l'agent applique les écarts mesurés avec et sans soutien-gorge (Zhong 2023) ; sinon, il fait descendre la poitrine jusqu'au grade de ptose.", "Bra or top with thick moulded cups (23 mm in the cited study). At cup B to C the agent applies the gaps measured with and without a bra (Zhong 2023); otherwise it lowers the bust to the ptosis grade."],
+  ["COQUES_FINES", "Coques fines", "Thin cups", "Soutien-gorge ou haut à coques fines (13 mm dans l'étude citée). En bonnet B à C, l'agent applique les écarts mesurés avec et sans soutien-gorge (Zhong 2023) ; sinon, il fait descendre la poitrine jusqu'au grade de ptose.", "Bra or top with thin moulded cups (13 mm in the cited study). At cup B to C the agent applies the gaps measured with and without a bra (Zhong 2023); otherwise it lowers the bust to the ptosis grade."],
+  ["TRIANGLE_SOUPLE", "Triangle souple", "Soft triangle", "Haut de maillot à triangles souples, sans coque ni armature : il soutient à peine, la poitrine change peu sans lui.", "Soft triangle bikini top, no cups or underwire: it barely supports, so the bust changes little without it."],
+  ["MAILLOT_SOUPLE", "Haut de maillot souple", "Soft bikini top", "Haut de maillot couvrant à bonnets souples, sans rembourrage ni armature : il soutient à peine, la poitrine change peu sans lui.", "Full-coverage bikini top with soft cups, no padding or underwire: it barely supports, so the bust changes little without it."],
+  ["HAUT_AMPLE", "Haut ample", "Loose top", "Haut court ample qui ne soutient pas la poitrine : elle change peu sans lui.", "Loose cropped top that does not support the bust: it changes little without it."],
+  ["HAUT_AJUSTE", "Haut ajusté", "Fitted top", "Haut court ajusté en jersey, qui suit la poitrine sans la remonter ni l'aplatir : maintien léger, elle change peu sans lui.", "Fitted jersey cropped top that follows the bust without lifting or flattening it: light support, it changes little without it."],
+  ["UNE_PIECE_AJUSTEE", "Une-pièce ajusté", "Fitted one-piece", "Maillot une pièce au devant non structuré : maintien léger, la poitrine change peu sans lui.", "One-piece swimsuit with an unstructured front: light support, the bust changes little without it."],
+  ["UNE_PIECE_GAINANTE", "Une-pièce gainant", "Shaping one-piece", "Maillot de compétition qui gaine la poitrine : sans lui, elle reprend sa forme au repos, jusqu'au grade de ptose.", "Competition swimsuit that compresses the bust: without it, the bust takes back its resting shape, down to the ptosis grade."],
+  ["INCONNU", "Inconnu", "Unknown", "L'agent s'arrête et demande le type de haut avant de déformer quoi que ce soit.", "The agent stops and asks for the type of top before it deforms anything."],
 ];
 var SD_A3D_TOPTXT = {
   COQUES_EPAISSES: "un soutien-gorge ou un haut à coques épaisses",
@@ -6215,12 +6218,12 @@ var SD_A3D_TOPTXT = {
   INCONNU: "un haut de type inconnu",
 };
 var SD_A3D_GRADES = [
-  ["auto", "Auto (forme)", "Auto (shape)"],
-  ["AUCUNE", "Aucune", "None"],
-  ["I", "I", "I"],
-  ["II", "II", "II"],
-  ["III", "III", "III"],
-  ["PSEUDO", "Pseudo", "Pseudo"],
+  ["auto", "Auto (forme)", "Auto (shape)", "Tiré de « Forme de la poitrine » sur la planche : un choix de conception, aucun grade n'est sourcé pour une forme donnée.", "Taken from “Bust shape” on the sheet: a design choice, no grade is sourced for a given shape."],
+  ["AUCUNE", "Aucune", "None", "Pas de chute : le mamelon au-dessus du pli sous le sein, rien du sein sous ce pli.", "No sag: the nipple above the fold under the breast, nothing of the breast below that fold."],
+  ["I", "I", "I", "Chute légère : le mamelon au niveau du pli sous le sein.", "Slight sag: the nipple level with the fold under the breast."],
+  ["II", "II", "II", "Chute moyenne : le mamelon sous le pli, sans être le point le plus bas du sein.", "Moderate sag: the nipple below the fold, but not the lowest point of the breast."],
+  ["III", "III", "III", "Chute marquée : le mamelon sous le pli, au point le plus bas du sein.", "Marked sag: the nipple below the fold, at the lowest point of the breast."],
+  ["PSEUDO", "Pseudo", "Pseudo", "Pseudo-ptose : le mamelon au niveau du pli ou au-dessus, mais le bas du sein descend sous le pli.", "Pseudoptosis: the nipple at or above the fold, but the lower breast hangs below it."],
 ];
 /* Follow-up of v158 (user, 2026-10-28: "il existe différents types de mamelon : soit on laisse auto, rien ne change, on laisse le
    skill faire, soit on oblige un type de mamelon en particulier"): "Mamelons" and "Aréoles", Auto by default. On Auto the prompt is
@@ -7002,7 +7005,7 @@ function sdAgent3d(t, set) {
       }),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Type de haut", "Type of top") }),
       sdA3dChips(t, set, "a3dTop", SD_A3D_TOPS),
-      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Grade de ptose", "Ptosis grade") }),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Grade de ptose (chute de la poitrine)", "Ptosis grade (how far the bust sags)") }),
       sdA3dChips(t, set, "a3dGrade", SD_A3D_GRADES),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Mamelons", "Nipples") }),
       sdA3dChips(t, set, "a3dNip", SD_A3D_NIPS),
