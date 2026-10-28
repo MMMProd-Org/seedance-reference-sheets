@@ -1107,9 +1107,10 @@ with sync_playwright() as p:
     agent.get_by_role("button", name="Big", exact=True).click()
     assert agent.evaluate(f"[{SAVED}.a3dNip, {SAVED}.a3dAre]") == ["SAILLANT", "GRANDE"]
     text = agent.evaluate(A3D)
-    for want in ("- NIPPLE = PROJECTING (", "- AREOLA = LARGE (", "- CHARACTER_HEIGHT = 160 cm", "areola LARGE: D_ar = 41 mm",
+    for want in ("\n- NIPPLE = PROJECTING\n", "\n- AREOLA = LARGE\n", "\n- CHARACTER_HEIGHT = 160 cm\n", "areola LARGE: D_ar = 41 mm",
                  "nipple PROJECTING: p = 9 mm", "d = 10 mm", "multiply them by H / 1600.", "Shape keys \"bare_rest\" and \"nipples\"",
-                 "   - V11: ", "V1 to V11 OK or FAILED", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
+                 "   - V11: ", "V1 to V11 OK or FAILED", "(Lee et al. 2008: 30.93 ± 10.07 mm, mean plus one SD; Sanuki et al. 2009: 40 mm)",
+                 "p = 9 mm (the mean of Sanuki et al. 2009)",
                  "(the areola's color and grain included)",
                  "A shape key or vertex group already named \"nipples\", \"areola_L\" or \"areola_R\": stop and ask, rename nothing."):
         assert want in text, (want, text[-800:])
@@ -1122,18 +1123,21 @@ with sync_playwright() as p:
         assert not re.search(r"\b(AUTO|PLAT|MOYENN?E?|SAILLANT|OMBILIQUE|PETITE|GRANDE|PLATE|PLATEAU|HERNIEE|VISIBLES|FLAT|AVERAGE|PROJECTING"
                              r"|UMBILICATED|SMALL|LARGE|FLUSH|DOMED|VISIBLE)\b", line), line
 
-    context(text, " Nipples and areolas set by hand (see TARGETS): projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
+    context(text, " Nipples and areolas (set by hand): projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
-    context(text, " Mamelons et aréoles réglés à la main (voir CIBLES) : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
+    context(text, " Mamelons et aréoles (réglés à la main) : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
             " grandes aréoles, environ 41 mm de diamètre.")
-    for want in ("- MAMELON = SAILLANT (", "- AREOLE = GRANDE (", "- TAILLE_PERSONNAGE = 160 cm", "aréole GRANDE : D_ar = 41 mm",
+    for want in ("\n- MAMELON = SAILLANT\n", "\n- AREOLE = GRANDE\n", "\n- TAILLE_PERSONNAGE = 160 cm\n", "aréole GRANDE : D_ar = 41 mm",
                  "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
-                 "   - V11 : ", "V1 à V11 OK ou KO", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
+                 "   - V11 : ", "V1 à V11 OK ou KO", "(Lee et al. 2008 : 30,93 ± 10,07 mm, moyenne plus un écart-type ; Sanuki et al. 2009 : 40 mm)",
+                 "p = 9 mm (moyenne de Sanuki et al. 2009)",
                  "(couleur et grain de l'aréole compris)",
                  "Une shape key ou un vertex group déjà nommé \"mamelons\", \"areole_G\" ou \"areole_D\" : arrête-toi et demande, ne renomme rien."):
         assert want in text, (want, text[-800:])
     set_lang(agent, "English", "en")
+    agent.locator("[data-a3d='a3dNip:PLAT']").click()
+    assert "nipple FLAT: p = 2 mm (Demiröz et al. 2021: 4.0 ± 1.8 mm, minus one SD)" in agent.evaluate(A3D)
     agent.get_by_role("button", name="Umbilicated", exact=True).click()
     areola_auto = agent.locator("[data-a3d='a3dAre:auto']")
     assert areola_auto.inner_text() == "Auto (mesh)"
@@ -1145,15 +1149,15 @@ with sync_playwright() as p:
     agent.locator("[data-a3d='a3dTub:VISIBLES']").click()
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
-    context(text, " Nipples and areolas set by hand (see TARGETS): umbilicated nipples, drawn into a dip at the centre of the areola;"
-            " areola size unchanged; domed areolas: in each side view the areola clearly stands out from the curve of the breast as a small,"
-            " distinct dome with the nipple on top, set apart from the breast by a sharp crease at its base; from the front the areola looks"
-            " swollen, ringed by the shadow of that crease;"
+    context(text, " Nipples and areolas (set by hand): umbilicated nipples, drawn into a dip at the centre of the areola;"
+            " areola size unchanged; domed areolas: in profile, each areola clearly stands out from the curve of the breast as a small"
+            " dome, the nipple on top, a sharp crease at its base; from the front, the areola looks swollen, ringed by the shadow of that"
+            " crease;"
             " small round bumps (Montgomery tubercles) visible on the areolas.")
-    for want in ("- AREOLA_RELIEF = DOMED (", "- TUBERCLES = VISIBLE (", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
+    for want in ("\n- AREOLA_RELIEF = DOMED\n", "\n- TUBERCLES = VISIBLE\n", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
                  "tubercles VISIBLE: small round bumps on the areola",
-                 "- h_ar: height of the areola, the distance between the areola plane and a plane fitted to the breast skin just around it"
-                 " (between 1.0 and 1.3 × D_ar / 2 from C), along their mean normal, positive forward.",
+                 "h_ar = the distance from the areola plane to that of the skin between 1.0 and 1.3 × D_ar / 2 from C, positive forward",
+                 "p = the signed distance from the plane to the bottom of a central dip", "96.23 % of inverted nipples, Park et al. 1999",
                  "h_ar > 0, a groove at the edge of the areola", "Shape keys \"bare_rest\" and \"nipples\""):
         assert want in text, (want, text[-800:])
     # the step that builds the geometry names both operations (the nipple is the umbilicated one set above)
@@ -1171,11 +1175,11 @@ with sync_playwright() as p:
     agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
-    for want in ("- RELIEF_AREOLE = HERNIEE (", "- TUBERCULES = VISIBLES (", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
+    for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
         assert want in text, (want, text[-800:])
-    context(text, " Mamelons et aréoles réglés à la main (voir CIBLES) : mamelons inchangés ; taille des aréoles inchangée ;"
-            " aréoles bombées en dôme : sur chaque vue de profil, l'aréole dépasse nettement de la courbe du sein en un petit dôme distinct,"
-            " le mamelon à son sommet, séparé du sein par un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli ;"
+    context(text, " Mamelons et aréoles (réglés à la main) : mamelons inchangés ; taille des aréoles inchangée ;"
+            " aréoles bombées en dôme : de profil, chaque aréole dépasse nettement de la courbe du sein en un petit dôme, le mamelon au"
+            " sommet, un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli ;"
             " petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles.")
     set_lang(agent, "English", "en")
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
@@ -1188,6 +1192,22 @@ with sync_playwright() as p:
             and a not in SAME_IN_BOTH and not NEUTRAL.match(a)]
     assert len(en) == len(fr) and not same, same
     agent.close()
+    assert not errors, errors
+
+    # The agent prompt fits the 10,000 characters of an image tool's prompt box (owner: "Cannot exceed 10000 characters"), counting
+    # each line break twice in case the box counts it as CRLF, on the longest settings, in both languages.
+    longest = ("pres: 'x', age: 26, fat: 1, chest: 3, bodyRef: true, refCover: 'tanga', headless: true, height: 160, bustShape: 'slender',"
+               " bustHigh: 'vhigh', bustWide: 'out', bustAsym: 'yes', bustSkin: 'loose', a3dNip: 'OMBILIQUE', a3dAre: 'GRANDE',"
+               " a3dRel: 'HERNIEE', a3dTub: 'VISIBLES'")
+    for extra in ("a3dTop: 'HAUT_AJUSTE'", "a3dTop: 'UNE_PIECE_AJUSTEE', a3dGrade: 'III'", "a3dTop: 'COQUES_FINES', chest: 2",
+                  "a3dNip: 'MOYEN', a3dAre: 'PETITE', a3dRel: 'PLATEAU'", "a3dNip: 'SAILLANT', a3dRel: 'PLATE', bustShape: 'conical'"):
+        pg = saved_page(longest + ", " + extra)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        for label, code in (("Français", "fr"), ("English", "en")):
+            set_lang(pg, label, code)
+            text = pg.evaluate(A3D)
+            assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+        pg.close()
     assert not errors, errors
 
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
