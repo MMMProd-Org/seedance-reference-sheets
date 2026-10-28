@@ -3731,7 +3731,7 @@ rep('''    sdHourglass() &&
     sdHipFlare() && (t += SD_HIP_FLARE),
     t
   );''')
-_m = _re.search(r'        \{\n          t: "chips",\n          k: "hipPos",\n(?:          [^\n]*\n|            [^\n]*\n)*?        \},\n', src)
+_m = _re.search(r'        \{\n          t: "chips",\n          k: "hipPos",\n(?:          [^\n]*\n)*?        \},\n', src)
 assert _m and src.count(_m.group(0)) == 1
 src = src.replace(_m.group(0), _m.group(0) + '''        {
           t: "toggle",

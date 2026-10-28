@@ -5700,7 +5700,7 @@ function sdBm(t) {
   if ("h" === p[0] ? !(t || !nw()) : t) return "";
   /* v139 review: a large mark on the face or the neck spreads past its place (a temple is about 5 cm wide) */
   var sz = "l" === e.bmSize && "h" === p[0] ? "about 10 cm across, spreading onto the skin around it" : SD_BM_SIZE[e.bmSize] || SD_BM_SIZE.m;
-  return "a " + ty[0] + " " + p[1].replace("%", "right" === e.bmSide ? "right" : "left") + ", " + sz + ": " + ty[1];
+  return "a " + ty[0] + " " + p[1].replace(/%/g, "right" === e.bmSide ? "right" : "left") + ", " + sz + ": " + ty[1];
 }
 /* the drawn marks of "Body details" (the last item of sdDetails) */
 var SD_DRAWN_MARKS = ["a small mole on the left shoulder blade", "a small mole on the left shoulder", "a cluster of faint freckles on both shoulders", "a small birthmark above the right hip", "a small mole on the inner left forearm", "dense freckles on the shoulders and the upper back"];

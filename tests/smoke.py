@@ -22,6 +22,8 @@ SAME_IN_BOTH = {
     "Twists", "Type", "Undercut", "Visible",
     # v140 silhouette types, v158 ptosis grades (Regnault, Roman numerals)
     "III", "Pseudo", "Rectangle", "Triangle",
+    # v137 and v156 place helpers and moods ("Place" is the French chip for a town square and the English for "Lieu")
+    "Cyberpunk", "Docks", "Festive", "Jungle", "Place", "Renaissance", "Tunnel", "Village",
 }
 NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
