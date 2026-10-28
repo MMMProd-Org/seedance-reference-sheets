@@ -1114,8 +1114,19 @@ with sync_playwright() as p:
                  "A shape key or vertex group already named \"nipples\", \"areola_L\" or \"areola_R\": stop and ask, rename nothing."):
         assert want in text, (want, text[-800:])
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
+
+    # the context line says the choices in plain words, early enough for an image model that reads the start (600 words for Seedream)
+    def context(text, want):
+        line = text.split("\n")[4]
+        assert line.endswith(want) and len(text[:text.index(want)].split()) < 600, (want, line)
+        assert not re.search(r"\b(AUTO|PLAT|MOYENN?E?|SAILLANT|OMBILIQUE|PETITE|GRANDE|PLATE|PLATEAU|HERNIEE|VISIBLES|FLAT|AVERAGE|PROJECTING"
+                             r"|UMBILICATED|SMALL|LARGE|FLUSH|DOMED|VISIBLE)\b", line), line
+
+    context(text, " Nipples and areolas set by hand (see TARGETS): projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
+    context(text, " Mamelons et aréoles réglés à la main (voir CIBLES) : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
+            " grandes aréoles, environ 41 mm de diamètre.")
     for want in ("- MAMELON = SAILLANT (", "- AREOLE = GRANDE (", "- TAILLE_PERSONNAGE = 160 cm", "aréole GRANDE : D_ar = 41 mm",
                  "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
                  "   - V11 : ", "V1 à V11 OK ou KO", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
@@ -1134,6 +1145,9 @@ with sync_playwright() as p:
     agent.locator("[data-a3d='a3dTub:VISIBLES']").click()
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
+    context(text, " Nipples and areolas set by hand (see TARGETS): umbilicated nipples, drawn into a dip at the centre of the areola;"
+            " areola size unchanged; areolas domed above the breast skin, with a constricting groove at their base;"
+            " small round bumps (Montgomery tubercles) visible on the areolas.")
     for want in ("- AREOLA_RELIEF = DOMED (", "- TUBERCLES = VISIBLE (", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
                  "tubercles VISIBLE: small round bumps on the areola",
                  "- h_ar: height of the areola, the distance between the areola plane and a plane fitted to the breast skin just around it"
@@ -1157,6 +1171,9 @@ with sync_playwright() as p:
     text = agent.evaluate(A3D)
     for want in ("- RELIEF_AREOLE = HERNIEE (", "- TUBERCULES = VISIBLES (", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
         assert want in text, (want, text[-800:])
+    context(text, " Mamelons et aréoles réglés à la main (voir CIBLES) : mamelons inchangés ; taille des aréoles inchangée ;"
+            " aréoles bombées en dôme au-dessus de la peau du sein, un sillon de resserrement à leur base ;"
+            " petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles.")
     set_lang(agent, "English", "en")
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
     panel = "() => [...document.querySelectorAll('#sd-a3d summary, #sd-a3d p, #sd-a3d button')].map((n) => [n.textContent.trim(), n.title])"
