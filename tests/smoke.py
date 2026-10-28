@@ -20,6 +20,8 @@ SAME_IN_BOTH = {
     "Dark", "Denim", "Description", "Dreadlocks", "Format", "Imperfections", "Long", "Moustache",
     "Musculature", "Musculature (volume)", "Nude", "Parka", "Smoky", "Style", "T-shirt", "Texture",
     "Twists", "Type", "Undercut", "Visible",
+    # v140 silhouette types, v158 ptosis grades (Regnault, Roman numerals)
+    "III", "Pseudo", "Rectangle", "Triangle",
 }
 NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
@@ -61,6 +63,10 @@ def clipboard_page(browser, errors):
     page.goto(page_path.resolve().as_uri())
     page.evaluate(HOLD_CLIPBOARD)
     return page
+
+
+# card titles: the h3 headings outside the named sections of the Body tab (v144)
+CARD_H3 = "h3:not([id^='sd-sec-'] h3)"
 
 
 HOLD_CLIPBOARD = "() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }"
@@ -115,7 +121,7 @@ with sync_playwright() as p:
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
     open_folds(page)
     page.get_by_role("button", name="Free retouch", exact=True).click()
-    preset = page.get_by_role("button", name="Dress", exact=True)
+    preset = page.get_by_role("button", name="Dress for assembly", exact=True)
     change = page.locator("#sd-iter")
     hint = page.get_by_text("Pick or write a retouch below.", exact=True)
 
@@ -133,7 +139,7 @@ with sync_playwright() as p:
     expect(hint).to_be_hidden()
     open_retouches()
     expect(preset).to_have_attribute("aria-pressed", "true")
-    expect(page.get_by_text(re.compile(r"^Same body, in a cropped top and leggings\. The text below is ready and already in the prompt: "))).to_be_visible()
+    expect(page.get_by_text(re.compile(r"^Same body, in a fitted cobalt-blue sleeveless cropped top and leggings, to combine the head and the body next\. The Outfit tab is not used\. The text below is ready and already in the prompt: "))).to_be_visible()
     assert change.input_value().rstrip(". ") in page.locator('pre[data-out="iter"]').text_content()
     preset.click()
     expect(change).to_have_value("")
@@ -166,15 +172,17 @@ with sync_playwright() as p:
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
-        expect(retouch).not_to_contain_text(dropped)
+        # the list of what is kept (a clothing change also gets a fit paragraph, which may name the outfit)
+        keep_line = next(x for x in retouch.text_content().splitlines() if x.startswith("Keep everything this change does not touch"))
+        assert kept in keep_line and dropped not in keep_line, (text, keep_line)
     change.fill("")
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
 
     found = {}
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
         page.get_by_role("radio", name=model, exact=True).click()
-        for subject in ["Person", "Animal", "Object"]:
-            page.get_by_role("radio", name=subject, exact=True).click()
+        for subject in ["Person", "Animal", "Object", "Place"]:  # "Place" since v137
+            page.get_by_role("radio", name=subject, exact=True).first.click()  # the type row, above the "Object" category chip
             tabs = page.get_by_role("tab")
             for i in range(tabs.count()):
                 tabs.nth(i).click()
@@ -182,10 +190,11 @@ with sync_playwright() as p:
                 untranslated(page, f"{model} / {subject} / {tabs.nth(i).inner_text()}", found)
             if subject == "Person":
                 tabs.first.click()
-                page.get_by_text("Man", exact=True).click()
+                # the presentation chip of the tab (the header also shows the sex, as a radio button)
+                page.locator("label").filter(has_text=re.compile(r"^Man$")).click()
                 untranslated(page, f"{model} / Person / Man", found)
-                page.get_by_text("Woman", exact=True).click()
-            if model == "GPT Image 2.5" and subject != "Object":
+                page.locator("label").filter(has_text=re.compile(r"^Woman$")).click()
+            if model == "GPT Image 2.5" and subject in ("Person", "Animal"):
                 tabs.first.click()
                 several = page.get_by_text(re.compile(r"^Several (characters|animals) in the same GPT conversation"))
                 several.click()
@@ -195,7 +204,7 @@ with sync_playwright() as p:
                 untranslated(page, f"{model} / {subject} / several, named", found)
                 name.fill("")
                 several.click()
-            page.get_by_role("button", name=re.compile(r"^New (character|animal|object)$")).click()
+            page.get_by_role("button", name=re.compile(r"^New (character|animal|object|place)$")).click()
             untranslated(page, f"{model} / {subject} / reset confirmation", found)
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
     assert not errors, errors
@@ -219,7 +228,7 @@ with sync_playwright() as p:
     copy = race.get_by_role("button", name="Copy for Seedream 5.0")
     head, body = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
     head.click()
-    race.get_by_text("Man", exact=True).click()
+    race.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     head.click()
     race.wait_for_function("window.writes.length === 2")
     race.evaluate("() => window.writes[1]()")  # the newer copy finishes first
@@ -239,7 +248,7 @@ with sync_playwright() as p:
     cross.evaluate("() => window.writes[0]()")
     cross.evaluate("() => window.writes[1]()")
     cross.get_by_role("radio", name="Seedream 5.0", exact=True).click()
-    expect(seedream).to_have_count(3)  # the "Copied" labels are back
+    expect(seedream).to_have_count(4)  # the "Copied" labels are back (head, body, retouch, final photo pass)
     seedream.nth(1).click()
     cross.wait_for_function("window.writes.length === 3")
     cross.evaluate("() => window.writes[2]()")
@@ -254,13 +263,13 @@ with sync_playwright() as p:
         headless.get_by_text("Choose the retouch", exact=True).click()
     expect(join).to_have_attribute("aria-pressed", "true")
     # its prompt is built while the change is empty, and the help says so
-    expect(headless.get_by_text("The body is kept and the head is added. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
+    expect(headless.get_by_text("The body is kept and the head is added. Switching the model (Seedream, Nano Banana or GPT Image) puts that model's text back. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
     join.click()
     expect(headless.locator("#sd-iter")).not_to_have_value("")
-    expect(headless.get_by_text(re.compile(r"^The body is kept and the head is added\. The text below is ready "))).to_be_visible()
+    expect(headless.get_by_text(re.compile(r"^The body is kept and the head is added\. Switching the model \(Seedream, Nano Banana or GPT Image\) puts that model's text back\. The text below is ready "))).to_be_visible()
     # in French too; "Free retouch" asks for the user's own text, with a French example
     set_lang(headless, "Français", "fr")
-    expect(headless.get_by_text(re.compile(r"^Le corps est gardé, la tête est ajoutée\. Le texte ci-dessous est prêt "))).to_be_visible()
+    expect(headless.get_by_text(re.compile(r"^Le corps est gardé, la tête est ajoutée\. Changer de modèle \(Seedream, Nano Banana ou GPT Image\) remet le texte de ce modèle\. Le texte ci-dessous est prêt "))).to_be_visible()
     headless.get_by_role("button", name="Retouche libre", exact=True).click()
     expect(headless.get_by_text(re.compile(r"^Écris ce qu'il faut changer sur ta planche \(image 1\), en français ou en anglais\. "))).to_be_visible()
     expect(headless.locator("#sd-iter")).to_have_attribute("placeholder", "ex. biceps et triceps plus dessinés")
@@ -276,7 +285,7 @@ with sync_playwright() as p:
     subject.wait_for_function("window.writes.length === 2")
     subject.evaluate("() => window.writes[0]()")  # the Person copy finishes once back on Person
     subject.evaluate("() => window.writes[1]()")
-    subject.get_by_text("Man", exact=True).click()  # after a head change, the prompts build on the copied head sheet
+    subject.locator("label").filter(has_text=re.compile(r"^Man$")).click()  # after a head change, the prompts build on the copied head sheet
     expect(subject.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
     assert not errors, errors
 
@@ -290,7 +299,7 @@ with sync_playwright() as p:
     looks.reload()
     expect(looks.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
     variant = looks.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-    looks.get_by_text("Man", exact=True).click()
+    looks.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     expect(variant).to_be_visible()  # a head change alone still builds on the copied head sheet
     looks.get_by_role("tab", name="Face").click()
     looks.get_by_role("slider", name="Beauty").press("ArrowRight")
@@ -307,7 +316,7 @@ with sync_playwright() as p:
     fat.get_by_role("radio", name="Animal", exact=True).click()
     fat.get_by_role("radio", name="Person", exact=True).click()
     variant = fat.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-    fat.get_by_text("Man", exact=True).click()
+    fat.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     expect(variant).to_be_visible()
     fat.get_by_role("tab", name=re.compile(r"^Body")).click()
     fat.get_by_role("slider", name="Build", exact=True).press("ArrowRight")
@@ -333,7 +342,7 @@ with sync_playwright() as p:
         if away:
             old.get_by_role("radio", name="Person", exact=True).click()
         variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-        old.get_by_text("Man", exact=True).click()
+        old.locator("label").filter(has_text=re.compile(r"^Man$")).click()
         expect(variant).to_be_visible()
         old.get_by_role("tab", name="Face").click()
         old.get_by_role("slider", name="Beauty").press("ArrowRight")
@@ -379,16 +388,18 @@ with sync_playwright() as p:
     leftover = re.compile(r"\bsix\b|six-view|panels?\b|3 by 2|top row|bottom row|aerial view|high-angle view from a top corner")
     obj = clipboard_page(browser, errors)
     obj.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
-    obj.get_by_role("radio", name="Object", exact=True).click()
-    for cat in ("Vehicle", "Weapon (film prop)", "Clothing", "Accessory", "Object", "House (exterior)", "Interior"):
-        obj.get_by_role("tab", name="Object", exact=True).click()
+    # places are their own type since v137 ("Place": a house, an interior or an outdoor location), with their own tab
+    for cat in ("Vehicle", "Weapon (film prop)", "Clothing", "Accessory", "Object", "House", "Interior", "Outdoor"):
+        kind = "Place" if cat in ("House", "Interior", "Outdoor") else "Object"
+        obj.get_by_role("radio", name=kind, exact=True).first.click()  # the type row, above the "Object" category chip
+        obj.get_by_role("tab", name=kind, exact=True).click()
         obj.get_by_role("tabpanel").get_by_text(cat, exact=True).click()
-        for light in ("Day", "Night", "Day and night") if cat in ("House (exterior)", "Interior") else ("",):
+        for light in ("Day", "Night", "Day and night") if kind == "Place" else ("",):
             if light:
                 obj.get_by_role("tab", name="Light and mood", exact=True).click()
                 obj.get_by_role("tabpanel").get_by_text(light, exact=True).click()
             texts = prompts(obj)
-            cards = [h for h in obj.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            cards = [h for h in obj.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
             if light:
                 assert not [c for c in cards if c.startswith("Triptych")], (cat, light, cards)
             else:
@@ -414,7 +425,7 @@ with sync_playwright() as p:
                 mode: 'object', objCat: '{place}', objTime: 'both', photo: true, photoOnly: {str(only).lower()}}}))""")
             lit.reload()
             texts = prompts(lit)
-            cards = [h for h in lit.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            cards = [h for h in lit.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
             if only:
                 assert len(texts) == len(cards) == 3, (place, cards)
             else:
@@ -529,7 +540,7 @@ with sync_playwright() as p:
             assert "the most recent animal sheet" in changed and "head sheet" not in changed
             ani.get_by_role("button", name="Random animal").click()
         body, head = prompts(ani)[:2]
-        cards = ani.locator("h3").all_inner_texts()[:2]
+        cards = ani.locator(CARD_H3).all_inner_texts()[:2]
         assert cards == ["Animal sheet", "Head close-ups (optional)"], (step, cards)
         assert "head sheet" not in body and "identity reference" in body and "SUBJECT:" in body, step
         assert "The same animal as on its four-view sheet" in head and "of your own choice" not in head, step
@@ -616,12 +627,12 @@ with sync_playwright() as p:
     msg = clipboard_page(browser, errors)
     msg.get_by_role("radio", name="Seedream 5.0", exact=True).click()
     msg.get_by_text("Start from a photo", exact=True).click()
-    assert msg.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+    assert msg.locator(CARD_H3).all_inner_texts() == ["Head sheet", "Body sheet"]
     assert len(prompts(msg)) == 2
     for button in msg.get_by_role("button", name="Copy for Seedream 5.0", exact=True).all():
         expect(button).to_be_enabled()
     msg.get_by_text("Start from a photo", exact=True).click()
-    cards = [h for h in msg.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+    cards = [h for h in msg.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
     assert cards[2].startswith("Retouch"), cards
     msg.close()
     assert not errors, errors
@@ -695,7 +706,8 @@ with sync_playwright() as p:
               " a flat trapezius line, a smooth upper chest.")
     for extra, wanted in (
         ("", (tested,
-              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, softly visible.",
+              # v128 (owner: "Discrets" and "Présents" abs looked the same): "Discrets" no longer reads "softly visible"
+              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, only faintly hinted, no deep shadows.",
               "weak fill: crisp shadows that bring out the veins; the muscles stay smooth.",
               "the upper part slightly deflated; the lowest point")),
         ("absStyle: 'auto'", (tested,)),  # abs at "Discrets" with no style: in the shared phrase, not one of their own
@@ -802,7 +814,7 @@ with sync_playwright() as p:
     pet.get_by_role("radio", name="Animal", exact=True).click()
     open_folds(pet)
     text = pet.locator("body").inner_text()
-    assert pet.locator("h3").all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator("h3").all_inner_texts()
+    assert pet.locator(CARD_H3).all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator(CARD_H3).all_inner_texts()
     for word in ("Choose the retouch", "shape guide", "bust shape", "Your three steps", "Combine head and body"):
         assert word not in text, word
     assert "The animal sheet: char_" in text
@@ -822,7 +834,7 @@ with sync_playwright() as p:
     for style in ("3d", "2d"):
         flat.evaluate("style => localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1, mode: 'person', style}))", style)
         flat.reload()
-        assert flat.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+        assert flat.locator(CARD_H3).all_inner_texts() == ["Head sheet", "Body sheet"]
         texts = prompts(flat)
         assert len(texts) == 2 and all(texts)
         assert not re.search(r"conversation|GENERATION LIMIT|this message", "\n".join(texts))
@@ -910,7 +922,7 @@ with sync_playwright() as p:
         assert len(ratios) == 2 and min(ratios) >= 4.5, (scheme, ratios)
         red.context.close()
 
-    # "Dress" writes the outfit of the with-head body sheet word for word (the dressed sheet becomes its image 2): a man's top
+    # "Dress for assembly" writes the outfit of the with-head body sheet word for word (the dressed sheet becomes its image 2): a man's top
     # lies over his chest, a very slim woman's has the lower neckline; at "Very generous" both cards carry the red warning.
     head_outfit = re.compile(r"Outfit, the same in every view: (.*?)\. Opaque, plain, no logos\.")
     dress_outfit = re.compile(r"Change only this: the outfit is replaced by (.*?); opaque, plain, no logos; ")
@@ -919,8 +931,9 @@ with sync_playwright() as p:
                           ("pres: 'm', chest: 2, fat: 2", False)):
         dressed = saved_page(f"age: 27, bodyRef: true, headless: true, refCover: 'sport', {state}")
         open_folds(dressed)
-        dressed.get_by_role("button", name="Dress", exact=True).click()
-        edit = next(t for t in prompts(dressed) if t.startswith("Edit image 1"))
+        dressed.get_by_role("button", name="Dress for assembly", exact=True).click()
+        prompts(dressed)
+        edit = dressed.locator('pre[data-out="iter"]').text_content()  # card 3 (since v147 a bust retouch card can come before it)
         assert (dress_warn in dressed.locator("body").inner_text()) == warned, state
         whole = saved_page(f"age: 27, bodyRef: true, headless: false, refCover: 'sport', {state}")
         outfit_text = next(t for t in prompts(whole) if "Outfit, the same in every view" in t)
@@ -957,7 +970,7 @@ with sync_playwright() as p:
     # the text a preset put in the box is cleared even after a setting has changed that preset's wording
     stale = saved_page("headless: true, bodyRef: true, pres: 'f', chest: 2.5")
     open_folds(stale)
-    stale.get_by_role("button", name="Dress", exact=True).click()
+    stale.get_by_role("button", name="Dress for assembly", exact=True).click()
     picked = stale.evaluate(f"{SAVED}.sdIter")
     stale.get_by_role("tab", name=re.compile(r"^Body")).click()
     stale.get_by_role("slider", name="Bust", exact=True).press("ArrowRight")
@@ -966,7 +979,7 @@ with sync_playwright() as p:
     saved = stale.evaluate(SAVED)
     assert saved.get("sdIterOp") == "free" and not saved.get("sdIter"), saved
     open_folds(stale)
-    stale.get_by_role("button", name="Dress", exact=True).click()
+    stale.get_by_role("button", name="Dress for assembly", exact=True).click()
     assert stale.evaluate(f"{SAVED}.sdIter") != picked, "the bust change must change the Dress text"
     stale.close()
 

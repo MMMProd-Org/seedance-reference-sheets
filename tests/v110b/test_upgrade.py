@@ -11,6 +11,9 @@ import unittest
 
 from playwright.sync_api import expect, sync_playwright
 
+# card titles: the h3 headings outside the named sections of the Body tab (v144)
+CARD_H3 = "h3:not([id^='sd-sec-'] h3)"
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 HTML = pathlib.Path(sys.argv.pop(1)).resolve() if len(sys.argv) > 1 else ROOT / "new/merged.html"
 KEY = "fiche-perso-seedance-v1"
@@ -71,6 +74,10 @@ class Upgrade(unittest.TestCase):
         texts = self.page.locator('pre:not([data-out="iter"]):visible, pre[data-out="iter"]:not(:empty):visible').all_text_contents()
         self.assertTrue(texts and all(t.strip() for t in texts), "missing prompt")
         return texts
+
+    def iter_prompt(self):
+        """Card 3's prompt (the final photo pass, v155, now comes after it)."""
+        return self.page.locator('pre[data-out="iter"]').text_content()
 
     def test_forte_respects_explicit_limbs_and_waist(self):
         for model in ("gpt", "seedream"):
@@ -178,7 +185,7 @@ class Upgrade(unittest.TestCase):
         self.assertEqual(len(self.prompts()), 4, "keep the triptych and three separate default views")
         self.load(mode="object", objCat="object", objViews=[0, 5])
         self.assertEqual(self.page.locator('g[data-view][aria-pressed="true"]:visible').count(), 2)
-        cards = self.page.locator("h3").all_text_contents()
+        cards = self.page.locator(CARD_H3).all_text_contents()
         self.assertEqual(len([c for c in cards if re.match(r"^View \d:", c)]), 2)
         self.page.reload()
         self.page.locator("header").wait_for()
@@ -187,7 +194,7 @@ class Upgrade(unittest.TestCase):
     def test_existing_seedream_photo_paths(self):
         self.load(mode="animal", photo=True)
         self.assertEqual(len(self.prompts()), 2)
-        self.assertEqual(self.page.locator("h3").all_text_contents()[:2], ["Animal sheet", "Head close-ups (optional)"])
+        self.assertEqual(self.page.locator(CARD_H3).all_text_contents()[:2], ["Animal sheet", "Head close-ups (optional)"])
         self.load(mode="object", objCat="clothing", photo=True, photoOnly=True, objMannequin=True)
         self.assertIn("invisible mannequin", self.prompts()[0])
         expect(self.page.get_by_text("On an invisible mannequin", exact=True)).to_be_visible()
@@ -197,16 +204,22 @@ class Upgrade(unittest.TestCase):
         start = source.index("var SD_CHILD_BAN_TERMS")
         end = source.index("\n}\n", source.index("function sdChildOk")) + 3
         words = json.loads((ROOT / "tests/v110b/child_words.json").read_text())
+        # v117 (independent child-safety reviews): wet hair or clothes, a bathrobe and heels are refused for a child too
+        later = ["wet hair", "heeled boots", "bathrobe"]
+        block = words["BLOCK"] + later
+        allow = [w for w in words["ALLOW"] if w not in later]
+        self.assertEqual(len(allow), len(words["ALLOW"]) - len(later))
         page = self.load(child=True)
-        result = page.evaluate("words => {" + source[start:end] + "\nreturn words.map(sdChildOk); }", words["BLOCK"] + words["ALLOW"])
-        self.assertEqual(result[:len(words["BLOCK"])], [False] * len(words["BLOCK"]))
-        self.assertEqual(result[len(words["BLOCK"]):], [True] * len(words["ALLOW"]))
+        result = page.evaluate("words => {" + source[start:end] + "\nreturn words.map(sdChildOk); }", block + allow)
+        self.assertEqual(result[:len(block)], [False] * len(block))
+        self.assertEqual(result[len(block):], [True] * len(allow))
 
     def test_join_migration_preserves_personal_text(self):
         presets = json.loads((ROOT / "tests/v110b/join_presets.json").read_text())
         for text in presets:
             self.load(age=31, sdIterOp="join", sdIter=text, sdIterPre=text)
-            self.assertIn("85% of the panel height", self.state()["sdIter"])
+            # v126: the current text draws the head in an empty grey band above each body (the v102 text said "85% of the panel height")
+            self.assertIn("in the empty grey band above each body", self.state()["sdIter"])
             self.assertEqual(self.state()["sdIterPre"], self.state()["sdIter"])
             edited = text + " Keep the red shoes."
             self.load(age=31, sdIterOp="join", sdIter=edited, sdIterPre=text)
@@ -272,7 +285,7 @@ class Upgrade(unittest.TestCase):
                         else:
                             self.assertIn("three equal panels side by side", texts[0])
                             self.assertIn("directly above", texts[-1])
-                            self.assertNotIn("At night", self.page.locator("h3").all_text_contents()[-1])
+                            self.assertNotIn("At night", self.page.locator(CARD_H3).all_text_contents()[-1])
                         if model == "seedream":
                             self.assertNotIn("conversation", "\n".join(texts))
 
@@ -309,7 +322,9 @@ class Upgrade(unittest.TestCase):
                             page.set_viewport_size({"width": 1440, "height": 1000})
                             self.assertAlmostEqual(status.evaluate("e => e.getBoundingClientRect().bottom"), 976, delta=1)
                             self.assertEqual(fixed_bar.evaluate("e => getComputedStyle(e.parentElement).paddingBottom"), "64px")
-                            reset = page.get_by_role("button", name="New object" if language == "en" else "Nouvel objet", exact=True)
+                            # v137: a house is a place, with its own reset button
+                            place = category == "house"
+                            reset = page.get_by_role("button", name=("New place" if place else "New object") if language == "en" else ("Nouveau lieu" if place else "Nouvel objet"), exact=True)
                             for width in (390, 320):
                                 page.set_viewport_size({"width": width, "height": 844})
                                 reset.scroll_into_view_if_needed()
@@ -318,7 +333,8 @@ class Upgrade(unittest.TestCase):
                                                      fixed_bar.evaluate("e => e.getBoundingClientRect().top"))
                                 reset.click(trial=True)
                             reset.click()
-                            expect(page.get_by_role("button", name="Confirm: delete this object" if language == "en" else "Confirmer : effacer cet objet", exact=True)).to_be_visible()
+                            confirm = ("Confirm: delete this place" if place else "Confirm: delete this object") if language == "en" else ("Confirmer : effacer ce lieu" if place else "Confirmer : effacer cet objet")
+                            expect(page.get_by_role("button", name=confirm, exact=True)).to_be_visible()
 
     def test_view_selection_keyboard_mobile_and_reload(self):
         page = self.load(mode="object", objCat="object", objViews=[0])
@@ -354,16 +370,19 @@ class Upgrade(unittest.TestCase):
     def test_canon_male_is_targeted_and_male_outfit_reaches_waist(self):
         self.load(pres="m", looks=0, bodyRef=True, headless=False)
         texts = self.prompts()
-        self.assertIn("real male model", texts[0])
+        self.assertIn("top male model", texts[0])  # v128: "Canon" stronger ("real male model" before)
         self.assertIn("beard shadow", texts[0])
         self.assertIn("hem reaches the waistband", texts[1])
         self.assertNotIn("cropped top", texts[1])
         self.load(pres="f", looks=0)
-        self.assertNotIn("real male model", self.prompts()[0])
+        self.assertNotIn("male model", self.prompts()[0])
 
     def test_canon_keeps_explicit_face_traits(self):
         self.load(pres="m", looks=0)
-        self.assertIn("a clearly defined jaw, thick natural eyebrows", self.prompts()[0])
+        # v128: shorter, no "thick natural eyebrows" at all (the eyebrows are the face's); the jaw cue stays while the jaw is on Auto
+        head = self.prompts()[0]
+        self.assertIn("a clearly defined jaw", head)
+        self.assertNotIn("thick natural eyebrows", head)
         for generation in (1, 2):
             for brows, jaw in (("thin", "auto"), ("auto", "soft"), ("thin", "soft")):
                 with self.subTest(generation=generation, brows=brows, jaw=jaw):
@@ -378,7 +397,7 @@ class Upgrade(unittest.TestCase):
                         self.assertIn("thin eyebrows", head)
                     if jaw != "auto":
                         self.assertIn("soft jawline", head)
-                    self.assertEqual("thick natural eyebrows" in head, brows == "auto")
+                    self.assertNotIn("thick natural eyebrows", head)
                     self.assertEqual("a clearly defined jaw" in head, jaw == "auto")
 
     def test_animal_individuality_respects_source_photo(self):
@@ -393,7 +412,7 @@ class Upgrade(unittest.TestCase):
 
     def test_selected_interior_light_matches_its_card(self):
         self.load(mode="object", objCat="interior", objLightSel=["lamps"], placeViews=[2], objTime="day")
-        self.assertEqual(self.page.locator("h3").all_text_contents(), ["View 1: light"])
+        self.assertEqual(self.page.locator(CARD_H3).all_text_contents(), ["View 1: light"])
         self.assertIn("view toward the main light source", self.prompts()[0])
         self.assertNotIn("main windows", self.prompts()[0])
 
@@ -610,7 +629,7 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                     if extra.get("baby"):
                         self.assertIn("full-length cotton sleepsuit", texts[0])
                 else:
-                    self.assertNotIn("Retouch (optional)", page.locator("h3").all_text_contents())
+                    self.assertNotIn("Retouch (optional)", page.locator(CARD_H3).all_text_contents())
 
     def test_v112_person_photo_references_and_copies(self):
         cases = [({}, True), ({"photoClothes": False}, False),
@@ -814,7 +833,9 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                     self.load(model=model, outfitFree=True, outfitText=text,
                               topSel=["hoodie"], colorSel=["red"], accSel=["cap"])
                     head, body = self.prompts()[:2]
-                    self.assertIn("a plain crew-neck top in a solid neutral color", head)
+                    # v157 (owner: no placeholder top on an adult's head sheet, so Seedance never reuses it): a bare neck instead
+                    self.assertRegex(head, r"(?m)^Bare neck")
+                    self.assertNotIn("crew-neck top", head)
                     self.assertIn("simple realistic everyday outfit in plain solid colors", body)
                     self.assertNotRegex(head + body, r"hoodie|baseball cap|except any logo")
             self.load(model=model, outfitFree=True,
@@ -835,15 +856,17 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                     self.assertEqual(self.state()["outfitText"], "orange velvet coat")
         page = self.load(bodyRef=True, headless=True, sdIterOp="dressMine", outfitFree=True,
                          outfitText="green cotton shirt, blue jeans, red hat and sunglasses")
-        head, body, edit = self.prompts()
+        head, body, edit = self.prompts()[:3]  # then the final photo pass (v155)
         self.assertNotIn("green cotton shirt", head + body)
         self.assertIn("green cotton shirt", edit.lower())
         self.assertIn("anything worn on the head or the face stays outside the frame", edit)
         self.assertIn("except any logo or print this outfit description names", edit)
         page.get_by_role("tab", name="Outfit", exact=True).click()
-        expect(page.get_by_role("switch", name="Outfit in a single text", exact=True)).to_be_checked()
+        # v153: with the reference outfit on, the switch says which retouch uses the text
+        expect(page.get_by_role("switch", name=re.compile(r"^Outfit in a single text(, for “Dress in my outfit”)?$"))).to_be_checked()
         page.reload()
-        self.assertIn("green cotton shirt", self.prompts()[-1].lower())
+        self.prompts()
+        self.assertIn("green cotton shirt", self.iter_prompt().lower())
 
     def test_v114_saved_free_outfit_signature_and_real_character_change(self):
         for model, key in (("gpt", "headSig"), ("seedream", "sdHeadSig")):
@@ -965,7 +988,7 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
 
     def test_v114_retouch_menu_applicability_and_saved_operations(self):
         for headless, expected in ((False, ["Dress in my outfit", "Free retouch"]),
-                                   (True, ["Combine head and body", "Dress", "Dress in my outfit", "Add the heads", "Free retouch"])):
+                                   (True, ["Combine head and body", "Dress for assembly", "Dress in my outfit", "Add the heads", "Free retouch"])):
             page = self.load(headless=headless)
             self.prompts()
             card = page.locator("#sd-card-iter")
@@ -978,21 +1001,23 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                 page = self.load(sdIterOp=operation, sdIter=text)
                 prompts = self.prompts()
                 expect(page.locator("#sd-card-iter h3")).to_have_text(expected_title)
-                self.assertEqual(len(prompts), 3 if active else 2)
+                self.assertEqual(len(prompts), 4 if active else 3)  # the final photo pass (v155) comes last
                 if active:
-                    self.assertIn(text.rstrip("."), prompts[-1])
+                    self.assertIn(text.rstrip("."), self.iter_prompt())
                 else:
                     self.assertEqual(self.state()["sdIter"], text, "hidden saved text stays available")
                     self.assertEqual(page.locator("#sd-iter").input_value(), "")
                     page.get_by_role("tab", name="Body", exact=True).click()
                     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
-                    self.assertIn(text.rstrip("."), self.prompts()[-1])
+                    self.prompts()
+                    self.assertIn(text.rstrip("."), self.iter_prompt())
         page = self.load(sdIterOp="dressMine")
         self.prompts()
         page.locator("#sd-iter").fill("x")
         page.locator("#sd-iter").fill("")
         self.assertEqual(self.state()["sdIterOp"], "dressMine")
-        self.assertIn("Edit image 1", self.prompts()[-1])
+        self.prompts()
+        self.assertIn("Edit image 1", self.iter_prompt())
 
     def test_v114_mobile_retouch_label_follows_headless_toggle(self):
         text = "Make the jacket blue, keeping its silver buttons."
@@ -1008,7 +1033,8 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                 page.get_by_role("tab", name="Body" if language == "en" else "Corps", exact=True).click()
                 headless = page.get_by_role("switch", name="Headless body sheet" if language == "en" else "Planche corps sans tête", exact=True)
                 headless.click()
-                prompt = self.prompts()[-1]
+                self.prompts()
+                prompt = self.iter_prompt()
                 expect(page.locator("#sd-card-iter h3")).to_have_text("Free retouch" if language == "en" else "Retouche libre")
                 expect(bar.get_by_role("button", name=retouch, exact=True)).to_be_visible()
                 expect(bar.get_by_role("button", name=dress, exact=True)).to_have_count(0)
@@ -1020,9 +1046,11 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                 self.assertEqual(self.state()["sdIterOp"], "dress")
                 self.assertEqual(self.state()["sdIterPre"], "Original clothing preset.")
                 headless.click()
-                expect(page.locator("#sd-card-iter h3")).to_have_text(dress)
+                # v153: the card names the preset in full, the bar keeps its short label
+                expect(page.locator("#sd-card-iter h3")).to_have_text("Dress for assembly" if language == "en" else "Habiller pour l'assemblage")
                 expect(bar.get_by_role("button", name=dress, exact=True)).to_be_visible()
-                self.assertIn(text.rstrip("."), self.prompts()[-1])
+                self.prompts()
+                self.assertIn(text.rstrip("."), self.iter_prompt())
                 self.assertEqual(self.state()["sdIter"], text)
 
     def test_v114_mobile_layout_and_tabs(self):
@@ -1036,8 +1064,14 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                         boxes = page.locator("#sd-mobile-copy-bar button").evaluate_all("items => items.map(x => { const b=x.getBoundingClientRect(); return [x.textContent,b.left,b.right,b.height]; })")
                         self.assertTrue(boxes)
                         self.assertTrue(all(left >= 0 and right <= width and height <= 50 for _, left, right, height in boxes), boxes)
-                        tabs = page.get_by_role("tablist").evaluate("list => { const r=list.getBoundingClientRect(); return [...list.querySelectorAll('[role=tab]')].map(t => {const b=t.getBoundingClientRect(); return b.left>=r.left-1 && b.right<=r.right+1;}); }")
-                        self.assertTrue(tabs and all(tabs), tabs)
+                        # v152 design: the tab row never wraps, it scrolls sideways; the row stays inside the page and every tab can be
+                        # scrolled fully into it
+                        tabs = page.get_by_role("tablist").evaluate("""list => { const r = list.getBoundingClientRect();
+                          return [r.left >= -1 && r.right <= innerWidth + 1].concat([...list.querySelectorAll('[role=tab]')].map(t => {
+                            t.scrollIntoView({ block: "nearest", inline: "nearest" }); const a = list.getBoundingClientRect(), b = t.getBoundingClientRect();
+                            return b.left >= a.left - 1 && b.right <= a.right + 1; })); }""")
+                        self.assertTrue(len(tabs) > 1 and all(tabs), tabs)
+                        self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), width)
 
     def test_v114_child_options_preserve_adult_save(self):
         for model in ("gpt", "seedream"):

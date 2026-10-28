@@ -76,7 +76,7 @@ function sdPhotoTip(t) {
     "animal" === t.mode
       ? "Pour créer un animal d'après une photo : un vrai animal ou une image trouvée. Les planches reprennent l'animal de la photo, et tes réglages peuvent y ajouter des accessoires, un état du moment ou des éléments fantastiques."
       : "object" === t.mode
-        ? "house" === t.objCat || "interior" === t.objCat
+        ? sdPlaceCat(t.objCat)
           ? "Pour créer un lieu d'après une photo : les planches reprennent son architecture, son aménagement, ses matières et ses couleurs, et tes réglages choisissent la lumière et le moment."
           : "Pour créer un objet d'après une photo : les planches reprennent sa forme, ses matières, ses couleurs et son usure, et tes marques, détails et état du moment s'y ajoutent."
         : "Pour créer un personnage d'après la photo d'une personne réelle, uniquement avec son accord. Les planches reprennent son visage et ses cheveux, ses habits avec « Utiliser les habits de la photo » (activé par défaut), et son corps avec « Garder le corps tel quel ».",
@@ -85,8 +85,17 @@ function sdPhotoTip(t) {
     return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
   });
 }
+/* v117: tooltip of the child's "Partir d'une photo" */
+function sdChildPhotoTip() {
+  return [
+    "Pour créer un enfant d'après une photo, uniquement avec l'accord de ses parents. La planche tête reprend son visage et ses cheveux, jamais ses habits, son fond ni sa pose.",
+    "La planche corps part de la planche tête : l'enfant y est habillé avec la tenue de l'onglet Tenue, en vêtements de tous les jours.",
+  ].map(function (x, i) {
+    return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
+  });
+}
 function sdPhotoOnlyTip(t) {
-  var pl = "object" === t.mode && ("house" === t.objCat || "interior" === t.objCat);
+  var pl = sdIsPlace(t);
   return [
     "person" === t.mode
       ? "Coché : ta photo est reprise telle quelle, sans rien inventer ni retoucher (visage, cheveux, maquillage, corps, tenue, accessoires). Seuls changent les angles de vue, la pose, le fond gris et la lumière de studio."
@@ -116,10 +125,14 @@ function sdMannequinTip() {
 /* message shown after "Copier corps" in Seedream: what to attach, or that the head sheet is missing / outdated */
 function sdIterCopyMsg(t) {
   var op = sdOp(t);
-  return "join" === op
-    ? sdT("Copié. Dans Seedream, ajoute ta planche corps sans tête (image 1) puis la planche tête (image 2).", "Copied. In Seedream, add your headless body sheet (image 1) then the head sheet (image 2).")
+  return "join" === op && sdNanoJoin()
+    ? sdT("Copié. Dans Nano Banana, ajoute ta planche corps sans tête telle quelle (image 1) puis la planche tête (image 2).", "Copied. In Nano Banana, add your headless body sheet as it is (image 1) then the head sheet (image 2).")
+    : "join" === op && sdGptJoin()
+    ? sdT("Copié. Dans ChatGPT (GPT Image 2.5), ajoute ta planche corps sans tête telle quelle (image 1) puis la planche tête (image 2), dans le même message.", "Copied. In ChatGPT (GPT Image 2.5), add your headless body sheet as it is (image 1) then the head sheet (image 2), in the same message.")
+    : "join" === op
+    ? sdT("Copié. Dans Seedream, ajoute ta planche corps sans tête préparée (+25 % en haut, image 1) puis la planche tête (image 2).", "Copied. In Seedream, add your prepared headless body sheet (+25% at the top, image 1) then the head sheet (image 2).")
     : "heads" === op
-      ? sdT("Copié. Dans Seedream, ajoute ta planche habillée agrandie (image 1) puis la planche tête (image 2).", "Copied. In Seedream, add your extended dressed sheet (image 1) then the head sheet (image 2).")
+      ? sdT("Copié. Dans Seedream, ajoute ta planche habillée préparée (+25 % en haut, image 1) puis la planche tête (image 2).", "Copied. In Seedream, add your prepared dressed sheet (+25% at the top, image 1) then the head sheet (image 2).")
       : "dress" === op
         ? sdT("Copié. Dans Seedream, ajoute ta planche corps sans tête (image 1).", "Copied. In Seedream, add your headless body sheet (image 1).")
         : "dressMine" === op
@@ -127,7 +140,8 @@ function sdIterCopyMsg(t) {
         : sdT("Copié. Dans Seedream, ajoute la planche à retoucher (image 1).", "Copied. In Seedream, add the sheet to retouch (image 1).");
 }
 function sdBodyCopyMsg(t) {
-  if (sdChildHl(t)) return "";
+  /* v117: a child from a photo: the headless body takes the skin tone from the head sheet (image 1) */
+  if (sdChildHl(t) && !sdChildPh(t)) return "";
   /* v112: a GPT prompt rewritten for Seedream (sdGptSd): "Mise en planche seulement" takes only the photos; otherwise the head sheet is
      image 1, then the photo when the body needs it (sdBodyPhotoAny); no shape guide */
   var gp = !sdNative(t);
@@ -180,6 +194,7 @@ function sdBodyCopyMsg(t) {
 }
 /* v112: message after copying a head or object prompt made from a photo in Seedream */
 function sdSrcCopyMsg(t) {
+  if ("seedream" === t.model && sdChildPh(t)) return sdT("Copié. Dans Seedream, ajoute la photo de l'enfant comme image 1.", "Copied. In Seedream, add the child's photo as image 1.");
   return "seedream" === t.model && t.photo && !sdChild(t)
     ? an()
       ? sdT("Copié. Dans Seedream, ajoute ta photo ou tes photos.", "Copied. In Seedream, add your photo or photos.")
@@ -215,7 +230,12 @@ function sdPresetDressMine() {
     t6(p) +
     " body stays exactly as in image 1 under the clothes: the same build, proportions and posture; the " +
     ("m" === e.pres ? "chest" : "bust") +
-    ", waist, hips, glutes and legs keep their shape and read through the fit of the clothes; the head, face and hair, if image 1 shows them, stay exactly as they are"
+    ", waist, hips, glutes and legs keep their shape and read through the fit of the clothes; " +
+    /* v130 (GPT audit of v129, checked: "apply red lipstick" asked, then the face "stays exactly as it is"): the makeup the outfit names
+       goes on a face that keeps its identity and features */
+    (fr && rq(Object.assign({}, e, { bodyRef: !1 }), sdFreeMk)
+      ? "the head and hair, if image 1 shows them, stay exactly as they are, and the face keeps exactly its identity, features and proportions: only the makeup this outfit names is added to it"
+      : "the head, face and hair, if image 1 shows them, stay exactly as they are")
   );
 }
 /* v104 "Fantastique" (GPT: animal, house, interior): the elements were one list item in a prompt that asks for a believable, ordinary photo, and came out faint or missing.
@@ -259,15 +279,21 @@ function sdHouseGreyLight() {
       ? u + "."
       : "dusk" === e.objTime
         ? c + "."
-        : s + " (top row). " + u + " (bottom row).";
+        : /* v156 */ "dawn" === e.objTime
+          ? "Dawn: soft, cool, pale light with no direct sun on the house and the grey floor, the windows still lit warmly from inside; the backdrop stays plain grey, with no sky."
+          : "golden" === e.objTime
+            ? "Golden hour: low, warm light from the left, long soft shadows on the grey floor; the backdrop stays plain grey, with no sky."
+            : s + " (top row). " + u + " (bottom row).";
 }
 /* v110: selections apply to separate cards. Empty older saves keep the established three views. */
 var SD_PLACE_LBL = {
   house: [["FACE", "FRONT"], ["TROIS QUARTS", "THREE-QUARTER"], ["ARRIÈRE", "REAR"], ["CÔTÉ GAUCHE", "LEFT SIDE"], ["CÔTÉ DROIT", "RIGHT SIDE"], ["VUE AÉRIENNE", "AERIAL"]],
   interior: [["ENTRÉE", "ENTRANCE"], ["COIN OPPOSÉ", "OPPOSITE CORNER"], ["FENÊTRES", "WINDOWS"], ["MUR GAUCHE", "LEFT WALL"], ["MUR DROIT", "RIGHT WALL"], ["PLONGÉE", "HIGH ANGLE"]],
+  /* v137 "Extérieur": tiles in the order of the house (main view, diagonal, reverse; left, right, aerial) */
+  exterior: [["PLAN LARGE", "WIDE"], ["DIAGONALE", "DIAGONAL"], ["CONTRECHAMP", "REVERSE"], ["CÔTÉ GAUCHE", "LEFT SIDE"], ["CÔTÉ DROIT", "RIGHT SIDE"], ["VUE AÉRIENNE", "AERIAL"]],
 };
 function sdIsPlace(t) {
-  return "object" === t.mode && ("house" === t.objCat || "interior" === t.objCat);
+  return "object" === t.mode && sdPlaceCat(t.objCat);
 }
 function sdViewChoice(t) {
   var v = sdIsPlace(t) ? t.placeViews : t.objViews,
@@ -286,9 +312,339 @@ function sdPlaceWin() {
   return nh("objLightSel", "objLightOpts", "objLight").indexOf("daylight through the windows") >= 0;
 }
 function sdPlaceViewTxt() {
+  if (sdExt())
+    return [
+      "eye-level wide main view of the whole location from its main approach (the reference viewpoint)",
+      "diagonal wide view from about 45 degrees to the left of the main view",
+      "reverse view from the far side of the location looking back toward the main viewpoint",
+      "side view from the left edge of the location (left as seen from the main viewpoint) looking across it toward the right",
+      "side view from the right edge of the location (right as seen from the main viewpoint) looking across it toward the left",
+      "high aerial three-quarter view showing the whole location and its layout",
+    ];
   return "house" === e.objCat
     ? ["front view", "three-quarter view from the front left", "rear view", "exact left side view", "exact right side view", sdHouseGrey() ? "high aerial three-quarter view showing the roof" : "high aerial three-quarter view showing the roof and the plot"]
-    : ["wide view from the entrance door", "wide view from the opposite corner, looking back toward the entrance", sdPlaceWin() ? "view toward the main windows" : "view toward the main light source", "view along the left wall", "view along the right wall", "high-angle view from a top corner showing the whole layout"];
+    : /* v115: each interior view is a camera position and a direction (user's Seedream test of v114b: "from the entrance door" was read as
+         "of the door", two panels framed the door, the same shot came back twice and no panel faced the windows) */
+      [
+        "wide view from the entrance doorway (the camera stands in the doorway with its back to the entrance door, which is not visible, and looks into the whole room)",
+        "wide view from the corner farthest from the entrance (the camera looks back across the room toward the entrance door, which is visible)",
+        sdPlaceWin()
+          ? "view toward the main windows (the camera stands in the middle of the room and faces them squarely, the window wall filling the frame)"
+          : "view toward the main light source (the camera stands in the middle of the room and faces it)",
+        "view along the left wall (left as seen from the entrance; the camera stands at the entrance end of that wall and looks along it to the far end of the room)",
+        "view along the right wall (right as seen from the entrance; the camera stands at the entrance end of that wall and looks along it to the far end of the room)",
+        "high-angle view from a top corner showing the whole layout",
+      ];
+}
+/* v115 (user's Seedream test of v114b, "Mise en planche seulement"): an interior from a photo had no camera line and kept the photo's own
+   framing; v137: an outdoor location too. All the views, by day: sdPlaceOne keeps the one of each card */
+function sdPlaceCamAll() {
+  return sdExt()
+    ? "Eye-level views from about 1.6 m high with a 24mm lens, from far enough to show the whole location; the aerial view from high enough to show the whole location and its surroundings. Vertical lines kept straight."
+    : "Eye-level views from about 1.5 m high with a 24mm lens, vertical lines kept straight, the whole room readable; the high-angle view from a top corner of the room.";
+}
+/* v115: an interior from a photo: the sides the photo does not show are completed like what it shows (the old sentence, "with nothing new",
+   made the model keep the photo's own framing instead of turning the camera) */
+var SD_PLACE_FILL = "Walls, windows, doors, floor and ceiling that the photo does not show are completed with exactly the same moldings, paint, flooring, materials and light as in the photo, with no new furniture or objects.";
+function sdPlaceAr(x) {
+  if (sdExt()) return x.replace("parts the photos do not show continue what is visible, with nothing new.", SD_EXT_FILL_AR);
+  return "interior" === e.objCat
+    ? x.replace("parts the photos do not show continue what is visible, with nothing new.", "walls, windows, doors, floor and ceiling that the photos do not show are completed with exactly the same moldings, paint, flooring, materials and light as in the photos, with no new furniture or objects.")
+    : x;
+}
+/* ---------- v137 "Lieu" (user: "ajouter un nouvel onglet lieu, et mettre maison, intérieur et extérieur dedans ; on doit pouvoir désigner
+   un lieu comme on peut et le dire sans cliquer pour éviter les blocages, ensuite il peut y avoir des boutons pour aider à la création";
+   his choice: the helper buttons write into the text) ----------
+   "Lieu" is a type of its own in the type row, built on the mode "object" with objCat "house", "interior" or the new "exterior" (an outdoor
+   location), like "Enfant" on "person": the place prompts, views, light, photo and Seedream paths of v104 to v115 are kept as they are. The
+   object and the place keep their own settings (name, description, views, photo...): switching swaps them (modeCfg.sdObj, modeCfg.sdPlace).
+   The description comes first, in the user's own words; the helpers below it add or remove English phrases in that same text. */
+var SD_PLACE_CATS = ["house", "interior", "exterior"],
+  SD_PLACE_CAT_OPTS = [
+    ["house", "Maison", "house"],
+    ["interior", "Intérieur", "interior room"],
+    ["exterior", "Extérieur", "outdoor location"],
+  ],
+  SD_EXT_FILL = "Ground, buildings, vegetation and sky that the photo does not show are completed with exactly the same architecture, materials and plants as in the photo, with no new buildings or objects.",
+  SD_EXT_FILL_AR = "ground, buildings, vegetation and sky that the photos do not show are completed with exactly the same architecture, materials, plants and light as in the photos, with no new buildings or objects.";
+function sdPlaceCat(c) {
+  return SD_PLACE_CATS.indexOf(c) >= 0;
+}
+function sdExt() {
+  return "object" === e.mode && "exterior" === e.objCat;
+}
+/* the house's daylight and weather, said for an outdoor place lit at night by what it holds */
+function sdExtLightFix(x) {
+  return sdExt()
+    ? x
+        .replace("the house lit by its own warm interior light through the windows and by its exterior lamps", "the place lit only by its own light sources (street lamps, lit windows or signs, as fits the place), or left in the dark where it has none")
+        .replace("light fog glowing around the lamps", "light fog glowing around any lights")
+        .replace("the windows already lit warmly from inside", "the first artificial lights switched on")
+        .replace("the windows still lit warmly from inside", "the last artificial lights still on")
+        .replace("fresh snow on the roof and the ground", "fresh snow on the ground and on every surface")
+    : x;
+}
+/* v156 (user: "concernant les ambiances pour les lieux on a droit à très peu de modes, il faut en ajouter", then "ajoute d'autres détails
+   intéressants, c'est pas assez, pareil pour les lieux"): "Moment" gains Aube (dawn) and Heure dorée (golden hour), between the others in the
+   order of the day; their light for a house or an outdoor place (with its weather), an interior with windows, and the house on grey (in
+   sdHouseGreyLight). An interior with no daylight is lit by its own lamps at any moment, as by day. */
+/* v156 review: golden hour in each weather, its own words (not the weather's text after "softened by") */
+var SD_GOLDEN_W = {
+  overcast: "Golden hour: the low sun from the left breaking through an overcast sky, its warm light soft and diffused, long soft shadows",
+  rain: "Golden hour: the low sun from the left under light rain, its warm light glinting on wet surfaces and reflections, long soft shadows",
+  fog: "Golden hour: the low sun from the left glowing through light fog, a warm haze softening the distance, long soft shadows",
+  snow: "Golden hour: low, warm sunlight from the left on fresh snow on the roof and the ground, long soft shadows",
+};
+/* v157b: with a description, the sources off by day and at golden hour defer to it ("a room lit by burning candles"); two reviews found no
+   reliable reading of "lit" by pattern (the French "lit", "lit by the sun", "the lamps on", "a roaring fire") */
+function sdSrcDesc() {
+  return t5(e.objDesc) ? ", unless the description says otherwise" : "";
+}
+function sdMomentLight(k, out, w, clear, win, src) {
+  if (out)
+    return "golden" === k
+      ? clear
+        ? "Golden hour: low, warm sunlight from the left just above the horizon, long soft shadows, a clear warm sky"
+        : SD_GOLDEN_W[e.objWeather] || "Golden hour: the low sun from the left, its warm light softened by the weather, long soft shadows"
+      : clear
+        ? "Dawn: the first light before sunrise, a pale pink and blue sky, soft cool light with no direct sun, the windows still lit warmly from inside"
+        : "Dawn: the first grey-blue light before sunrise, " + w + ", soft cool light with no direct sun, the windows still lit warmly from inside";
+  if (win)
+    return "golden" === k
+      ? /* v157b (GPT audit of v157, checked: "with candles switched off" next to "a room lit by burning candles"): by day the light comes
+           from the windows and the sources are off (the hint says it), unless the description says otherwise (sdSrcDesc) */
+        "Golden hour: low, warm sunlight enters through the windows in long beams across the room" + (src ? ", with " + src + " switched off" + sdSrcDesc() : "")
+      : "Dawn: pale, cool early light through the windows, the room still dim" + (src ? ", " + src + " still on" : "");
+  return "";
+}
+/* v156 (user: "je trouve que le HTML devrait m'aider pour les lieux, car je fais la description mais le style n'est pas souvent
+   cinématographique ; est-ce qu'il y aurait une technique pour donner plus de profondeur, de densité au lieu qu'on crée, avec un prompt
+   assez automatique ajouté, pour que l'IA améliore ce qui est dit"): "Direction artistique cinéma" (objCine, on by default), a production
+   designer's and a cinematographer's layer after the place text, before the layout: the description kept whole and completed with
+   consistent details; depth (foreground, middle ground, background, leading lines; haze in the distance outdoors); the density the place
+   would really have (never empty unless the atmosphere asks it, never cluttered at random); materials with history at the strength the
+   condition, era and atmosphere set; motivated light with real falloff and detail in the shadows; a palette of two or three colors and an
+   accent (or the dominant colors set). Every view stays readable: nothing in the foreground hides the place, the same dressing in every
+   panel. Not with a photo (copied as it is) and not on the house alone on grey (no surroundings to dress, its light fixed). */
+function sdCine() {
+  if (!e.objCine || e.photo || "object" !== e.mode || !sdPlaceCat(e.objCat)) return "";
+  var h = "house" === e.objCat,
+    x = sdExt(),
+    g = sdHouseGrey();
+  if (g) return "";
+  return (
+    "PRODUCTION DESIGN:\nDress it as a finished film set, the way a production designer would: keep everything stated above and complete it with specific, consistent details that show who uses the place and how, never contradicting it. " +
+    (h
+      ? "Depth: the house set in its surroundings, with a foreground, the house and a background, paths and fences leading the eye to it; nothing hides the house. "
+      : x
+        ? "Depth in every view: a foreground, a middle ground and a background, with facades, kerbs, paths or the terrain leading the eye into the distance, and a slight haze softening the farthest planes; nothing in the foreground hides the place. "
+        : "Depth in every view: a foreground, a middle ground and a background, with furniture, doorways and walls leading the eye into the room; nothing in the foreground hides the room. ") +
+    (h
+      ? "Density: the details this house would really show, at their real scale and where they belong; never empty unless the description or the atmosphere asks for it, never cluttered at random. "
+      : x
+        ? "Density: the benches, lamp posts, signs, vegetation and small objects this place would really hold, at their real scale and where they would really be; never empty unless the atmosphere asks for it, never cluttered at random. "
+        : "Density: the objects, textiles, papers and fittings this room would really hold, at their real scale and where they would really be; never empty unless the atmosphere asks for it, never cluttered at random. ") +
+    "Materials with history: patina, wear, small repairs and dust in the corners, at the strength the condition, era and atmosphere set. " +
+    "Motivated light: every light has a visible or implied source (the sky, a window, a lamp, a sign), with real falloff; light and shadow areas shape the space, with detail kept in the shadows. " +
+    (nd("objColSel", "colorOpts").length || t5(e.objColor) ? "A coherent palette built on the dominant colors above, with one accent." : "A coherent palette: two or three dominant colors and one accent, true to the atmosphere and the light.") +
+    " The same dressing in every panel.\n\n"
+  );
+}
+/* v156 (user: "dans véhicule j'ai mis « bad shape car » dans la description, ça n'a pas marché, ça m'a fait une voiture sortie du
+   concessionnaire"): the condition line said "in good condition, with faint signs of use" (Usure on its default) after a description that
+   says the opposite, and a product-photo frame. A description (or the details) that names a condition now wins over "Bon état" and "Neuf";
+   with Usé, Très usé or Abîmé the object is never cleaned up or restored for the photo. Objects and places alike. */
+var SD_COND_RX = /\b(bad|poor|terrible|rough|awful) (shape|condition|state)\b|\b(rust(y|ed|ing)?|dent(s|ed)?|wreck(s|ed)?|battered|beat[- ]?up|banged[- ]?up|damaged|broken|crashed|abandoned|derelict|neglected|decay(ed|ing)?|rott(en|ing)|worn[- ]out|weathered|scratched|scuffed|dirty|filthy|muddy|grimy|peeling|cracked|burnt|burned|shabby|ramshackle|run[- ]down|dilapidated|junk(ed|yard)?|scrap(ped)?|corroded|moldy|mouldy)\b|rouill|cabossé|abîmé|épave|délabré|accidenté|mauvais état|crasseu|déglingu|pourri|cassé|fissuré|brûlé/i;
+/* v156 review: colors and finishes named like damage ("rust-colored", "burnt orange", "blanc cassé", "broken-in leather", "a weathered oak
+   finish") are not a condition; a description that says the object is new keeps the setting's words */
+var SD_COND_NOT = /\brust[- ]?(colou?red|red|orange|brown)\b|\bburn(t|ed) (orange|sienna|umber)\b|blanc cassé|\bbroken-in\b|\b(weathered|distressed)[- ]([a-z]+[- ])?(finish|look|effect|stain|style)\b/gi;
+var SD_COND_NEW = /\b(brand[- ]new|like new|mint condition|showroom condition)\b|comme neu|tout neu|flambant neu/i;
+var SD_COND_RX2 = /\bruin(ed|s)?\b|\bcrumbling\b|\bcollapsed\b|\broofless\b|\bvandali[sz]ed\b|ruine|effondré|vandalisé/i;
+/* v157b (GPT audit of v157, checked: "a silver car without rust or dents" with "Neuf" said "its wear and damage clearly visible"; two
+   reviews then found no reliable reading of negations by pattern: lists, "except", "and", French, line breaks): a damage word with no
+   negation in the text keeps the v156 rule (the description wins); with a negation word anywhere in it, the setting is said and the
+   prompt lets the description decide, which the image model reads in full (sdCond) */
+var SD_COND_NEGW = /\b(?:without|no|not|never|neither|nor|free (?:of|from)|zero|sans|pas|jamais|non|aucune?|ni|z[ée]ro)\b|\b[a-z]+-free\b|\bn['’]/i;
+function sdCondTxt() {
+  return (String(e.objDesc || "") + ".\n" + String(e.objMarks || "")).replace(/[«»"]/g, "").replace(SD_COND_NOT, " ");
+}
+function sdCondDesc() {
+  var d = sdCondTxt();
+  return !SD_COND_NEW.test(d) && (SD_COND_RX.test(d) || SD_COND_RX2.test(d));
+}
+/* v156 review: an abandoned, squalid or post-apocalyptic place is never in good condition either */
+function sdCondMood() {
+  return sdPlaceCat(e.objCat) && ["abandoned", "squalid", "postapo"].indexOf(e.objMood) >= 0;
+}
+function sdCond() {
+  var w = +e.objWear;
+  /* v157b review: an abandoned, squalid or post-apocalyptic mood wins over the setting before the negation case, as the hint says */
+  return w <= 1 && sdCondDesc() && !SD_COND_NEGW.test(sdCondTxt())
+    ? "as the description says, its wear and damage clearly visible at that level; never new, cleaned up or restored for the photo"
+    : w <= 1 && sdCondMood()
+    ? "worn and neglected as the atmosphere says, its wear and damage clearly visible; never new, cleaned up or restored for the photo"
+    : w <= 1 && sdCondDesc()
+    ? t1("objWear", e.objWear) + ", unless the description or the details describe actual wear or damage: then that wear and damage show clearly, never cleaned up or restored for the photo"
+    : t1("objWear", e.objWear) + (w >= 2 ? "; not cleaned up or restored for the photo" : "");
+}
+/* the settings kept apart by switching: the per-mode keys of the app (name, photo, style, state...), except the lock, and every object key
+   (v137 review: "Nouvel objet" and "Nouveau lieu" clear the object keys of the active kind; the inactive kind lives in modeCfg only). The
+   views stay as they are: "objViews" and "placeViews" are already apart */
+function sdKindKeys() {
+  return r4
+    .filter(function (x) {
+      return "locked" !== x && "base" !== x;
+    })
+    .concat(
+      Object.keys(tJ).filter(function (k) {
+        return 0 === k.indexOf("obj") && "objViews" !== k;
+      }),
+    );
+}
+function sdKindSwap(r, toPlace) {
+  var K = sdKindKeys(),
+    mc = Object.assign({}, r.modeCfg || {}),
+    cur = {},
+    d = Object.assign({}, r6("object", r.style)),
+    o = {};
+  K.forEach(function (k) {
+    k in r && (cur[k] = Array.isArray(r[k]) ? r[k].slice() : r[k]);
+    o[k] = k in d ? d[k] : Array.isArray(tJ[k]) ? tJ[k].slice() : tJ[k];
+  });
+  mc[toPlace ? "sdObj" : "sdPlace"] = cur;
+  o.objCat = toPlace ? "exterior" : "object";
+  o.style = r.style;
+  var back = mc[toPlace ? "sdPlace" : "sdObj"] || {};
+  K.forEach(function (k) {
+    k in back && (o[k] = back[k]);
+  });
+  /* a stale or missing category never lands on the other kind */
+  sdPlaceCat(o.objCat) !== toPlace && (o.objCat = toPlace ? "exterior" : "object");
+  return Object.assign({}, r, o, { modeCfg: mc });
+}
+/* the type row: "place" is the mode "object" with a place; "object" with an object; the other types as before (sdChildMode) */
+function sdPlaceMode(v, s, core) {
+  var P = "place" === v,
+    r = sdChildMode(P ? "object" : v, s, core);
+  return "object" !== r.mode || sdChild(r) || sdPlaceCat(r.objCat) === P ? r : sdKindSwap(r, P);
+}
+/* the helpers: [group FR, group EN, meaning ("" = several choices; otherwise one choice, across the three kinds: changing "Type de lieu"
+   then picking a place type replaces the one of the other kind), [[label FR, label EN, English phrase], ...]] */
+var SD_ERA = ["Époque", "Era", "era", [["Antiquité", "Antiquity", "in Roman antiquity"], ["Moyen Âge", "Middle Ages", "in the Middle Ages"], ["Renaissance", "Renaissance", "in the Renaissance"], ["XVIIIe siècle", "18th century", "in the 18th century"], ["XIXe siècle", "19th century", "in the 19th century"], ["Années 1900", "1900s", "in the early 1900s"], ["Années 1920", "1920s", "in the 1920s"], ["Années 1930", "1930s", "in the 1930s"], ["Années 1950", "1950s", "in the 1950s"], ["Années 1960", "1960s", "in the 1960s"], ["Années 1970", "1970s", "in the 1970s"], ["Années 1980", "1980s", "in the 1980s"], ["Années 1990", "1990s", "in the 1990s"], ["Années 2000", "2000s", "in the 2000s"], ["Aujourd'hui", "Today", "in the present day"], ["Futur proche", "Near future", "in the near future"], ["Futur lointain", "Far future", "in the far future"]]],
+  SD_PLACE_HELP = {
+    exterior: [
+      ["Lieu", "Place", "kind", [["Rue", "Street", "a city street"], ["Ruelle", "Alley", "a narrow back alley"], ["Place", "Square", "a town square"], ["Parking", "Car park", "an open-air car park"], ["Quai de gare", "Station platform", "an outdoor railway platform"], ["Toit", "Rooftop", "a city rooftop"], ["Port", "Harbour", "a harbour quay"], ["Forêt", "Forest", "a forest clearing"], ["Plage", "Beach", "a sandy beach"], ["Désert", "Desert", "a desert road"], ["Montagne", "Mountain", "a mountain path"], ["Campagne", "Countryside", "a country road between fields"], ["Friche", "Wasteland", "an industrial wasteland"], ["Pont", "Bridge", "a city bridge"], ["Tunnel", "Tunnel", "a road tunnel"], ["Marché", "Market", "an open-air market"], ["Cour", "Courtyard", "an inner courtyard between buildings"], ["Parc", "Park", "a city park"], ["Cimetière", "Cemetery", "an old cemetery"], ["Chantier", "Building site", "a construction site"], ["Station-service", "Petrol station", "a petrol station"], ["Autoroute", "Motorway", "a motorway"], ["Village", "Village", "a village street"], ["Lac", "Lake", "a lakeshore"], ["Rivière", "River", "a riverbank"], ["Falaise", "Cliff", "a sea cliff"], ["Jungle", "Jungle", "a jungle"], ["Docks", "Docks", "industrial docks with cranes and containers"], ["Terrain vague", "Vacant lot", "a vacant lot"], ["Stade", "Stadium", "an empty stadium"], ["Champ", "Field", "an open wheat field"]]],
+      SD_ERA,
+      ["Saison", "Season", "season", [["Printemps", "Spring", "in spring"], ["Été", "Summer", "in summer"], ["Automne", "Autumn", "in autumn"], ["Hiver", "Winter", "in winter"]]],
+      ["Sol", "Ground", "ground", [["Asphalte", "Asphalt", "asphalt ground"], ["Pavés", "Cobblestones", "cobblestones"], ["Terre", "Dirt", "packed dirt and gravel"], ["Herbe", "Grass", "grass"], ["Sable", "Sand", "sand"], ["Béton", "Concrete", "bare concrete ground"], ["Gravier", "Gravel", "gravel"], ["Boue", "Mud", "mud"], ["Planches", "Boardwalk", "a wooden boardwalk"]]],
+      ["Détails", "Details", "", [["Lampadaires", "Street lamps", "street lamps"], ["Voitures garées", "Parked cars", "parked cars"], ["Tags", "Graffiti", "graffiti on the walls"], ["Câbles", "Power lines", "overhead power lines"], ["Flaques", "Puddles", "puddles"], ["Feuilles mortes", "Fallen leaves", "fallen leaves"], ["Enseignes", "Shop signs", "shop signs"], ["Bancs", "Benches", "benches"], ["Arbres", "Trees", "trees"], ["Néons", "Neon signs", "neon signs"], ["Vapeur", "Street steam", "steam rising from street vents"], ["Échafaudages", "Scaffolding", "scaffolding"], ["Poubelles", "Bins", "overflowing bins"], ["Terrasse de café", "Café terrace", "café tables on the pavement"], ["Affiches", "Posters", "torn posters on the walls"], ["Feux", "Traffic lights", "traffic lights"], ["Vélos", "Bicycles", "parked bicycles"], ["Kiosque", "Newsstand", "a newsstand"], ["Linge", "Laundry", "laundry hanging between the windows"], ["Barrières", "Barriers", "construction barriers"], ["Fontaine", "Fountain", "a fountain"], ["Bouche de métro", "Metro entrance", "a metro entrance"]]],
+    ],
+    interior: [
+      ["Pièce", "Room", "kind", [["Salon", "Living room", "a living room"], ["Cuisine", "Kitchen", "a kitchen"], ["Chambre", "Bedroom", "a bedroom"], ["Salle de bain", "Bathroom", "a bathroom"], ["Bureau", "Office", "an office"], ["Couloir", "Corridor", "a corridor"], ["Hall", "Entrance hall", "an entrance hall"], ["Cave", "Cellar", "a cellar"], ["Grenier", "Attic", "an attic"], ["Bar", "Bar", "a bar"], ["Restaurant", "Restaurant", "a restaurant dining room"], ["Atelier", "Workshop", "a workshop"], ["Entrepôt", "Warehouse", "a warehouse"], ["Salle de classe", "Classroom", "a classroom"], ["Boîte de nuit", "Nightclub", "a nightclub"], ["Chambre d'hôtel", "Hotel room", "a hotel room"], ["Chambre d'hôpital", "Hospital room", "a hospital room"], ["Salle de sport", "Gym", "a gym"], ["Boutique", "Shop", "a small shop"], ["Usine", "Factory", "a factory floor"], ["Laboratoire", "Laboratory", "a laboratory"], ["Parking souterrain", "Underground car park", "an underground car park"], ["Quai de métro", "Metro platform", "an underground metro platform"], ["Église", "Church", "a church nave"], ["Open space", "Open-plan office", "an open-plan office"], ["Salle de réunion", "Meeting room", "a meeting room"], ["Garage", "Car garage", "a car repair garage"], ["Loft", "Loft", "a loft"], ["Salle de cinéma", "Cinema", "a cinema auditorium"], ["Commissariat", "Police station", "a police station office"]]],
+      SD_ERA,
+      ["Style", "Style", "style", [["Haussmannien", "Haussmann", "Haussmann-style moldings and herringbone parquet"], ["Industriel", "Industrial", "industrial style, exposed brick and steel beams"], ["Scandinave", "Scandinavian", "Scandinavian style, pale wood and white walls"], ["Rustique", "Rustic", "rustic style, exposed wooden beams and stone walls"], ["Art déco", "Art Deco", "Art Deco style"], ["Minimaliste", "Minimalist", "modern minimalist style"], ["Bohème", "Bohemian", "bohemian style, eclectic and layered"], ["Baroque", "Baroque", "baroque style, gilding and ornament"], ["Brutaliste", "Brutalist", "brutalist style, raw concrete"], ["Japonais", "Japanese", "Japanese style, tatami mats and sliding paper screens"], ["Années 50", "Mid-century", "mid-century modern style"], ["Victorien", "Victorian", "Victorian style, dark wood and patterned wallpaper"], ["Contemporain", "Contemporary", "contemporary style"], ["Marocain", "Moroccan", "Moroccan style, zellige tiles and carved wood"]]],
+      ["Taille", "Size", "size", [["Exiguë", "Cramped", "small and cramped"], ["Spacieuse", "Spacious", "large and spacious"]]],
+      ["Plafond", "Ceiling", "ceiling", [["Haut", "High", "high ceilings"], ["Bas", "Low", "a low ceiling"]]],
+      ["Sol", "Floor", "floor", [["Carrelage", "Tiled floor", "a tiled floor"], ["Parquet", "Wooden floor", "a wooden floor"], ["Moquette", "Carpet", "wall-to-wall carpet"], ["Béton", "Concrete", "a bare concrete floor"], ["Pierre", "Stone", "stone flagstones"], ["Lino", "Linoleum", "worn linoleum"], ["Tomettes", "Terracotta tiles", "hexagonal terracotta floor tiles"], ["Marbre", "Marble", "a marble floor"]]],
+      ["Détails", "Details", "", [["Grandes fenêtres", "Large windows", "large windows"], ["Bibliothèque", "Bookshelves", "bookshelves"], ["Plantes", "Plants", "plants"], ["Escalier", "Staircase", "a staircase"], ["Papier peint décollé", "Peeling wallpaper", "peeling wallpaper"], ["Poutres", "Exposed beams", "exposed wooden beams"], ["Briques", "Brick walls", "exposed brick walls"], ["Lustre", "Chandelier", "a chandelier"], ["Rideaux", "Curtains", "heavy curtains"], ["Tapis", "Rugs", "rugs on the floor"], ["Tableaux", "Pictures", "framed pictures on the walls"], ["Miroir", "Mirror", "a large mirror"], ["Moulures", "Moldings", "ornate moldings"], ["Cartons", "Boxes", "stacked cardboard boxes"], ["Tuyaux", "Pipes", "exposed pipes"], ["Stores", "Blinds", "venetian blinds"]]],
+    ],
+    house: [
+      ["Type", "Type", "kind", [["Pavillon", "Suburban house", "a detached suburban house"], ["Ferme", "Farmhouse", "a country farmhouse"], ["Villa", "Villa", "a modern villa"], ["Chalet", "Chalet", "a mountain chalet"], ["Maison de ville", "Townhouse", "a narrow townhouse"], ["Cabane", "Cabin", "a wooden cabin"], ["Manoir", "Manor", "a manor house"], ["Maison de plage", "Beach house", "a beach house"], ["Longère", "Longhouse", "a long single-storey stone farmhouse"], ["Mas", "Mas", "a Provençal stone farmhouse"], ["Bastide", "Bastide", "a Provençal country manor"], ["Bungalow", "Bungalow", "a bungalow"], ["Mobile home", "Mobile home", "a mobile home"], ["Ruine", "Ruin", "a ruined, roofless house"], ["Moulin", "Mill", "a converted watermill"], ["Maison d'architecte", "Architect house", "a modern architect-designed house"]]],
+      SD_ERA,
+      ["Style", "Style", "style", [["Normand", "Normandy", "Normandy half-timbered style"], ["Provençal", "Provençal", "Provençal stone with terracotta roof tiles"], ["Américain", "American", "American clapboard style"], ["Méditerranéen", "Mediterranean", "Mediterranean whitewashed walls"], ["Scandinave", "Scandinavian", "Scandinavian painted wood"], ["Brique", "Brick", "red brick walls"], ["Basque", "Basque", "Basque style, white walls and red timbers"], ["Breton", "Breton", "Breton granite walls and a slate roof"], ["Alsacien", "Alsatian", "Alsatian half-timbered style in bright colors"], ["Contemporain", "Contemporary", "contemporary glass and concrete"], ["Victorien", "Victorian", "Victorian style with bay windows"], ["Colonial", "Colonial", "colonial style with a wide veranda"], ["Japonais", "Japanese", "Japanese style, dark timber and a tiled roof"]]],
+      ["Étages", "Storeys", "storeys", [["Plain-pied", "Single-storey", "single-storey"], ["Un étage", "Two storeys", "two storeys"], ["Deux étages", "Three storeys", "three storeys"]]],
+      ["Détails", "Details", "", [["Jardin", "Garden", "a front garden"], ["Garage", "Garage", "a garage"], ["Porche", "Porch", "a porch"], ["Volets", "Shutters", "shutters"], ["Cheminée", "Chimney", "a chimney"], ["Clôture", "Fence", "a fence"], ["Piscine", "Pool", "a swimming pool"], ["Lierre", "Ivy", "ivy on the walls"], ["Panneaux solaires", "Solar panels", "solar panels"], ["Terrasse", "Terrace", "a terrace"], ["Balcon", "Balcony", "balconies"], ["Véranda", "Veranda", "a glass veranda"], ["Portail", "Gate", "a wrought-iron gate"], ["Allée", "Driveway", "a gravel driveway"], ["Haie", "Hedge", "a hedge"], ["Grand arbre", "Old tree", "a large old tree"], ["Boîte aux lettres", "Letterbox", "a letterbox"], ["Antenne", "TV aerial", "a TV aerial on the roof"]]],
+    ],
+  };
+/* a phrase is one item of the text, between commas, periods, semicolons or line breaks, whatever its case */
+function sdPhrRx(p, g) {
+  return new RegExp("(^|[,.;\\n])\\s*" + p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*(?=[,.;\\n]|$)", g ? "gi" : "i");
+}
+function sdPhrHas(x, p) {
+  return sdPhrRx(p).test(String(x || ""));
+}
+function sdPhrDel(x, p) {
+  return String(x || "").replace(sdPhrRx(p, 1), "").replace(/^\s*[,.;]\s*/, "");
+}
+/* the phrases of one meaning in the three kinds */
+function sdPhrGroup(key) {
+  var r = [];
+  for (var c in SD_PLACE_HELP)
+    SD_PLACE_HELP[c].forEach(function (gr) {
+      gr[2] === key &&
+        gr[3].forEach(function (q) {
+          r.indexOf(q[2]) < 0 && r.push(q[2]);
+        });
+    });
+  return r;
+}
+function sdPhrToggle(x, p, group) {
+  if (sdPhrHas(x, p)) return sdPhrDel(x, p);
+  (group || []).forEach(function (q) {
+    x = sdPhrDel(x, q);
+  });
+  var b = String(x || "").replace(/[\s,.;]+$/, "");
+  return b ? b + ", " + p : p;
+}
+function sdPlaceHelp(t, g) {
+  var G = SD_PLACE_HELP[t.objCat];
+  if (!sdIsPlace(t) || !G) return null;
+  var x = String(t.objDesc || ""),
+    cls = "relative inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ";
+  return (0, l.jsxs)(
+    "div",
+    {
+      className: "py-4 border-b last:border-0",
+      id: "sd-place-help",
+      children: [
+        (0, l.jsx)("p", { className: "font-semibold", children: sdT("Aides", "Helpers") }),
+        (0, l.jsx)("p", {
+          className: "mt-1 text-sm text-muted-foreground",
+          children: sdT("Chaque bouton écrit dans ta description, en anglais ; reclique pour l'enlever. Tout reste modifiable à la main.", "Each button writes into your description, in English; click again to remove it. Everything stays editable by hand."),
+        }),
+      ].concat(
+        G.map(function (gr, gi) {
+          var nm = sdT(gr[0], gr[1]);
+          return (0, l.jsxs)(
+            "div",
+            {
+              className: "mt-3",
+              role: "group",
+              "aria-label": nm,
+              children: [
+                (0, l.jsx)("p", { className: "mb-2 text-sm font-medium text-muted-foreground", children: nm }),
+                (0, l.jsx)("div", {
+                  className: "flex flex-wrap gap-2",
+                  children: gr[3].map(function (it) {
+                    var on = sdPhrHas(x, it[2]);
+                    return (0, l.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        "aria-pressed": on,
+                        "data-phrase": it[2],
+                        className: cls + (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
+                        onClick: function () {
+                          g(
+                            "objDesc",
+                            sdPhrToggle(x, it[2], gr[2] ? sdPhrGroup(gr[2]) : null),
+                          );
+                        },
+                        children: sdT(it[0], it[1]),
+                      },
+                      it[2],
+                    );
+                  }),
+                }),
+              ],
+            },
+            "g" + gi,
+          );
+        }),
+      ),
+    },
+    "sd-place-help",
+  );
 }
 function sdObjViewTxt() {
   var c = e.objCat;
@@ -342,7 +698,7 @@ function sdPlaceThumb(t0, g, h, cls) {
           ["CÔTÉ DROIT", "RIGHT SIDE"],
           "clothing" === t.objCat ? ["À PLAT, DESSUS", "LAID FLAT"] : ["DESSUS", "TOP"],
         ]
-      : SD_PLACE_LBL["house" === t.objCat ? "house" : "interior"].slice();
+      : (SD_PLACE_LBL[t.objCat] || SD_PLACE_LBL.interior).slice();
   !obj && "interior" === t.objCat && !(t0.photo && t0.photoOnly) && !rq(t, sdPlaceWin) && (lbl[2] = ["LUMIÈRE", "LIGHT"]);
   obj && "clothing" !== t.objCat && lbl.push(["TROIS QUARTS ARRIÈRE", "THREE-QUARTER REAR"]);
   function tog(i) {
@@ -421,10 +777,49 @@ function sdPlaceThumb(t0, g, h, cls) {
 }
 /* ---------- v106 child mode ("Enfant") ----------
    A person with child: true, chosen with the "Enfant" button next to Personne, Animal and Objet. Kept apart from every adult control: no body sliders,
-   no Beauté, no makeup, no reference outfit, no headless body, no retouch, no photo source. Always fully dressed in everyday clothes; a head sheet,
+   no Beauté, no makeup, no reference outfit, no retouch, never the adult's photo options (v117: its own photo for the face and hair only, and the
+   single-text outfit with its own keys; every typed text of a child accepted only in the known words of its field, sdChildTypedOk).
+   Always fully dressed in everyday clothes; a head sheet,
    then a full-body sheet with the head, in both engines. Clothing or marks that would undress or sexualize a child are dropped, never sent. */
 function sdChild(t) {
   return !!t && "person" === t.mode && !!t.child;
+}
+/* v117 (user, with the parents' consent): a child from a photo ("Partir d'une photo" in the child mode, key childPhoto, apart from the adult's
+   photo). The photo gives only the face and hair of the head sheet: never its clothing, accessories, background or pose; no "Mise en planche
+   seulement", no body or clothes from the photo; the body sheet starts from the head sheet, dressed as for any child. Never for a baby. */
+function sdChildPh(t) {
+  return sdChild(t) && !t.baby && !!t.childPhoto;
+}
+/* v117 (third review): after a child's or a baby's GPT head sheet, an adult prompt never falls back on "the most recent head sheet" */
+function sdNoKidHead() {
+  return "person" === e.mode && !sdChild(e) && +e.sdLastHeadKid > 0 ? ", never the head sheet of a child or a baby" : "";
+}
+function sdGptKidMsg(t, k) {
+  return ("body" === k || "iter" === k) && "person" === t.mode && !sdChild(t) && +t.sdLastHeadKid > 0
+    ? sdT("Copié. La dernière planche tête copiée était celle d'un enfant : dans GPT, joins à ton message la planche tête de ce personnage.", "Copied. The last head sheet copied was a child's: in GPT, attach this character's head sheet to your message.")
+    : "";
+}
+/* the state shortcuts of a child: no cut, blood, torn sleeve, wet clothes or sweat (the child word lists refuse them) */
+function sdChildChips() {
+  return [
+    ["Hématome", "bruise on the [left/right] [cheek], purple and yellow"],
+    ["Pansement", "white bandage around the [left/right] [forearm]"],
+    ["Saleté", "mud on the knees and dust on the shoes"],
+  ];
+}
+/* v117 (independent review): GPT keeps the conversation, where the child's photo was attached for the head sheet */
+var SD_CHILD_PH_BODY = "Never use the photo of this child from earlier in this conversation for the body, build, clothing or pose.";
+/* v117 (third review): the typed name of a child never goes into a prompt; a neutral reference drawn from it keeps the characters of one
+   GPT conversation apart ("«child 3F7K»") */
+function sdChildRef() {
+  var x = sdChildNorm(t5(e.name)),
+    h = 5381;
+  if (!x) return "this child";
+  for (var i = 0; i < x.length; i++) h = ((h * 33) ^ x.charCodeAt(i)) >>> 0;
+  return "«child " + ("000" + h.toString(36).toUpperCase()).slice(-4) + "»";
+}
+function sdChildFic() {
+  return sdChildPh(e) ? "" : "fictional ";
 }
 var SD_CHILD_KEYS = ["childSex", "childAge", "childHeight", "childBuild", "childHeadless"],
   SD_CHILD_FACE = ["origin", "originDetail", "skin", "face", "forehead", "eyeColor", "eyeShape", "brows", "noseW"];
@@ -448,7 +843,7 @@ var SD_CHILD_BAN_TERMS = [
   "bra", "bralettes?", "sports? bras?", "briefs", "boxers?", "boxer (shorts|briefs)", "pant(y|ies)", "knickers", "thongs?", "tangas?", "g-?strings?",
   "(un|en|le|des|les|petit|mini) strings?", "nighties?", "nightgowns?", "babydolls?", "camisoles?", "bodysuits?", "leotards?",
   "corsets?", "bustiers?", "garters?", "stockings?",
-  "maillots? de bain", "maillots? (une|deux) pieces?", "shorts? de bain", "(?<!jupe-|jupe )culottes?(?! courtes?)", "soutiens?[- ]gorges?", "(?<!non-|anti-)slips?(?![- ]on)",
+  "maillots? de bain", "maillots? (une|deux) pieces?", "shorts? de bain", "(?<!jupe-|jupe )culottes?(?! courtes?)", "soutiens?[- ]gorges?", "(?<!non-|anti-|non |anti )slips?(?![- ]on)",
   "calecons?", "brassieres?", "sous[- ]vetements?", "nuisettes?", "chemises? de nuit", "justaucorps",
   /* bare body, body parts */
   "shirtless", "topless", "bare[- ]?(chest\\w*|belly|midriff|torso|shoulders?|back|legs?|skin|bottom|bum)", "no (shirt|clothes|clothing)", "without (a shirt|any clothes|clothes|clothing)",
@@ -467,35 +862,489 @@ var SD_CHILD_BAN_TERMS = [
   /* makeup, heels, tattoos, piercings */
   "lipsticks?", "make[- ]?up", "mascara", "eye[- ]?liner", "lip ?gloss", "fond de teint", "nail (polish|varnish)", "vernis a ongles", "ongles vernis",
   "maquill\\w*", "rouge a levres", "high[- ]?heel\\w*", "(?<!low |low-|flat |flat-)heels", "stilettos?", "hauts? talons", "talons? (hauts?|aiguilles?)", "a talons(?! plats)", "escarpins?",
-  "tattoo\\w*", "tatouage\\w*", "tatoue\\w*", "piercing\\w*", "pierced", "percee?s?"
+  "tattoo\\w*", "tatouage\\w*", "tatoue\\w*", "piercing\\w*", "pierced", "percee?s?",
+  /* v117: the single-text outfit opens the field to any wording: more revealing cuts refused */
+  "low[- ]?rise", "taille basse", "short shorts", "booty shorts", "micro[- ]?(shorts?|skirts?|jupes?|dress\\w*|robes?)", "tiny (shorts|skirts?|tops?|dress\\w*)",
+  "skin[- ]?tight", "tube tops?", "bodycon", "fishnets?", "resille\\w*", "latex",
+  /* v117 (independent review): the families the list still let through */
+  "mini[- ]?(dress\\w*|robes?|shorts?|tops?)", "minis", "(?<!low |low-|flat |flat-)heel(ed)?", "wedges?", "pumps", "platforms?",
+  "eye[- ]?shadows?", "blush(er|es)?", "kohl", "khol", "fards?", "faux[- ]cils", "false (eye)?lash\\w*", "lash extensions?", "painted (nails|toenails)", "nails? (painted|varnished|polish\\w*)",
+  "ongles (peints|vernis|faits)", "nail[- ]?polish", "lip[- ]?gloss\\w*",
+  "nothing (but|else|on|under\\w*|beneath)", "wearing (only|just|nothing)", "(only|just) wearing", "rien (d'autre|que|sous|dessous)", "(uniquement|seulement) (un|une|en|des)",
+  "no (tops?|shirts?|t-?shirts?|pants|trousers|bottoms?|clothes|clothing|outfit|dress|skirt|shorts)", "without (a |any )?(tops?|shirts?|t-?shirts?|pants|trousers|bottoms?|clothes|clothing|dress|skirt)",
+  "sans (haut|t-?shirt|tee-?shirt|chemise|pantalon|vetements?|habits?|jupe|robe|culotte)", "half[- ]?(naked|nude|dressed)", "barely (dressed|clothed|covered)", "scant\\w*", "partially (dressed|clothed)", "a moitie (nue?s?|habille\\w*)",
+  "g[- ]?strings?", "y[- ]?fronts?", "jockstraps?", "night[- ]?dress\\w*", "negligees?", "robes? de nuit", "porte[- ]jarretelles?", "jarretel\\w*", "jarretieres?", "slip dress\\w*",
+  "spaghetti( straps?)?", "thin straps?", "halter\\w*", "bandeaux?(?! dans les cheveux)", "open[- ]?back\\w*", "slits?", "fendue?s?", "deep[- ]?v([- ]?neck\\w*)?", "plunge\\w*", "(?<!carre )plongeant\\w*", "cut[- ]?outs?",
+  "above the (navel|belly( button)?|waist)", "belly[- ]?buttons?", "navels?", "nombrils?", "crop[- ]?tees?", "see[- ]?thru", "tops? transparent\\w*",
+  "echancre\\w*", "moulant\\w*", "figure[- ]hugging", "form[- ]fitting", "body[- ]?hugging", "catsuits?", "unitards?", "spandex", "lycra", "bare[- ]?legged",
+  "tight (dress\\w*|tops?|skirts?|shorts|jeans|leggings|clothes|clothing|outfits?|fit)", "tie[- ]?front", "front[- ]?tie", "(knotted|tied)( (in|on|at))?( the)? (waist|front|belly|midriff|navel)", "over-the-knees?", "over the knees? (socks|boots|stockings|chaussettes|bottes)", "over[- ]knees?",
+  "birthday'?s? (suits?|clothes)", "in the buff", "au naturel", "cat[- ]suits?", "(plus|sans) (de |d')?(vetements|habits)",
+  /* v117 (third review) */
+  "(dog|pet|cat|leather|spiked|studded) collars?", "chokers?", "leash\\w*", "laisses?", "colliers? (de|pour) chien",
+  "(socks|chaussettes|boots|bottes) over the knees?", "tie (at |on |in )?(the |its |her |his )?front", "front (is )?tied", "tied (in|on|at|over)( the| its| her| his)? front",
+  "(above|behind|inside) (the |his |her )?((left|right) )?knees?",
+  "jailbait", "lolis?", "lolicons?", "shotas?", "shotacons?", "hentai", "porn\\w*", "nsfw", "sluts?", "slutty", "whores?", "milfs?", "horny", "boobs?", "boobies",
+  "tits", "titty", "titties", "sexpots?", "strippers?", "stripteas\\w*", "onlyfans", "naturis\\w*", "nudis\\w*", "nubile", "chesty", "thicc", "barely legal", "nymphos?",
+  "bimbos?", "minx", "vixens?", "pedo\\w*", "paedo\\w*", "camgirls?", "lap ?danc\\w*", "salopes?", "putes?", "putain", "cochonnes?", "lust\\w*", "seductress",
+  "temptress", "playboy", "playmates?", "babygirl", "hotties?",
+  "(clothes|clothing|outfit|pants|trousers|jeans|dress|top|shirt|bottom|skirt|shorts)s?[- ]?less", "wet", "damp", "soaking", "dripping", "moist", "oiled", "oily", "glisten\\w*",
+  "beds?", "bedtime", "bedroom", "lying", "allonge\\w*", "under the covers", "sous la couette", "au lit", "dans (son|sa|le|un) lit", "beach\\w*", "plage", "pool\\w*", "piscine", "sunbath\\w*", "bronzage",
+  "(one|two|1|2|une|deux)[- ]pieces?(?! suits?)", "bathers", "cossies?", "togs", "budgie smugglers?", "petticoats?", "jupons?", "camis", "undershirts?", "maillots? de corps",
+  "dressing gowns?", "bathrobes?", "peignoirs?", "robes? de chambre", "pyjamas?", "pajamas?", "onesies?", "nightwear", "sleepwear", "loungewear", "lacy",
+  "(?<!vis |vis-|visibility )vests?", "nylons", "nose rings?", "hoop earrings?", "earrings?", "boucles? d'oreilles?", "manicure\\w*", "pedicure\\w*", "glitter\\w*", "paillettes",
+  "(pink|red|glitter|manicured|fake|false|long|painted|glossy) (finger|toe)?nails", "toenails?", "(glossy|red|pink) lips", "rouge a joues",
+  "(sports?|sporty|running|gym|workout|athletic|fitness) (tops?|bras?|brassieres?)", "little black dress\\w*", "petite robe noire",
+  "lingeries", "underwears", "mascaras", "eye[- ]?liners", "make[- ]?ups", "nudit(ies|e|es)", "sexuel\\w*", "mesh\\w*",
+  "bas (resille|nylon|de soie|blancs?|noirs?|chair|transparents?|autofixants?)", "collants? (chair|transparents?)",
+  "curv(y|es|aceous)", "busty", "bust", "poitrine", "voluptu\\w*", "(wide|large|broad) hips", "hips", "hanches?", "hourglass", "(long|slender|slim|bare|toned|shapely) legs", "jambes? (nues?|fines?|longues?)",
+  "thighs?", "cuisses?", "sexi\\w*", "sexx\\w*", "sex", "flirt\\w*", "sultry", "fetish\\w*", "fetich\\w*", "bondage", "aguich\\w*", "nymph\\w*", "allumeuse", "coquin\\w*", "naughty", "kinky"
 ];
 var SD_CHILD_BAN = new RegExp("(^|[^a-z0-9])(" + SD_CHILD_BAN_TERMS.join("|") + ")(?=$|[^a-z0-9])");
 /* everyday phrases removed before the check, so their words do not count ("nu-pieds", "pieds nus": barefoot) */
 var SD_CHILD_ALLOW = /(^|[^a-z0-9])(nu-pieds|pieds[- ]nus)(?=$|[^a-z0-9])/g;
+/* v117 (independent review): look-alike letters and hidden characters no longer get a word past the list: compatibility forms folded (full-width,
+   ligatures, styled letters), accents and invisible characters (zero-width, soft hyphen, joiners) removed, dashes, quotes and spaces made plain;
+   a letter still outside plain ASCII after that (Cyrillic, Greek...) refuses the text */
 function sdChildNorm(x) {
   return String(x || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f\u1ab0-\u1aff\u1dc0-\u1dff\u20d0-\u20ff\ufe20-\ufe2f]/g, "")
+    .replace(/[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0]/g, "")
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[‐-―−⁃﹘﹣－]/g, "-")
+    .replace(/[‘’‚‛′ʼ`´]/g, "'")
+    .replace(/[«»“-‟‹›]/g, '"')
+    .replace(/[\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000•‣◦·]/g, " ")
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    .replace(/ß/g, "ss")
+    .replace(/ø/g, "o")
+    .replace(/ł/g, "l")
+    .replace(/[đð]/g, "d")
+    .replace(/þ/g, "th")
+    .replace(/ı/g, "i");
 }
+/* the list is also tested with the hyphens read as spaces and with the hyphens removed ("short-shorts", "taille-basse", "tube-top") */
 function sdChildOk(x) {
-  return !SD_CHILD_BAN.test(sdChildNorm(x).replace(SD_CHILD_ALLOW, "$1 "));
+  var s = sdChildNorm(x).replace(SD_CHILD_ALLOW, "$1 ");
+  return !/[^\x00-\x7e]/.test(s) && !SD_CHILD_BAN.test(s) && !SD_CHILD_BAN.test(s.replace(/-/g, " ")) && !SD_CHILD_BAN.test(s.replace(/-/g, ""));
 }
-/* free-text fields that reach a child prompt outside the outfit, marks and state: blanked when they fail the list (prompt state only, via sdG) */
-var SD_CHILD_FREE = [
-  ["hairStyle", "cheveux"],
-  ["hairColorCustom", "cheveux"],
-  ["skinCustom", "visage"],
-  ["eyeColorCustom", "visage"],
-  ["originDetail", "visage"],
-  ["name", "nom"],
+/* v117: typed text of a child, also read with every non-letter removed, so spaced or dotted letters ("b-i-k-i-n-i", "s e x y") and glued words
+   ("shortshorts", "croptop") are caught */
+var SD_CHILD_COMPACT = /bikini|monokini|tankini|lingerie|underwear|underpant|undies|thong|gstring|nude|naked|nudit|topless|shirtless|sexy|sexi|sexual|sexuel|erotic|erotiq|seduct|seduis|lolita|nymph|swimsuit|swimwear|bathingsuit|maillotdebain|croptop|lipstick|lipgloss|makeup|maquill|mascara|eyeliner|eyeshadow|nailpolish|stiletto|highheel|soutiengorge|sousvetement|nuisette|fishnet|resille|bodycon|microshort|microskirt|minijupe|miniskirt|minishort|minidress|minirobe|hotpant|seethrough|seethru|lowrise|taillebasse|shortshort|bootyshort|tubetop|negligee|jockstrap|bralette|jarretel|garter|corset|bustier|catsuit|plunge|decollete|cleavage|strapless|backless|offshoulder|offtheshoulder|spaghetti|halter|bandeau|fetish|bondage|aguich|provocan|sultry|flirt|busty|voluptu|curvy|hourglass|kohl|khol|skintight|latex|birthdaysuit|birthdayssuit|clothesless|clothingless|outfitless|pantsless|trouserless|trousersless|jeansless|dressless|bottomless|skirtless|shortsless/;
+/* v117 (three independent reviews: a block list cannot cover free text, and allowed words combine): a child's typed text is accepted
+   only when every word is a known word of its field, English or French: the outfit (the single text and the Haut, Bas, Chaussures,
+   Accessoires fields), the hair (style and color), the skin, the eyes, the marks, the current state and the origin each have their own
+   short list; the name takes any word but no function word, clothing word or word of the name list below, in at most 4 words. One
+   unknown word refuses the whole field and the red note names it. The block list and the compact reading stay a second gate. Function
+   words never take a plural or feminine ending ("less" is not "les"); "for" and "of" are not outfit words ("a ribbon for a top"); an
+   accessory word before a garment ("a scarf skirt"), a garment made "of" an accessory, and "un", "de" or "dis" before an undoing verb
+   ("un-buttoned") are refused. Left out of the outfit on purpose: short, mini, micro, tiny, small, little, very, petit, cropped, low,
+   deep, v, strap, lace, back, open, bare, cut, tight, fitted, slim, skinny, thin, sheer, wide, heavy, body, skin, neck, knee, front,
+   tied, under, up, down, off, nothing, no, without, only, sans, sous, court, satin, silk, mesh, tulle, rubber, leather, straw, nylon,
+   padded, pants, jumpsuit, numbers, wedding, robe and chemise alone (bathrobe and lingerie in English), the words for the child itself,
+   swim, bath, bed and night words, makeup, heels. Rubber, leather, straw, pants, robe and chemise come back only in fixed phrases
+   (rubber boots, leather shoes, straw hat, cargo pants, une robe, une chemise). */
+function sdChildDict(x) {
+  var o = Object.create(null);
+  x.split(" ").forEach(function (w) {
+    w && (o[w] = !0);
+  });
+  return o;
+}
+var SD_CHILD_FN = sdChildDict(
+  "a an the and or with over in on at to by its it " +
+  "his her their matching same plus s un une des de du d la " +
+  "le les l et ou avec sur en au aux par son sa " +
+  "ses one two three deux trois "
+),
+  SD_CHILD_COLORS =   "red blue green yellow orange purple violet pink white black grey gray brown beige " +
+  "navy cream ivory khaki olive teal turquoise maroon burgundy lilac lavender mint coral mustard " +
+  "camel denim light dark pale bright pastel neon multicolored multicoloured colorful colourful rainbow gold " +
+  "golden silver offwhite color colour colored coloured rouge bleu vert jaune rose blanc blanche " +
+  "noir gris marron brun marine kaki bordeaux clair fonce vif dore argente multicolore couleur " +
+  "arcenciel ",
+  SD_CHILD_GARM =   "worn wearing wears rolled zipped buttoned tucked untucked layered cuffed fastened lined trim trimmed " +
+  "sleeve sleeves sleeveless longsleeved shortsleeved collar collared crewneck turtleneck hood hooded hoodup pocket pockets " +
+  "button buttons zip zipper zipup buttonup shoelaces sole soles brim cuff cuffs patch patches " +
+  "badge logo print printed pompom pompon drawstring frills frill ruffle ruffles puff smocked sash " +
+  "toggle toggles crest capuche col manche manches mancheslongues manchescourtes poche poches bouton boutons fermeture " +
+  "eclair lacets semelle scratch velcro shirt tshirt tee top tanktop blouse polo sweater jumper " +
+  "pullover sweatshirt hoodie cardigan jacket coat raincoat anorak parka windbreaker duffle bomber blazer fleece " +
+  "gilet waistcoat bodywarmer downjacket puffer overalls dungarees dress skirt kilt pinafore tunic jeans jean " +
+  "trousers joggers sweatpants tracksuit shorts bermuda cargo chinos corduroys corduroy leggings tights socks uniform " +
+  "suit costume apron poncho cape kit jersey snowsuit skisuit hivisvest gi hanbok dirndl boubou " +
+  "qipao shoes shoe sneakers trainers boots boot wellies wellie wellington gumboot sandals sandal slippers " +
+  "loafers clogs flats maryjanes moccasins rainboot cleats nonslip hightop espadrille hat cap beanie beret " +
+  "bobble sunhat scarf gloves mittens backpack bag satchel crossbody belt glasses sunglasses skigoggles frames " +
+  "frame headband hairclip bow bowtie ribbon watch wristwatch umbrella helmet earmuffs earflaps bandana tie " +
+  "jewelry jewellery discreet necklace bracelet crown tiara bob bucket keyring lunchbox mask wings eyepatch " +
+  "chemisier pull sweat veste blouson manteau doudoune impermeable cire kway salopette jupe jupeculotte tunique " +
+  "pantalon jogging survetement legging collant chaussette chaussure baskets basket botte bottine sandale nupieds piedsnus " +
+  "barefoot chausson mocassin sabot tablier uniforme couronne debardeur haut maillotdesport crampon casquette bonnet chapeau " +
+  "echarpe foulard gant moufle sac sacados cartable ceinture lunettes soleil serretete barrette noeud ruban " +
+  "montre collier bijou bijoux parapluie casque deguisement mariniere caban cagoule cotton wool woolen woollen " +
+  "woolly knit knitted linen canvas suede waterproof quilted puffy fluffy faux fur felt tweed " +
+  "flannel velvet sequins sequined coton laine polaire velours cotele lin daim toile tricot tricote " +
+  "feutre matelasse flanelle fourre ",
+  SD_CHILD_GARMD = sdChildDict(SD_CHILD_GARM),
+  /* clothing words that are also common names or places (Jean, Bob, Kit, Jersey): allowed in a name */
+  SD_CHILD_NAMEOK = sdChildDict("jean bob kit jersey polo"),
+  /* words a name never holds: clothing words the outfit list itself refuses, and words that sexualize */
+  SD_CHILD_LABELNO = sdChildDict("heel heels talon talons string strings vernis voile bas transparent transparente lip lips nail nails skin body hot hottie babe babes daddy sugar lover kitten tease doll toy plaything slave mistress pet sexy"),
+  /* the word list of each child field */
+  SD_CHILD_V = {
+    wear: sdChildDict(SD_CHILD_COLORS + SD_CHILD_GARM +
+  "striped stripes stripe plaid tartan checked checkered check gingham polka dots dot dotted spotted " +
+  "spots floral flowery flower patterned pattern camo camouflage graphic star heart dinosaur unicorn rocket " +
+  "cartoon character cat bear lion fox tiger shark pumpkin raye rayure carreaux pois fleuri " +
+  "fleur imprime motif etoile coeur dinosaure licorne ecossais vichy brode embroidered plain simple solid " +
+  "everyday casual comfortable cozy cosy warm soft thick chunky big large long loose baggy " +
+  "oversized straight relaxed regular classic smart neat clean new old faded round raw kneehigh " +
+  "kneelength longlength ankle wideleg straightleg pleated favorite favourite outfit clothes clothing tenue vetement " +
+  "habit left right wrist steel metal rolledsleeves backwards varsity uni ample grand grande longue " +
+  "chaud chaude epais epaisse confortable decontracte neuf nouveau rond ronde doux douce droit droite " +
+  "classique delave plisse plat envers lumineux lumineuse peinture school sports sport sporty outdoor winter " +
+  "summer spring autumn fall rain rainy snow ski hiking running football soccer rugby basketball " +
+  "baseball tennis party birthday christmas holiday weekend halloween communion judo karate ecole scolaire ete " +
+  "hiver printemps automne pluie neige fete anniversaire noel randonnee foot pirate knight astronaut wizard " +
+  "witch fairy superhero skeleton princess explorer cowboy armour armor sailor police firefighter doctor chef " +
+  "chevalier astronaute sorcier sorciere fee princesse explorateur armure pompier "),
+    hair: sdChildDict(SD_CHILD_COLORS +
+  "of hair hairs braid braids braided plait plaits plaited pigtail pigtails ponytail ponytails bun " +
+  "buns knot knots topknot curl curls curly curled wavy wave waves straight frizzy fluffy " +
+  "messy tidy neat short long medium mid length shoulder shoulders chin ear ears jaw " +
+  "jawline nape cut bob fringe bangs side sides part parting parted middle center centre " +
+  "afro cornrows locs dreadlocks twists twisted coily coils puffs puff spiky spikes buzzcut crewcut " +
+  "bowlcut pixiecut pixie mullet babyhairs tied loose loosely pulled back behind tucked clip clips " +
+  "hairclip headband ribbon ribbons bow bows elastic elastics scrunchie scrunchies bead beads thick thin " +
+  "fine volume voluminous layered layers natural slightly bit swept brushed combed gelled cowlick half " +
+  "up down high low double single french dutch fishtail crown framing forehead tousled tangled " +
+  "unruly sleek shiny silky soft tips tip ends roots highlights streaks blonde blond brunette " +
+  "chestnut auburn ginger copper strawberry honey ash ashy platinum sandy jet mousy dirty cheveux " +
+  "tresse natte couette queue cheval chignon frange raie cote milieu boucle frise ondule raide " +
+  "lisse attache detache court courte courts longs longue mi carre degrade ebouriffe bataille pince " +
+  "barrette elastique noeud ruban serretete epais epaisse fin fine naturel releve tire arriere oreille " +
+  "oreilles epaule epaules menton nuque haute basse souple brillant chatain roux rousse cuivre miel " +
+  "cendre venitien meches reflets pointes racines africain "),
+    skin: sdChildDict(SD_CHILD_COLORS +
+  "of skin tone tones toned complexion fair medium tan deep warm cool neutral undertone " +
+  "undertones porcelain peach peachy rosy freckled freckles ebony umber chestnut honey caramel bronze ruddy " +
+  "even natural matte cheeks peau teint carnation claire mate doree hale halee brune foncee " +
+  "noire metisse rosee taches tache rousseur ivoire peche caramel miel ambre cuivre naturel naturelle " +
+  "unie joues "),
+    eyes: sdChildDict(SD_CHILD_COLORS +
+  "of eyes eye hazel amber flecks flecked fleck ring rim speckled heterochromia each deep " +
+  "almond round large left right yeux oeil noisette vairons ambre reflets cercle gauche droit " +
+  "droite chaque "),
+    marks: sdChildDict(SD_CHILD_COLORS +
+  "of backof freckle freckles freckled mole moles birthmark birthmarks scar scars scarred dimple dimples " +
+  "gap tooth teeth missing babytooth chipped braces hearingaid vitiligo eczema cleftlip scratch scratches bruise " +
+  "bruises bruised graze grazes grazed plaster plasters bandage bandages band aid cast sling spot " +
+  "spots chickenpox rash cheek cheeks chin nose forehead eyebrow eyebrows brow jaw ear ears " +
+  "earlobe temple neck head hand hands wrist wrists arm arms forearm forearms elbow elbows " +
+  "knee knees shin shins finger fingers thumb face left right side both near above " +
+  "below corner bridge middle centre center tip edge across along small little tiny faint " +
+  "round thin long short wide narrow old healed fresh few several cluster sprinkle sprinkled " +
+  "scattered slight slightly each tache taches rousseur grain grains beaute cicatrice cicatrices fossette fossettes " +
+  "egratignure egratignures bleus pansement pansements platre dent dents manquante appareil dentaire joue joues menton " +
+  "nez front sourcil sourcils oreille oreilles tempe cou tete main mains poignet coude coudes " +
+  "genou genoux tibia doigt doigts pouce visage gauche droite droit cote pres dessus milieu " +
+  "coin bout petit petite fine leger legere quelques plusieurs ancienne "),
+    state: sdChildDict(SD_CHILD_COLORS +
+  "of muddy mud dirty dirt dust dusty tired messy tousled scruffy smudge smudged smudges " +
+  "grass stain stains stained paint chalk crumbs chocolate jam icecream runnynose outofbreath fullof crying " +
+  "rain raindrops snow snowflakes snowy windswept windblown wind leaf leaves twig twigs scratch scratches " +
+  "scraped scrape grazed graze bruise bruised plaster bandage around knee knees elbow elbows hand " +
+  "hands face cheek cheeks nose forehead chin forearm arm arms hair sleeve sleeves shoes " +
+  "boots trousers jeans jacket coat hoodie sneakers slightly after playing play playground football game " +
+  "park garden school day running left right side both boueux boueuse boue sale sales " +
+  "poussiere poussiereux fatigue fatiguee ebouriffe decoiffe decoiffee tache taches herbe peinture craie miettes chocolat " +
+  "confiture pluie gouttes neige vent feuilles feuille brindilles egratigne egratignure ecorche bleus pansement genou " +
+  "genoux coude coudes mains main visage joues joue nez front menton cheveux jean chaussures " +
+  "bottes apres jeu jouer recreation parc jardin ecole course essouffle gauche droite droit autour "),
+    orig: sdChildDict("and of from the half mixed et de d du des origin origine descent heritage franco anglo sino indo hispano italo germano luso jersey " +
+  "afghan albanian algerian american andorran angolan antiguan argentine argentinian armenian australian austrian azerbaijani azeri " +
+  "bahamian bahraini bangladeshi barbadian belarusian belgian belizean beninese bhutanese bolivian bosnian botswanan brazilian british " +
+  "bruneian bulgarian burkinabe burmese burundian cambodian cameroonian canadian chadian chilean chinese colombian comorian congolese " +
+  "croatian cuban cypriot czech danish djiboutian dominican dutch ecuadorian egyptian emirati english eritrean estonian " +
+  "ethiopian fijian filipino filipina finnish french gabonese gambian georgian german ghanaian greek grenadian guatemalan " +
+  "guinean guyanese haitian honduran hungarian icelandic indian indonesian iranian iraqi irish israeli italian ivorian " +
+  "jamaican japanese jordanian kazakh kenyan korean kosovar kuwaiti kyrgyz lao laotian latvian lebanese liberian " +
+  "libyan lithuanian luxembourgish malagasy malawian malaysian maldivian malian maltese mauritanian mauritian mexican moldovan mongolian " +
+  "montenegrin moroccan mozambican namibian nepalese nepali nicaraguan nigerian nigerien norwegian omani pakistani palestinian panamanian " +
+  "papuan paraguayan peruvian polish portuguese qatari romanian russian rwandan salvadoran samoan saudi scottish senegalese " +
+  "serbian singaporean slovak slovakian slovenian somali spanish sudanese surinamese swedish swiss syrian taiwanese tajik " +
+  "tanzanian thai tibetan togolese tongan trinidadian tunisian turkish turkmen ugandan ukrainian uruguayan uzbek venezuelan " +
+  "vietnamese welsh yemeni zambian zimbabwean african american asian european arab arabic berber amazigh kabyle " +
+  "kurdish basque breton corsican catalan sicilian romani inuit maori aboriginal polynesian hawaiian tahitian melanesian " +
+  "caribbean antillean guadeloupean martinican reunionese creole latino latina hispanic scandinavian nordic slavic mediterranean balkan " +
+  "baltic celtic persian punjabi tamil bengali gujarati hmong cantonese han yoruba igbo hausa wolof " +
+  "fulani zulu xhosa ashanti somali amhara tigrayan north south east west central northern southern " +
+  "eastern western middle sub saharan indies coast ivory sri lankan costa rican puerto rican " +
+  "south korea leone sierra cape verdean new zealand zealander francais algerien marocain tunisien senegalais " +
+  "malien ivoirien camerounais congolais comorien malgache haitien antillais reunionnais guadeloupeen martiniquais guyanais berbere arabe " +
+  "turc turque portugais espagnol italien allemand anglais belge suisse polonais roumain russe ukrainien chinois " +
+  "japonais coreen vietnamien cambodgien laotien thai indien pakistanais bangladais libanais syrien iranien irakien egyptien " +
+  "ethiopien erythreen somalien nigerian ghaneen bresilien mexicain colombien peruvien chilien argentin cubain americain canadien " +
+  "quebecois armenien georgien grec grecque serbe croate bosniaque albanais kurde afro metis asiatique africain " +
+  "europeen maghrebin nord sud est ouest moyen orient orientale oriental caribeen tahitien polynesien kanak " +
+  "france algeria algerie morocco maroc tunisia tunisie senegal mali ivoire cameroon cameroun congo comoros comores madagascar haiti martinique guadeloupe reunion guyana guyane mayotte philippines japan japon korea coree china chine vietnam cambodia cambodge laos thailand thailande india inde pakistan bangladesh lebanon liban syria syrie iran iraq irak egypt egypte ethiopia ethiopie eritrea erythree somalia somalie nigeria ghana kenya brazil bresil mexico mexique colombia colombie peru perou chile chili argentina argentine cuba usa america amerique canada quebec armenia armenie georgia georgie greece grece serbia serbie croatia croatie bosnia bosnie albania albanie kurdistan turkey turquie portugal spain espagne italy italie germany allemagne england angleterre britain uk ireland irlande scotland ecosse wales belgium belgique switzerland suisse poland pologne romania roumanie russia russie ukraine sweden suede norway norvege denmark danemark finland finlande netherlands holland hollande pays bas israel jordan jordanie palestine yemen oman qatar saudi arabia arabie emirates taiwan mongolia mongolie nepal tibet indonesia indonesie malaysia malaisie singapore singapour australia australie zealand zelande samoa tonga fiji tahiti polynesia polynesie caledonie caledonia "),
+  },
+  /* the name: the function words it may hold */
+  SD_CHILD_NAMEP = sdChildDict("de du d la le l van von el al ben mc mac da di dos das del della an"),
+  /* the outfit: an accessory word before a garment, a garment made of an accessory, an undoing verb after un, de, dis */
+  SD_CHILD_ACC = sdChildDict("bandana scarf belt ribbon headband bow tie sash hat cap beanie beret glasses sunglasses gloves mittens bag backpack satchel necklace bracelet watch wristwatch frames frame mask wings crown tiara keyring lunchbox umbrella helmet earmuffs earflaps foulard echarpe ceinture ruban noeud chapeau casquette bonnet lunettes gant moufle sac collier montre couronne serretete barrette"),
+  SD_CHILD_BODY = sdChildDict("top tops tanktop tshirt tee shirt blouse skirt shorts dress trousers kilt pinafore tunic overalls dungarees bermuda leggings tights haut jupe pantalon debardeur chemisier tunique salopette legging collant"),
+  SD_CHILD_UNDO = sdChildDict("button buttoned buttons zip zipped zips zipping fasten fastened tie tied dress dressed do done lace laced buckle buckled tuck tucked clothe clothed robe robed cover covered wrap wrapped hook hooked snap snapped boutonne zippe attache habille");
+/* compound words read as one before the check ("t-shirt", "sac à dos", "un short", "manches courtes": only these uses of the risky words pass) */
+var SD_CHILD_PHR = [
+  [/\b(t|tee)[- ]?shirts?\b/g, " tshirt "],
+  [/\bsweat[- ]shirts?\b/g, " sweatshirt "],
+  [/\b(short|long)[- ]sleeve[sd]?\b/g, " $1sleeved "],
+  [/\bmanches? courtes?\b/g, " manchescourtes "],
+  [/\bmanches? longues?\b/g, " mancheslongues "],
+  [/\bknee[- ]?(high|length)s?\b/g, " knee$1 "],
+  [/\b(ankle|mid|calf|full|floor)[- ]length\b/g, " longlength "],
+  [/\bcrew[- ]?necks?\b/g, " crewneck "],
+  [/\bturtle[- ]?necks?\b/g, " turtleneck "],
+  [/\bcols? roules?\b/g, " col turtleneck "],
+  [/\blace[- ]?ups? (shoes|boots|sneakers|trainers|bottines|chaussures|baskets)\b/g, " $1 "],
+  [/\bshoe[- ]?laces?\b/g, " shoelaces "],
+  [/\bslip[- ]?ons? (shoes|sneakers|trainers|baskets|chaussures|loafers)\b/g, " $1 "],
+  [/\bnon[- ]?slip\b/g, " nonslip "],
+  [/\bzip[- ]?ups?\b/g, " zipup "],
+  [/\bbutton[- ]?(ups?|downs?)\b/g, " buttonup "],
+  [/\bhigh[- ]?tops?\b/g, " hightop "],
+  [/\bpull[- ]?overs?\b/g, " pullover "],
+  [/\b(wide|straight)[- ]legs?(ged)?\b/g, " $1leg "],
+  [/\btank[- ]?tops?\b/g, " tanktop "],
+  [/\bmary[- ]?janes?\b/g, " maryjanes "],
+  [/\bnu[- ]?pieds\b/g, " nupieds "],
+  [/\bpieds[- ]nus\b/g, " piedsnus "],
+  [/\bbare[- ]?f(oo|ee)t(ed)?\b/g, " barefoot "],
+  [/\bsacs?[- ]a[- ]dos\b/g, " sacados "],
+  [/\bserre[- ]?tetes?\b/g, " serretete "],
+  [/\bk[- ]?way\b/g, " kway "],
+  [/\bjupes?[- ]culottes?\b/g, " jupeculotte "],
+  [/\bmaillots? de (foot|football|rugby|basket|basketball|sport|cyclisme|velo|hockey|handball)\b/g, " maillotdesport "],
+  /* "un short" is French for shorts, never before another garment ("un short skirt") */
+  [/\b(un|le|ce|mon|ton|son|leur|du) short\b(?! (skirt|dress|top|tops|tshirt|shirt|blouse|jupe|robe|haut|kilt|tunic|pinafore)\b)/g, " $1 shorts "],
+  [/\barc[- ]en[- ]ciel\b/g, " arcenciel "],
+  [/\bpom[- ]?poms?\b/g, " pompom "],
+  [/\bhair[- ]?(clips?|bands?|ties?|bows?|slides?|pins?)\b/g, " hairclip "],
+  [/\bhead[- ]?bands?\b/g, " headband "],
+  [/\bear[- ]?muffs?\b/g, " earmuffs "],
+  [/\boff[- ]?white\b/g, " offwhite "],
+  [/\bsweat[- ]?pants\b/g, " sweatpants "],
+  [/\btrack[- ]?suits?\b/g, " tracksuit "],
+  [/\bwind[- ]?breakers?\b/g, " windbreaker "],
+  [/\bbody[- ]?warmers?\b/g, " bodywarmer "],
+  [/\bdown jackets?\b/g, " downjacket "],
+  [/\bbow[- ]?ties?\b/g, " bowtie "],
+  [/\bballet[- ]flats?\b/g, " flats "],
+  [/\bballerines\b/g, " flats "],
+  [/\blow[- ]?(cut|top)s? (sneakers|shoes|trainers|boots|baskets|socks)\b/g, " $2 "],
+  [/\b((?:sun)?glasses) with (transparent|clear) frames?\b/g, " $1 with frames "],
+  /* rubber, leather, straw only for shoes and a few accessories; pants only as trousers; robe and chemise only as French (une robe, une chemise) */
+  [/\brubber (boots?|soles?|wellies|clogs)\b/g, " $1 "],
+  [/\b(bottes?|semelles?) en caoutchouc\b/g, " $1 "],
+  [/\bleather (shoes?|boots?|sneakers|jackets?|belts?|bags?|satchels?|gloves|sandals|loafers|moccasins|backpacks?)\b/g, " $1 "],
+  [/\b(chaussures|bottes?|bottines?|veste|blouson|ceinture|sac|cartable|sandales|gants|mocassins) en cuir\b/g, " $1 "],
+  [/\bpadded (jackets?|coats?|gilets?)\b/g, " $1 "],
+  [/\bstraw (hats?|bags?)\b/g, " $1 "],
+  [/\b(chapeaux?|sacs?) de paille\b/g, " $1 "],
+  [/\b(cargo|track|rain|snow|ski|jogging|corduroy|denim|khaki|linen|cotton|wool|fleece|hiking|waterproof|dress) pants\b/g, " $1 trousers "],
+  [/\b(a |one )?pairs? of\b/g, " "],
+  [/\b(une|la|ma|ta|sa|cette|leur|des|les|ses) robes?\b/g, " $1 dress "],
+  [/\b(une|la|ma|ta|sa|cette|leur|des|les|ses) chemises?\b/g, " $1 shirt "],
+  [/\bchaussures? vernies?\b/g, " chaussures "],
+  [/\bsuper[- ]?(heros?|heroes)\b/g, " superhero "],
+  [/\b(kimonos? (de )?(judo|karate)|(judo|karate) kimonos?)\b/g, " judo gi "],
+  [/\bsun[- ]?hats?\b/g, " sunhat "],
+  [/\bski goggles\b/g, " skigoggles "],
+  [/\bear[- ]?flaps?\b/g, " earflaps "],
+  [/\bhood (is )?up\b/g, " hoodup "],
+  [/\b(rolled[- ]up sleeves|sleeves rolled up)\b/g, " rolledsleeves "],
+  [/\b(high|hi)[- ]?vis(ibility)?( (vests?|jackets?))?\b/g, " hivisvest "],
+  [/\b(combinaisons? de ski|ski[- ]?suits?)\b/g, " skisuit "],
+  [/\bcombinaisons? de pluie\b/g, " raincoat "],
+  [/\bsnow[- ]?suits?\b/g, " snowsuit "],
+  [/\bbandeau dans les cheveux\b/g, " headband "],
+  [/\blunch[- ]?box(es)?\b/g, " lunchbox "],
+  [/\bkey[- ]?rings?\b/g, " keyring "],
+  [/\beye[- ]?patch(es)?\b/g, " eyepatch "],
+  [/\bpeter pan collars?\b/g, " collar "],
+  /* hair */
+  [/\b(buzz|crew|bowl|pixie)[- ]?cuts?\b/g, " $1cut "],
+  [/\bspace buns\b/g, " buns "],
+  [/\bbox braids\b/g, " braids "],
+  [/\bbantu knots\b/g, " knots "],
+  [/\btop[- ]?knots?\b/g, " topknot "],
+  [/\bbaby hairs?\b/g, " babyhairs "],
+  [/\bcarre plongeant\b/g, " carre "],
+  /* marks: "the back of the left hand" (never the back itself) */
+  [/\bback of (?=(the |his |her )?(left |right )?(hands?|neck|knees?|wrists?|fingers?|head)\b)/g, " backof "],
+  [/\bdos de (la|sa) main\b/g, " backof main "],
+  [/\bport[- ]wine stains?\b/g, " birthmark "],
+  [/\bcleft lip\b/g, " cleftlip "],
+  [/\bappareil dentaire\b/g, " braces "],
+  [/\b(dents? de lait|baby (tooth|teeth))\b/g, " babytooth "],
+  [/\bhearing aids?\b/g, " hearingaid "],
+  /* state */
+  [/\bice[- ]?cream\b/g, " icecream "],
+  [/\brunny nose\b/g, " runnynose "],
+  [/\bout of breath\b/g, " outofbreath "],
+  [/\bfull of\b/g, " fullof "],
 ];
+/* a word of the field list D: as written, or a list word with a plural or feminine ending (never a function word with one) */
+function sdChildKnown(w, D) {
+  return (
+    !!SD_CHILD_FN[w] ||
+    !!(D[w] || (/s$/.test(w) && D[w.slice(0, -1)]) || (/es$/.test(w) && D[w.slice(0, -2)]) || (/e$/.test(w) && D[w.slice(0, -1)]) || (/x$/.test(w) && D[w.slice(0, -1)]) ||
+      (/nnes?$/.test(w) && D[w.replace(/nes?$/, "")]))
+  );
+}
+/* the words of a typed text, compound words joined (a word with a letter outside plain ASCII stays whole, and is unknown) */
+function sdChildWords(x) {
+  var s = " " + sdChildNorm(x) + " ";
+  SD_CHILD_PHR.forEach(function (p) {
+    s = s.replace(p[0], p[1]);
+  });
+  return s.split(/[^a-z0-9\u0080-\uffff]+/).filter(Boolean);
+}
+function sdChildSing(w, D) {
+  return D[w] || (/s$/.test(w) && D[w.slice(0, -1)]);
+}
+/* the unknown words of a typed text for the field list D, in order, once each, then the refused combinations */
+function sdChildUnknown(x, D) {
+  D = D || SD_CHILD_V.wear;
+  var u = [],
+    w = sdChildWords(x),
+    put = function (v) {
+      u.indexOf(v) < 0 && u.push(v);
+    };
+  w.forEach(function (v, i) {
+    sdChildKnown(v, D) || put(v);
+    ("un" === v || "de" === v || "dis" === v) && w[i + 1] && SD_CHILD_UNDO[w[i + 1]] && put(v + " " + w[i + 1]);
+    if (D !== SD_CHILD_V.wear) return;
+    var n1 = w[i + 1] || "",
+      n2 = w[i + 2] || "",
+      n3 = w[i + 3] || "";
+    (sdChildSing(v, SD_CHILD_ACC) || "shorts" === v) && sdChildSing(n1, SD_CHILD_BODY) && put(v + " " + n1);
+    sdChildSing(v, SD_CHILD_BODY) && /^(en|in|de|d|of|from|made)$/.test(n1) && (sdChildSing(n2, SD_CHILD_ACC) || (SD_CHILD_V.wear[n2] && sdChildSing(n3, SD_CHILD_ACC))) && put(v + " " + n1 + " " + n2);
+  });
+  return u;
+}
+/* the name: at most 4 words, letters only, no function word but its particles, no clothing word, no word of SD_CHILD_LABELNO */
+function sdChildLabelBad(x, P) {
+  var w = sdChildNorm(x).split(/[^a-z0-9\u0080-\uffff]+/).filter(Boolean),
+    u = [];
+  w.forEach(function (v) {
+    (!/^[a-z]+$/.test(v) || (SD_CHILD_FN[v] && !P[v]) || SD_CHILD_LABELNO[v] || (!SD_CHILD_NAMEOK[v] && (SD_CHILD_GARMD[v] || (/s$/.test(v) && SD_CHILD_GARMD[v.slice(0, -1)])))) && u.indexOf(v) < 0 && u.push(v);
+  });
+  w.length > 4 && u.push(w.slice(4).join(" "));
+  return u;
+}
+function sdChildRandomText(x) {
+  return /^(random|au hasard|hasard|al[ée]atoire)$/i.test(sdFreeClean(x));
+}
+/* a typed text of a child: the list on the text as typed, as cleaned for the single text (sdFreeClean) and as sent from a field (t5), the
+   compact reading, then the field check: D a word list (sdChildUnknown) or P the particles of a name (sdChildLabelBad); the origin is a
+   word list of its own, at most 4 words */
+function sdChildTypedOk(x, D, P) {
+  var v = [x, sdFreeClean(x), t5(x)];
+  return v.every(function (y) {
+    return (
+      sdChildOk(y) &&
+      !SD_CHILD_COMPACT.test(sdChildNorm(y).replace(/[^a-z]/g, "")) &&
+      (!D || (!sdChildUnknown(y, D).length && (D !== SD_CHILD_V.orig || sdChildWords(y).length <= 4))) &&
+      (!P || !sdChildLabelBad(y, P).length)
+    );
+  });
+}
+/* the single text of a child: "random" alone is the plain everyday outfit, as for an adult */
+function sdChildFreeOk(x) {
+  return sdChildRandomText(x) || sdChildTypedOk(x, SD_CHILD_V.wear);
+}
+/* free-text fields that reach a child prompt outside the outfit: blanked when they fail the list (prompt state only, via sdG);
+   v117 (independent review: they took any word the block list missed, "a wet one-piece", "in pyjamas", "a nose ring"): each with its own
+   word list (the origin too), the name with the label rule; the marks and state texts added. With the child's photo, the face and hair
+   fields are not used and not reported */
+var SD_CHILD_FREE = [
+  ["hairStyle", "cheveux", "hair"],
+  ["hairColorCustom", "cheveux", "hair"],
+  ["skinCustom", "visage", "skin"],
+  ["eyeColorCustom", "visage", "eyes"],
+  ["originDetail", "visage", "orig"],
+  ["marks", "signes", "marks"],
+  ["eState", "état du moment", "state"],
+];
+/* a child field that reaches the prompts: with the child's photo, the face and hair come from it */
+function sdChildFreeUsed(t, f) {
+  return !(sdChildPh(t) && ("visage" === f[1] || "cheveux" === f[1]));
+}
+function sdChildFieldOk(f, x) {
+  return sdChildTypedOk(x, f[2] ? SD_CHILD_V[f[2]] : null, "name" === f[3] ? SD_CHILD_NAMEP : null);
+}
+/* v117: the outfit fields of the Tenue tab (Haut, Bas, Chaussures, Accessoires), for a child only with known clothing words (sdChildWearOk) */
+var SD_CHILD_WEAR = ["top", "bottom", "shoes", "acc"];
 function sdChildClean(t) {
   var o = null;
   SD_CHILD_FREE.forEach(function (f) {
-    sdChildOk(t[f[0]]) || ((o = o || Object.assign({}, t)), (o[f[0]] = ""));
+    sdChildFieldOk(f, t[f[0]]) || ((o = o || Object.assign({}, t)), (o[f[0]] = ""));
   });
   return o || t;
+}
+/* the outfit fields of a child, after "random" became a child garment (sdRndOutfit): one field refused and the whole outfit is the safe one */
+function sdChildWearOk(t) {
+  return SD_CHILD_WEAR.every(function (k) {
+    return sdChildTypedOk(t[k], SD_CHILD_V.wear);
+  });
+}
+/* v117 (independent review: the adult's single text dressed the child): a child has its own switch and text (childOutfitFree, childOutfitText),
+   read in place of the adult's; never for a baby */
+function sdChildMap(t) {
+  return sdChild(t) ? Object.assign({}, t, { outfitFree: !sdBaby(t) && !!t.childOutfitFree, outfitText: sdBaby(t) ? "" : String(t.childOutfitText || "") }) : t;
+}
+/* the switch of the Tenue tab box, on the saved state */
+function sdFreeSw(t) {
+  return sdChild(t) ? !sdBaby(t) && !!t.childOutfitFree : !!t.outfitFree;
+}
+/* the words of a child's typed texts that are not accepted, for the red note: the unknown words; when there are none, what the list found;
+   when it found nothing, what the compact reading found (v117 review: not every form of the same word) */
+function sdChildBadWords(t) {
+  var u = [],
+    put = function (w) {
+      w && u.indexOf(w) < 0 && u.push(w);
+    },
+    add = function (x, D, P) {
+      if (sdChildTypedOk(x, D, P)) return;
+      var n0 = u.length;
+      [x, sdFreeClean(x), t5(x)].forEach(function (y) {
+        (D ? sdChildUnknown(y, D) : []).concat(P ? sdChildLabelBad(y, P) : []).forEach(put);
+      });
+      if (u.length > n0) return;
+      [x, sdFreeClean(x)].forEach(function (y) {
+        var n = sdChildNorm(y).replace(SD_CHILD_ALLOW, "$1 "),
+          m = SD_CHILD_BAN.exec(n) || SD_CHILD_BAN.exec(n.replace(/-/g, " ")) || SD_CHILD_BAN.exec(n.replace(/-/g, ""));
+        put(m && m[2]);
+      });
+      if (u.length > n0) return;
+      [x, sdFreeClean(x)].forEach(function (y) {
+        var c = SD_CHILD_COMPACT.exec(sdChildNorm(y).replace(/[^a-z]/g, ""));
+        put(c && c[0]);
+      });
+    };
+  sdFreeSw(t)
+    ? sdChildRandomText(t.childOutfitText) || add(t.childOutfitText, SD_CHILD_V.wear)
+    : SD_CHILD_WEAR.forEach(function (k) {
+        add(sdRndOutfit(t)[k], SD_CHILD_V.wear);
+      });
+  SD_CHILD_FREE.forEach(function (f) {
+    sdChildFreeUsed(t, f) && add(t[f[0]], f[2] ? SD_CHILD_V[f[2]] : null, "name" === f[3] ? SD_CHILD_NAMEP : null);
+  });
+  return u.slice(0, 8);
 }
 function sdChildAge() {
   return Math.max(3, Math.min(12, Math.round(+e.childAge || 7)));
@@ -521,11 +1370,15 @@ function sdChildRawOutfit(t) {
 }
 function sdChildOutfit() {
   var o = sdChildRawOutfit(e);
-  return sdChildOk(o) ? o : "a T-shirt, jeans and sneakers in plain solid colors";
+  if (!sdChildOk(o) || (!sdFreeOn() && !sdChildWearOk(e))) return "a T-shirt, jeans and sneakers in plain solid colors";
+  /* v117: the free outfit text of a child, completed with plain everyday clothes for anything it does not name */
+  return sdFreeText()
+    ? o + (sdChildHl(e) ? " (anything worn on the head or the face stays outside the frame)" : "") + "; anything this description does not name is plain everyday clothing, so the child is fully dressed"
+    : o;
 }
 /* v108: the head sheet is cropped at the base of the neck, the shoulders and clothes out of frame: Seedance took the top of the outfit from the head sheet */
 function sdChildCrop(gpt) {
-  var lg = ["shoulder", "long", "vlong"].indexOf(e.hairLen) >= 0;
+  var lg = sdHairPast();
   return (
     (gpt ? "Each panel is a tight, centered close-up of the head and neck, framed from just above the top of the hair down to the base of the neck" : "Each panel is a tight, centered close-up of the head and neck, from just above the top of the hair down to the base of the neck") +
     ", so the head, from the top of the hair to the chin, fills about three quarters of the panel height, with plain grey on both sides. The shoulders and the clothes stay below the bottom edge, out of the frame" +
@@ -536,7 +1389,10 @@ function sdChildCrop(gpt) {
 /* hat, cap, glasses on the head sheet; v108: nothing worn around the neck or on the clothes (scarf, jewelry), since the head sheet shows no clothes */
 var SD_CHILD_HEADACC = ["glasses", "sunglasses", "cap", "beanie", "hat"];
 function sdChildHeadAcc() {
-  if (!sdChildOk(sdChildRawOutfit(e))) return "";
+  if (!sdChildOk(sdChildRawOutfit(e)) || (!sdFreeOn() && !sdChildWearOk(e))) return "";
+  /* v117 (independent review: the whole text was pasted on the head sheet): only the parts of the single text worn on the head or the face,
+     cut at commas, semicolons and "and", "with", "et", "avec"; nothing worn at the neck */
+  if (sdFreeOn()) return sdChildHeadParts(sdFreeText());
   var a = tZ.accOpts
       .filter(function (o) {
         return (e.accSel || []).indexOf(o[0]) >= 0 && SD_CHILD_HEADACC.indexOf(o[0]) >= 0;
@@ -544,9 +1400,27 @@ function sdChildHeadAcc() {
       .map(function (o) {
         return o[2];
       }),
-    x = t5(e.acc);
-  x && /glass|\bhats?\b|\bcaps?\b|beanie|helmet|headband|hair ?clip/i.test(x) && !/scarf|necklace|choker|hood|collar|earring|piercing|jewel/i.test(x) && sdChildOk(x) && a.push(x);
+    x = sdChildHeadParts(t5(e.acc));
+  /* v117 (third review): the Accessoires text cut in the same way, never pasted whole */
+  x && a.push(x);
   return a.join(", ");
+}
+/* the head items of an outfit text: cut at commas, semicolons, "and", "over", "under", "et", "plus", "sur", "sous"; a "with" or "avec" part
+   that names a body garment is cut off too ("a cap with a dinosaur on it" stays whole); nothing worn at the neck, no body garment */
+var SD_CHILD_BODYRX = /\b(t-?shirts?|tee|tops?|tank ?tops?|shirts?|blouse|dress(es)?|robe|jacket|coat|hoodie|sweater|jumper|cardigan|jeans|trousers|pants|skirt|shorts|leggings|tights|socks|boots|shoes|sneakers|sandals|uniform|suit|costume|pull|veste|manteau|jupe|pantalon|chaussures|baskets|bottes)\b/i;
+function sdChildHeadParts(fx) {
+  return String(fx || "")
+    .split(/\s*[,;:]\s*|\s+(?:and|over|under|et|plus|sur|sous)\s+/i)
+    .map(function (x) {
+      var m = /\s+(?:with|avec)\s+/i.exec(x);
+      return m && SD_CHILD_BODYRX.test(x.slice(m.index)) ? x.slice(0, m.index) : x;
+    })
+    .filter(function (x) {
+      return /glass|\bhats?\b|\bcaps?\b|beanie|beret|helmet|head ?band|hair ?clip|\bbob\b|\bcrown\b|bandana|earmuff|casquette|lunettes|bonnet|chapeau|serre-?t[êe]te|couronne|barrette|casque/i.test(x) &&
+        !/scarf|necklace|choker|\bhood|collar|earring|piercing|jewel|[ée]charpe|foulard|collier|capuche|\bcol\b|bijou/i.test(x) &&
+        !SD_CHILD_BODYRX.test(x);
+    })
+    .join(", ");
 }
 function sdChildMarks() {
   var m = rg(!0);
@@ -559,13 +1433,15 @@ function sdChildState() {
 /* what was dropped, read on the saved state t (the prompt state is already cleaned), for the red note */
 function sdChildDropped(t) {
   var d = [];
-  sdChildOk(sdChildRawOutfit(t)) || d.push("tenue");
+  sdFreeSw(t)
+    ? sdChildFreeOk(t.childOutfitText) || d.push("tenue en un seul texte")
+    : (sdChildWearOk(sdRndOutfit(t)) && sdChildOk(sdChildRawOutfit(sdChildMap(sdChildOpts(t))))) || d.push("tenue");
   rq(t, function () {
     sdChildOk(rg(!0)) || d.push("signes");
     sdChildOk(rl()) || d.push("état du moment");
   });
   SD_CHILD_FREE.forEach(function (f) {
-    sdChildOk(t[f[0]]) || d.indexOf(f[1]) >= 0 || d.push(f[1]);
+    !sdChildFreeUsed(t, f) || sdChildFieldOk(f, t[f[0]]) || d.indexOf(f[1]) >= 0 || d.push(f[1]);
   });
   return d;
 }
@@ -614,6 +1490,7 @@ function sdChildEyes() {
 }
 function sdChildSig() {
   if (sdBaby(e)) return sdBabyWho() + "\n" + sdBabyFace();
+  if (sdChildPh(e)) return ["photo", sdChildWho(), sdChildMarks()].join("\n");
   return [sdChildWho() + sdChildOrigin(), t7("skin"), sdChildEyes(), ne(), sdChildFace(), sdChildMarks()].join("\n");
 }
 function sdChildBuild() {
@@ -621,6 +1498,233 @@ function sdChildBuild() {
     { small: "small for " + sdChildPos() + " age", tall: "tall for " + sdChildPos() + " age" }[e.childHeight] ||
     "of average height for " + sdChildPos() + " age"
   ) + ", " + ({ slim: "a slim build", sturdy: "a sturdy build" }[e.childBuild] || "an average build");
+}
+/* v145 (user: the arms out "pour tous les prompts de création de corps ou personnage en entier"): the adult Seedream text tested on his
+   sheet; the other full-body sheets (child, GPT) say the gap, not an angle, so the arms fit their equal panels (GPT checks panel widths;
+   the figure includes the head); GPT names the waist, hips and thighs, not "from the armpit down", since its very large bust spreads
+   "against the inner arms". The baby sheet keeps its sitting pose: a baby does not stand with its arms out */
+var SD_ARMS_OUT = "arms straight and held about 20 degrees out from the body, palms toward the thighs, hands visible: in the front and back views a clear gap of backdrop between each arm and the waist, hips and thighs, the hands well clear of the thighs";
+var SD_ARMS_OUT_C = "arms straight and held slightly out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel";
+var SD_ARMS_OUT_G = "arms straight and held slightly out from the body, just enough for a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel";
+/* v145 review: the Seedream sheets have no panel-width check (no GENERATION LIMIT) and Seedream draws less than the angle said (about 12
+   degrees for 20 on his sheet): "slightly out" could leave no gap; the child sheet of Seedream and the GPT text rewritten for Seedream (3D,
+   2D, from a photo; sdGptSdText) say the angle */
+var SD_ARMS_OUT_CS = "arms straight and held about 20 degrees out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel";
+var SD_ARMS_OUT_GS = "arms straight and held about 20 degrees out from the body, a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel";
+/* v157 (user, on his render: "les bras ne sont pas écartés, pourquoi" (about 11 degrees measured each side for the "about 20 degrees" asked,
+   as in v145), then "je dois pouvoir écarter plus l'entrejambe"): "Écart des bras", Marqué by default (the v156 texts are Léger), and
+   "Écart des pieds" (hips, as before; shoulders; wide, the A-pose of 3D character references), adults only, both engines. The marked
+   arms say a distance the model can see (a hand's width between hand and thigh) on top of the angle; the front and back panels widen
+   and the figure shrinks a little to fit (v151 measure), a full 45-degree A-pose does not fit four views in 16:9. Applied last to the
+   finished prompts (sdPoseM), as exact replacements of the v156 texts. */
+var SD_ARMS_M = [
+  [SD_ARMS_OUT, "arms straight and held well out, about 30 degrees, palms toward the thighs: each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the body from the armpit down in the front and back views"],
+  [SD_ARMS_OUT_GS, "arms straight and held well out, about 30 degrees, each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel"],
+  [SD_ARMS_OUT_G, "arms straight and held well out from the body, each hand about a hand's width away from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel"],
+];
+var SD_FEET = {
+  shoulders: "feet shoulder-width apart",
+  wide: "feet set wide, about one and a half shoulder widths apart, legs straight, as in the A-pose of a 3D character reference",
+};
+/* v157 (user, a Seedream head sheet with "Barbe fournie (3 mois)": "la barbe de 3 mois sur Seedream ça va pas du tout", a beard of about two
+   weeks drawn): "about three months" is a time, not something seen, and three other parts of the head line asked for the line of the jaw
+   the beard hides (the jaw, the age, the face fat), with "fine" facial hair in the skin line. With "Barbe fournie" or "Barbe longue": the
+   jaw said under the beard, its line and the double chin no longer asked to show, the facial hair dense (both engines) */
+/* v157b (GPT audit of v157, checked: "Très anguleux" with "Graisse : visage" Marquée said "hollow cheeks" and "plump cheeks", "a sharp
+   jawline" and "a soft jawline"): the face fat says the soft tissue, so the angularity keeps the bone: no hollow cheeks from "Légère" up,
+   the angular bone structure under the soft tissue and no sharp or crisp jawline from "Visible" up (both engines) */
+var SD_ANGLE_FAT = [
+  ["a strongly angular, sculpted face: high, sharply defined cheekbones and hollow cheeks and a sharp jawline and chin", "a strongly angular bone structure: high, sharply defined cheekbones and a sharp jawline and chin", "a strongly angular bone structure under the soft tissue: high, sharply defined cheekbones"],
+  ["angular, sculpted contours: defined cheekbones with slight hollows beneath them and a crisp jawline", "angular, sculpted contours: defined cheekbones and a crisp jawline", "an angular bone structure under the soft tissue: defined cheekbones"],
+];
+function sdFaceAngleFat(s) {
+  var v = sdFaceFatLv();
+  v &&
+    SD_ANGLE_FAT.forEach(function (a) {
+      s = s.split(a[0]).join(v >= 2 ? a[2] : a[1]);
+    });
+  return s;
+}
+function sdBeardFull() {
+  return sdBeardOn() && ["full", "long"].indexOf(e.facialHair) >= 0;
+}
+function sdBeardJaw(s) {
+  if (!sdBeardFull()) return s;
+  s = s
+    .split("full, rounded cheeks and a softer jawline, the face visibly fleshy").join("full, rounded cheeks, the face visibly fleshy")
+    .split("a round, fleshy face with plump cheeks, a soft jawline and the start of a double chin").join("a round, fleshy face with plump cheeks above the beard")
+    .split("a heavy, fleshy face with full jowls along the jaw and a clear double chin").join("a heavy, fleshy face with full jowls, the beard rounded over a double chin")
+    .split(", slightly sagging jawline").join("")
+    .split("sagging jawline and neck skin").join("sagging neck skin")
+    .split("strong, defined jawline").join("a strong jaw under the beard")
+    .split(" with visible corners").join(" under the beard")
+    .split(" with softly rounded corners").join(" under the beard")
+    .replace(/a clearly defined, (moderately wide|slender) jaw/g, "a $1 jaw under the beard")
+    .replace(/a clearly defined jaw(?=[,.;])/g, "a strong jaw under the beard")
+    /* v157 review 3: no chin shape asked under a beard that hides it (a mark on the chin set by hand stays) */
+    .replace(/, (?:a|an) (?:[a-z-]+,? (?:and )?){0,3}chin(?: of medium (?:projection|size))?(?=[,.;])/g, "")
+    .replace(/: (?:a|an) (?:[a-z-]+,? (?:and )?){0,3}chin(?: of medium (?:projection|size))?, /g, ": ")
+    .replace(/, a clean,? (?:clearly defined|smooth) line from the jaw to the neck/g, "")
+    .replace(/,? and (?:a )?(?:[a-z-]+,? ){0,2}jawline(?: and chin)?(?=[,.;:])/g, "")
+    .replace(/, (?:a )?(?:[a-z-]+,? ){0,2}jawline(?: and chin)?(?=[,.;:])/g, "")
+    .replace(/: (?:a )?(?:[a-z-]+,? ){0,2}jawline(?: and chin)?, /g, ": ")
+    .split("fine, natural facial hair texture").join("coarse, dense beard hair, its individual hairs visible");
+  return s;
+}
+/* v157 (user, photos in swimwear: "les poils ne suivent pas les cheveux, on doit pouvoir décider soit cheveux, soit noir, soit autre"):
+   "Comme les cheveux" said nothing where no amount of body hair was set, so the faint body hair every sheet asks for came in any color;
+   it is now said in the color of the hair when that color is named (not "Auto (âge)", typed by hand, platinum or bald, nor with a photo).
+   The peach fuzz of "Duvet" stays pale unless a color is chosen (fine vellus hair) */
+function sdHairBodyCol() {
+  if ("person" !== e.mode || sdChild(e) || e.photo || !sdBodyHairColOn() || (e.bodyHairColor && "auto" !== e.bodyHairColor)) return "";
+  if (t5(e.hairColorCustom) || "bald" === e.hairStyleSel || "auto" === e.hairColor || "platinum" === e.hairColor) return "";
+  return t1("hairColor", e.hairColor) || "";
+}
+/* v157b (GPT audit of v157, checked: "Set the feet hip-width apart." typed as a free retouch was copied as "Set the feet set wide, about
+   one and a half shoulder widths apart"): the final rewrites below (stance, arms, legs, beard, body hair color, face fat) are for the
+   app's own sentences; every text the user typed (retouch, outfit, marks, state, accessories, hair, colors, origin) is set aside while
+   they run, then put back as typed */
+var SD_USER_KEYS = ["outfitText", "eState", "marks", "acc", "top", "bottom", "shoes", "hairStyle", "originDetail", "skinCustom", "eyeColorCustom", "hairColorCustom", "name", "eName"];
+/* v157b review: a user text that is only a piece of one of the app's sentences below (for example "feet hip-width apart" or "hollow
+   cheeks" typed alone) is not set aside in the other prompts, so those sentences are still rewritten; in the prompt that holds the
+   retouch typed in card 3 ("iter") or the edit text (editHead, editBody), that text is always set aside */
+var SD_POSE_TARGETS = [
+  "feet hip-width apart", "faint body hair", "fine, natural facial hair texture", "legs with subtle muscle tone", "legs with defined but slim muscles", "with sharply defined, slim muscles",
+  "toned, not bulky thighs", "defined but not bulky thighs", "thighs that taper clearly to the knees, not bulky", " that taper clearly to the knees", " and taper to the knees",
+  "the upper outer thighs continue the curve of the hips, tapering to the knees", ", with a slight inward dip between the hip and the bulge", ", with a clear inward dip between the hip and the bulge",
+  "so each side of the outline shows a double curve, the hip and then the saddlebag below it, in the front and back views", " rather than one smooth, idealized curve",
+  " Front view: each side of the lower body shows the double curve, hip then saddlebag, never a single smooth curve.", " with a wide base,", ", its base covering most of the width of the chest in the front view",
+  "the inner thighs touching from the top down to just above the knees", "Neutral standing reference pose, weight on both feet, arms", ", little breast tissue",
+  /* the beard (sdBeardJaw), the slender bust and the straight legs */
+  "full, rounded cheeks and a softer jawline, the face visibly fleshy", "a round, fleshy face with plump cheeks, a soft jawline and the start of a double chin", "a heavy, fleshy face with full jowls along the jaw and a clear double chin",
+  ", slightly sagging jawline", "sagging jawline and neck skin", "strong, defined jawline", " with visible corners", " with softly rounded corners", ", a clearly defined jaw,", "a clearly defined, moderately wide jaw",
+  "a clearly defined, slender jaw", "a clearly defined jaw", "a clean, clearly defined line from the jaw to the neck", "a clean, smooth line from the jaw to the neck",
+  " with a wide base spanning the full width of the chest, its outer edges reaching the inner side of the upper arms in the front view", "; in the front view the bust fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms",
+  "in the front view it fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms, and ", "straight legs with little taper: the thighs, knees and calves close in width, a straight outline from the hips to the ankles",
+];
+function sdPoseFrag(x) {
+  return SD_POSE_TARGETS.concat(
+    SD_ARMS_M.map(function (a) {
+      return a[0];
+    }),
+    SD_ANGLE_FAT.map(function (a) {
+      return a[0];
+    }),
+  ).some(function (t) {
+    /* v157b review: without case, "Hollow cheeks" is a piece of "hollow cheeks" */
+    return t.toLowerCase().indexOf(x.toLowerCase()) >= 0;
+  });
+}
+function sdUserTxts(k) {
+  var o = [],
+    /* as typed, as the app cleans it (quotes, spaces, the end dots, the line breaks of an outfit text), and with its first letter in
+       capitals or not (the prompts open a sentence with it) */
+    add = function (x, all) {
+      x = String(x || "");
+      var v = [];
+      [x, t5(x), sdFreeClean(x)].forEach(function (z) {
+        z = z.trim();
+        [z, z.replace(/[.\s]+$/, "")].forEach(function (w) {
+          w.length >= 6 && v.indexOf(w) < 0 && v.push(w);
+        });
+      });
+      /* v157b review: one variant a piece of an app sentence, none of them set aside */
+      (all ||
+        !v.some(function (w) {
+          return sdPoseFrag(w);
+        })) &&
+        v.forEach(function (w) {
+          [w, w.charAt(0).toUpperCase() + w.slice(1), w.charAt(0).toLowerCase() + w.slice(1)].forEach(function (y) {
+            o.indexOf(y) < 0 && o.push(y);
+          });
+        });
+    };
+  SD_USER_KEYS.forEach(function (n) {
+    var v = "string" == typeof e[n] ? e[n] : "";
+    [v].concat(v.split(/\n+/)).forEach(function (x) {
+      add(x);
+    });
+  });
+  add(sdFreeText());
+  "iter" === k && add(e.sdIter, !0);
+  /* v157b review: the edit text only in its own slot of its own edit */
+  ("body" === e.fixImg ? "editBody" : "editHead") === k && t5(e.fixText) && add("«" + t5(e.fixText) + "»", !0);
+  return o.sort(function (a, b) {
+    return b.length - a.length;
+  });
+}
+function sdPoseTxt(s, k) {
+  if ("string" != typeof s || "person" !== e.mode || sdChild(e)) return s;
+  var keep = [];
+  sdUserTxts(k).forEach(function (x) {
+    s.indexOf(x) >= 0 && (keep.push(x), (s = s.split(x).join("\u0002" + (keep.length - 1) + "\u0003")));
+  });
+  s = sdPoseTxt0(s);
+  return keep.length
+    ? s.replace(/\u0002(\d+)\u0003/g, function (m, i) {
+        return keep[+i];
+      })
+    : s;
+}
+function sdPoseTxt0(s) {
+  /* v157b review: the face fat before the beard, whose jaw removal would hide the angularity sentence */
+  s = sdFaceAngleFat(s);
+  s = sdBeardJaw(s);
+  sdHairBodyCol() && (s = s.split("faint body hair").join("faint " + sdHairBodyCol() + " body hair"));
+  "light" !== e.armsOut &&
+    SD_ARMS_M.forEach(function (a) {
+      s = s.split(a[0]).join(a[1]);
+    });
+  var f = SD_FEET[e.feetW];
+  f && (s = s.split("feet hip-width apart").join(f));
+  /* v157 (user, his render with "Muscles apparents : jambes" on Marqués: "il y a presque aucune différence"): on slim thighs ("Fines",
+     "Très fines") the legs said "subtle muscle tone" (Présents) and "defined but slim muscles" (Marqués), weaker than the other sizes; now
+     what shows, the muscles staying slim (both engines, whatever came before them) */
+  s = s
+    .replace(/((?:lean,? )?(?:slender )?legs) with subtle muscle tone/g, "$1 with visible muscle, the quadriceps outlined above the knee and the calves visible")
+    .replace(/((?:lean,? )?(?:slender )?legs) with defined but slim muscles/g, "$1 with sharply defined, slim muscles, the quadriceps separations visible above the knee, the inner thigh muscle drawn and the calves sharp");
+  /* v157: "Droites": no taper said elsewhere */
+  "straight" === e.legShape &&
+    (s = s
+      .split(" that taper clearly to the knees").join("")
+      .replace(/[;,] the thighs (?:then )?taper(?: smoothly)? to the knees/g, "")
+      .split(" and taper to the knees").join("")
+      .split("the upper outer thighs continue the curve of the hips, tapering to the knees").join("the upper outer thighs continue the curve of the hips"));
+  /* v157 (his render): with muscular legs set, the defined leg muscles are no longer said slim */
+  sdLegMus() && (s = s.split("with sharply defined, slim muscles").join("with sharply defined muscles"));
+  /* v157 review: never "not bulky" next to muscular front thighs or sprinter's legs (GPT's leg definition) */
+  (+e.thighFront >= 3 || "sprinter" === e.legShape) &&
+    (s = s.split("toned, not bulky thighs").join("toned thighs").split("defined but not bulky thighs").join("defined thighs").split("thighs that taper clearly to the knees, not bulky").join("thighs that taper clearly to the knees"));
+  /* v157 review: full sides: the saddlebags keep their bulge, without the dip above it */
+  sdGlSide() >= 3 &&
+    (s = s
+      .replace(/, with a (?:slight )?dip above it/g, "")
+      .split(", with a slight inward dip between the hip and the bulge").join("")
+      /* v157 review: the marked saddlebags too, in both engines, and GPT's check of the double curve */
+      .split(", with a clear inward dip between the hip and the bulge").join("")
+      .split("so each side of the outline shows a double curve, the hip and then the saddlebag below it, in the front and back views").join("so each side of the outline widens again below the hip at the saddlebag, in the front and back views")
+      .split(" rather than one smooth, idealized curve").join("")
+      .split(" Front view: each side of the lower body shows the double curve, hip then saddlebag, never a single smooth curve.").join(""));
+  /* v157 review: a slender bust never said wide at the base; an athletic bust from "Généreuse" up keeps its tissue */
+  "slender" === e.bustShape &&
+    (s = s
+      .split(" with a wide base spanning the full width of the chest, its outer edges reaching the inner side of the upper arms in the front view").join("")
+      .split(", its base covering most of the width of the chest in the front view").join("")
+      .split(" with a wide base,").join(",")
+      .split("; in the front view the bust fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms").join("")
+      .split("in the front view it fills the whole width of the chest, its outer sides bulging past the ribcage against the inner arms, and ").join(""));
+  "athletic" === e.bustShape && e.chest >= 3 && (s = s.split(", little breast tissue").join(""));
+  /* v157 review: wide feet never next to thighs touching down to the knees */
+  "wide" === e.feetW && (s = s.split("the inner thighs touching from the top down to just above the knees").join("the inner thighs touching at the top"));
+  /* v157 review: the pose of "Mise en planche" (from photos) has no feet clause: the stance set is said there too */
+  f && (s = s.split("Neutral standing reference pose, weight on both feet, arms").join("Neutral standing reference pose, weight on both feet, " + f + ", arms"));
+  return s;
+}
+function sdPoseM(m) {
+  var o = {},
+    k;
+  for (k in m) o[k] = sdPoseTxt(m[k], k);
+  return o;
 }
 var SD_CHILD_LIMIT =
   "GENERATION LIMIT:\nProduce one image. Panels whose widths differ by more than about 10% are a missed requirement. If a requirement is clearly missed, regenerate at most three times (four images in total), fixing the most visible miss first and changing the image clearly each time. A generation stopped by the safety filter does not count: retry it once unchanged; after two stops in total, deliver the best image so far, say so and stop. Then deliver the best attempt and stop: no variations.";
@@ -639,16 +1743,21 @@ function sdChildHead(gpt) {
   var p = sdChildPos(),
     mk = sdChildMarks(),
     st = sdChildState(),
-    who = sdChildWho() + sdChildOrigin(),
-    id = sdChildA() + who + ", a fictional child character for a family film: " + t7("skin") + ", " + sdChildEyes() + ". " + t6(ne()) + ".\n" +
-      "Face, " + p + " own and kept exactly in every panel: " + sdChildFace() + ".\n" +
+    ph = sdChildPh(e),
+    who = sdChildWho() + (ph ? "" : sdChildOrigin()),
+    id = (ph
+      ? (gpt ? "The attached photo is the only source for this child's face and hair" : "Image 1 is a photo of this child, the only source for " + p + " face and hair") +
+        ": copy exactly " + p + " face, bone structure, eyes, eyebrows, nose, lips, ears, skin tone and texture, hair (cut, color, length and parting) and any visible mark, with their natural asymmetry; do not beautify, age, de-age or restyle them. Take only the face and hair from the photo: never its clothing, accessories, background, light or pose.\n" +
+        sdChildA() + who + ", a child character for a family film.\n"
+      : sdChildA() + who + ", a fictional child character for a family film: " + t7("skin") + ", " + sdChildEyes() + ". " + t6(ne()) + ".\n" +
+        "Face, " + p + " own and kept exactly in every panel: " + sdChildFace() + ".\n") +
       (mk ? "Distinctive marks, each on the stated side: " + mk + ".\n" : "") +
       (st ? "Current state, on the stated side: " + st + ".\n" : "") +
-      (sdChildHeadAcc() ? "Worn on the head and face, identical in every panel: " + sdChildHeadAcc() + ", plain and unbranded.\n" : "") +
+      (sdChildHeadAcc() ? "Worn on the head and face, identical in every panel: " + sdChildHeadAcc() + (sdFreeText() ? ".\n" : ", plain and unbranded.\n") : "") +
       "A natural, ordinary child's face with the soft features of that age and the slight asymmetry of a real face, no makeup.\n";
   if (!gpt)
     return (
-      sdChildLead() + ", 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin mid-grey gaps: an identity reference sheet of one fictional child character for a family film, the same child in all four panels.\n" +
+      sdChildLead() + ", 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin mid-grey gaps: an identity reference sheet of one " + sdChildFic() + "child character for a family film, the same child in all four panels.\n" +
       "Top left: front view, looking straight into the lens. Top right: three-quarter view, " + p + " face turned toward the left edge of the frame. Bottom left: exact profile facing the left edge of the frame, showing the left side of " + p + " face. Bottom right: back view, the back of " + p + " head seen straight from behind, no face visible" + sdBackHair() + ".\n" + sdChildCrop(0) +
       id + "\n" +
       "Calm, natural expression, mouth closed.\n\n" +
@@ -656,10 +1765,14 @@ function sdChildHead(gpt) {
       sdChildRender(0) + " No text, labels or watermark."
     );
   return (
-    "Create " + t9().noun + " to be used as an identity reference for AI video: four close-up studio views of the same original fictional child character, side by side in one image.\n\n" +
+    "Create " + t9().noun + " to be used as an identity reference for AI video: four close-up studio views of " + (ph ? "the same child, from the attached photo" : "the same original fictional child character") + ", side by side in one image.\n\n" +
     "CHARACTER:\n" +
-    (e.multiChar
-      ? "Several characters are created in this conversation. This one, " + ri() + ", is a different child from all of them: give " + ("m" === e.childSex ? "him" : "her") + " " + p + " own face and hair, and never reuse anyone from earlier images; the name is only for reference and never appears in the image.\n"
+    (ph
+      ? e.multiChar
+        ? "Several characters are created in this conversation. This one, " + sdChildRef() + ", is the child in the attached photo: never mix " + ("m" === e.childSex ? "him" : "her") + " with anyone from earlier images; the name is only for reference and never appears in the image.\n"
+        : "Use only the attached photo for this child, never anyone from earlier images in this conversation.\n"
+      : e.multiChar
+      ? "Several characters are created in this conversation. This one, " + sdChildRef() + ", is a different child from all of them: give " + ("m" === e.childSex ? "him" : "her") + " " + p + " own face and hair, and never reuse anyone from earlier images; the name is only for reference and never appears in the image.\n"
       : "This is a new, original child character: do not reuse the face or hair of anyone from earlier images in this conversation.\n") +
     id +
     nX + "\n\n" +
@@ -693,6 +1806,24 @@ function sdBodyPhotoAny(t) {
 /* v114 (UI audit): options a child is never offered */
 var SD_CHILD_OPT_OFF = { hairColor: ["saltpepper", "grey", "white"], hairStyleSel: ["receding"], shoesOpts: ["heels"] };
 function sdOpts(t, i) {
+  /* v137: "Objet" shows the object categories, "Lieu" the three kinds of place */
+  if ("objCat" === i && "object" === t.mode)
+    return sdIsPlace(t)
+      ? SD_PLACE_CAT_OPTS
+      : tZ.objCat.filter(function (o) {
+          return !sdPlaceCat(o[0]);
+        });
+  if ("glutesDefOpts" === i || "glutesDefOptsM" === i) {
+    var gv = Array.isArray(t.glutesDef) ? t.glutesDef : [],
+      own = tZ[i];
+    return own.concat(
+      tZ["glutesDefOpts" === i ? "glutesDefOptsM" : "glutesDefOpts"].filter(function (o) {
+        return gv.indexOf(o[0]) >= 0 && !own.some(function (x) {
+          return x[0] === o[0];
+        });
+      }),
+    );
+  }
   var off = sdChild(t) && SD_CHILD_OPT_OFF[i];
   return off
     ? tZ[i].filter(function (o) {
@@ -774,46 +1905,113 @@ function sdPhotoOnlyText(t) {
    head neckline and the body, in both engines and in "Habiller avec ma tenue". Never for a child or a baby (sdG clears it), never with the photo's
    clothes, never while the reference outfit dresses the body (nv). Empty: a plain everyday outfit, never the hidden choices. */
 function sdFreeOn() {
-  return "person" === e.mode && !sdChild(e) && !sdPhotoClothes() && !nv() && !!e.outfitFree;
+  return "person" === e.mode && !sdBaby(e) && !sdPhotoClothes() && !nv() && !!e.outfitFree;
 }
-function sdFreeText() {
-  if (!sdFreeOn()) return "";
-  var x = String(e.outfitText || "")
+/* the typed text as it goes into the prompt (v117: also read by the child check, so the words checked are the words sent) */
+function sdFreeClean(x) {
+  return String(x || "")
     .replace(/[«»]/g, "")
     .replace(/^[\s,;:\-–•*]+/, "")
     .replace(/[\s,;]*\n[\s,;\-–•*]*/g, "; ")
     .replace(/\s+/g, " ")
     .trim()
     .replace(/[\s.;,:!?…]+$/, "");
+}
+function sdFreeText() {
+  if (!sdFreeOn()) return "";
+  var x = sdFreeClean(e.outfitText);
   /* "random" alone is not an outfit: the plain one, as for an empty text */
   return /^(random|au hasard|hasard|al[ée]atoire)$/i.test(x) ? "" : x;
+}
+/* v116: the free outfit text names makeup (user's silver lounge set: "Light at-home evening makeup: thin black eyeliner..."): it replaces
+   the Maquillage setting in the prompts, which said "No makeup" at the same time */
+/* v157b (GPT audit of v157, checked: "red lipstick" changed to "black lipstick" in "Tenue en un seul texte" left the head signature
+   unchanged, since v130 the free outfit line is left out of it so a change of trousers is not a new face): the makeup parts of that text
+   (between commas and semicolons) are kept in the signature */
+var SD_MK_RX = /\bmake-?up\b|eye-?liner|\bwinged liner\b|mascara|\blipstick\b(?![- ](?:red|pink|rose|coral|nude|plum|berry|colou?red|tones?|toned|shade)\b)|\blip ?gloss\b|\blip ?(?:liner|stain|tint)\b|\b(?:red|pink|nude|dark|black|plum|berry|coral|matte|glossy|painted|bright|deep|wine|cherry)(?:,? (?:red|pink|nude|dark|black|plum|berry|coral|matte|glossy))? lips\b(?![- ]?(?:print\w*|logo|motif|pattern|patch|graphic|embroider\w*|badge|pin|appliqu\w*|tee|t-shirt|shirt|top|sweater|hoodie|bag|earrings?|pendant)\b)|\blips (?:painted|tinted|stained|glossed|lined)\b(?! on\b)|\bsmok[e]?y eyes?\b|\bfalse lashes\b|\blash extensions\b|eye ?shadow|\bblush\b(?![- ](?:pink|rose|red|peach|beige|nude|colou?red|tones?|toned|silk|satin|chiffon|linen|lace|dress|gown|top|shirt|blouse|skirt|suit|sweater|cardigan|jacket|coat)\b)|maquillage|rouge à lèvres|fard à|\bkhôl\b|\bkohl\b/i;
+var SD_MK_GARM = sdChildDict("gown gowns jumpsuit romper corset bodysuit heels pumps stilettos lingerie bra bikini swimsuit robe");
+function sdFreeMkSig() {
+  /* v157b reviews: each makeup word's clause, from the comma or semicolon before it to the one after it, cut at "and", "with", "over",
+     "under" (et, avec, sur, sous); a piece that names a garment and no makeup is left out ("a black slip dress and red lipstick" gives
+     "red lipstick"; "black and gold eyeshadow", "smoky eyes with silver shimmer", "lipstick in a deep berry shade", "deep red, glossy
+     lips" stay whole) */
+  var t = sdFreeText(),
+    out = [],
+    rx = new RegExp(SD_MK_RX.source, "gi"),
+    m;
+  while ((m = rx.exec(t))) {
+    var a = Math.max(t.lastIndexOf(",", m.index - 1), t.lastIndexOf(";", m.index - 1)) + 1,
+      r = t.slice(m.index + m[0].length).search(/[,;]/),
+      b = r < 0 ? t.length : m.index + m[0].length + r;
+    t.slice(a, b)
+      .split(/\s+(?:and|with|over|under|et|avec|sur|sous)\s+/i)
+      .forEach(function (p) {
+        p = p.trim();
+        p &&
+          (SD_MK_RX.test(p) ||
+            !p
+              .toLowerCase()
+              .split(/[^a-zà-ÿ]+/)
+              .some(function (w) {
+                return SD_CHILD_GARMD[w] || SD_MK_GARM[w];
+              })) &&
+          out.indexOf(p) < 0 &&
+          out.push(p);
+      });
+    rx.lastIndex = Math.max(rx.lastIndex, b);
+    m[0].length || rx.lastIndex++;
+  }
+  return out.join("; ");
+}
+function sdFreeMk() {
+  /* v130 (GPT audit of v129, checked: "a blush pink silk dress" took the "Soirée" makeup away): "blush" before a color, a fabric or a
+     garment is a color */
+  return SD_MK_RX.test(sdFreeText());
+}
+/* v116: a body copied from a photo ("Garder le corps tel quel") named part by part, so a loose garment does not slim or flatten it
+   (user: the bust disappeared under a cowl-neck camisole) */
+function sdAsIsShape() {
+  return (
+    " The same " +
+    ("m" === e.pres ? "shoulders, chest" : "shoulders, bust size, shape and hang") +
+    ", waist, hips, glutes, thighs and legs, the same muscle definition and skin: under the clothes they keep exactly this shape and size and read through the fit, and a loose garment drapes over them without flattening, hiding or slimming them."
+  );
 }
 /* the closing "no text" line of a prompt keeps the logos and prints the free outfit names */
 function sdFreeNoText(s) {
   return sdFreeText() ? String(s).replace(/\.$/, ", except any logo or print this outfit description names.") : s;
 }
-/* the Tenue tab box: the switch, then the text */
+/* the Tenue tab box: the switch, then the text; v117: a child's own keys (childOutfitFree, childOutfitText), and the reference outfit, which
+   never dresses a child, is not named for one */
 function sdFreeBox(t, g, L) {
+  var c = sdChild(t),
+    on = sdFreeSw(t),
+    ref = t.bodyRef && !c;
   return (0, l.jsxs)("div", {
-    className: "my-4 rounded-2xl border p-4 " + (t.outfitFree ? "border-[hsl(var(--tape))]" : ""),
+    className: "my-4 rounded-2xl border p-4 " + (on ? "border-[hsl(var(--tape))]" : ""),
     children: [
-      (0, l.jsx)(ax, { checked: !!t.outfitFree, onChange: (v) => g("outfitFree", v), children: "Tenue en un seul texte" }),
+      /* v116: with the reference outfit on, the label says which sheet the text dresses (user: both switches on looked like a bug) */
+      (0, l.jsx)(ax, { checked: on, onChange: (v) => g(c ? "childOutfitFree" : "outfitFree", v), children: ref ? "Tenue en un seul texte, pour « Habiller avec ma tenue »" : "Tenue en un seul texte" }),
       (0, l.jsx)("p", {
         className: "mt-2 text-sm text-muted-foreground",
-        children: t.outfitFree
-          ? t.bodyRef
-            ? "Ton texte remplace tous les choix de cet onglet pour la retouche « Habiller avec ma tenue » ; la planche corps garde la tenue de référence. Il part tel quel dans le prompt : écris-le en anglais de préférence. Vide : une tenue simple, unie."
+        children: on
+          ? ref
+            ? "Ton texte remplace tous les choix de cet onglet pour la retouche « Habiller avec ma tenue » ; les planches tête et corps gardent la tenue de référence. Il part tel quel dans le prompt : écris-le en anglais de préférence. Vide : une tenue simple, unie."
+            : c
+            ? "Ton texte remplace tous les choix de cet onglet, pour la tête et le corps : écris-le en anglais de préférence. Pour un enfant, seuls les mots de vêtements de tous les jours sont acceptés : un seul mot inconnu ou refusé (maillot, sous-vêtement, maquillage, talons, mini, court...) écarte tout le texte, il est signalé en rouge et une tenue simple de tous les jours est utilisée. Ce que le texte ne nomme pas est complété en vêtements de tous les jours."
             : "Ton texte remplace tous les choix de cet onglet, pour la tête et le corps, et part tel quel dans le prompt : écris-le en anglais de préférence. Vide : une tenue simple, unie."
           : "Pour décrire toute la tenue d'un coup, sans cocher chaque pièce.",
       }),
-      t.outfitFree &&
+      on &&
         (0, l.jsx)("textarea", {
           id: "c-outfitText",
           "aria-label": "Tenue en un seul texte",
           className: L + " min-h-[96px] resize-y",
-          placeholder: "ex. black leather biker jacket worn open over a white cotton t-shirt, straight dark blue jeans, black leather ankle boots, silver ring on the right hand",
-          value: t.outfitText || "",
-          onChange: (ev) => g("outfitText", ev.target.value),
+          placeholder: c
+            ? "ex. red rain jacket over a striped long-sleeve top, dark blue jeans, yellow rubber boots, a red baseball cap"
+            : "ex. black leather biker jacket worn open over a white cotton t-shirt, straight dark blue jeans, black leather ankle boots, silver ring on the right hand",
+          value: (c ? t.childOutfitText : t.outfitText) || "",
+          onChange: (ev) => g(c ? "childOutfitText" : "outfitText", ev.target.value),
         }),
     ],
   });
@@ -839,21 +2037,25 @@ function sdChildHlNow() {
 }
 function sdChildBodyHl(gpt, body, out, st) {
   var crop = "Each panel's top edge cuts across the base of the neck, just above the collar of the top: no chin and no face. Feet included, same scale and floor line in every panel, with some grey space below the feet.",
-    skin = "Skin tone on the hands, arms and neck: " + t7("skin") + "." + (["shoulder", "long", "vlong"].indexOf(e.hairLen) >= 0 ? " The part of the hair that falls below the neck shows: " + ne() + "." : "");
+    skin = sdChildPh(e)
+      ? "Skin tone on the hands, arms and neck, and any hair that falls below the neck: exactly as on the head sheet."
+      : "Skin tone on the hands, arms and neck: " + t7("skin") + "." + (["shoulder", "long", "vlong"].indexOf(e.hairLen) >= 0 ? " The part of the hair that falls below the neck shows: " + ne() + "." : "");
   if (!gpt)
     return (
-      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a body and costume reference turnaround of one fictional child character for a family film, framed from the neck down, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
-      crop + "\n\n" +
+      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a body and costume reference turnaround of one " + sdChildFic() + "child character for a family film, framed from the neck down, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
+      crop + "\n" +
+      (sdChildPh(e) ? "Image 1 is this child's head reference sheet: take only the skin tone and any hair that falls below the neck from it; the head itself is outside the frame.\n" : "") +
+      "\n" +
       body + " " + skin + "\n\n" + out + (st ? " Current state: " + st + "." : "") + "\n\n" +
-      "Neutral, relaxed standing pose, feet slightly apart, arms relaxed at the sides, hands visible.\n\n" +
+      "Neutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_CS + ".\n\n" +
       "Seamless mid-grey backdrop. Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
     );
   return (
-    "Create " + t9().noun + " to be used as a costume and character reference for AI video: four studio views of the body of the same fictional child character, framed from the neck down, side by side in one image.\n\n" +
-    "BODY:\n" + body + "\n" + skin + " If a head sheet of this child is earlier in this conversation or attached, take only the skin tone and any hair that falls below the neck from it; the head itself is outside the frame.\n\n" +
+    "Create " + t9().noun + " to be used as a costume and character reference for AI video: four studio views of the body of the same " + sdChildFic() + "child character, framed from the neck down, side by side in one image.\n\n" +
+    "BODY:\n" + body + "\n" + skin + " If a head sheet of this child is earlier in this conversation or attached, take only the skin tone and any hair that falls below the neck from it; the head itself is outside the frame." + (sdChildPh(e) ? " " + SD_CHILD_PH_BODY : "") + "\n\n" +
     "OUTFIT:\n" + out + (st ? "\nCurrent state: " + st + "." : "") + "\n\n" +
     "LAYOUT:\nA 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop. From left to right: front view, exact left side view, back view, exact right side view; the two side views face opposite directions. " + crop + "\n\n" +
-    "POSE:\nNeutral, relaxed standing pose, feet slightly apart, arms relaxed at the sides, hands visible. " + nX + "\n\n" +
+    "POSE:\nNeutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_C + ". " + nX + "\n\n" +
     "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + " Realistic hands with five fingers each.\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
@@ -869,22 +2071,22 @@ function sdChildBody(gpt) {
   if (e.childHeadless) return sdChildBodyHl(gpt, body, out, st);
   if (!gpt)
     return (
-      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a full-body costume reference turnaround of one fictional child character for a family film, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
+      sdChildLead() + ", 16:9, four equal vertical panels with thin grey gaps: a full-body costume reference turnaround of one " + sdChildFic() + "child character for a family film, the same child in every panel. Left to right: front; left side, facing the left edge; back; right side, facing the right edge; the two profiles face opposite ways.\n" +
       "Whole figure in every panel, hair to feet, same scale and floor line, with some grey space above the head and below the feet.\n" +
       "Image 1 is this child's head reference sheet: copy face, hair and skin tone exactly; ignore its layout and clothing.\n" +
-      "Hair exactly as in image 1: " + ne() + ", the same in every panel.\n\n" +
+      (sdChildPh(e) ? "Hair exactly as in image 1, the same in every panel.\n\n" : "Hair exactly as in image 1: " + ne() + ", the same in every panel.\n\n") +
       body + "\n\n" + out + (st ? " Current state: " + st + "." : "") + "\n\n" +
-      "Neutral, relaxed standing pose, feet slightly apart, arms relaxed at the sides, hands visible.\n\n" +
+      "Neutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_CS + ".\n\n" +
       "Seamless mid-grey backdrop. Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
     );
   return (
-    "Create " + t9().noun + " to be used as a costume and character reference for AI video: four full-body studio views of the same fictional child character, side by side in one image.\n\n" +
+    "Create " + t9().noun + " to be used as a costume and character reference for AI video: four full-body studio views of the same " + sdChildFic() + "child character, side by side in one image.\n\n" +
     "IDENTITY:\nThe head sheet (four head close-ups on a grey backdrop) earlier in this conversation is the identity anchor: match its face, hair and every visible mark exactly. If a head sheet is attached to this message, it is the anchor.\n" +
-    "Hair exactly as on the head sheet: " + ne() + ".\n\n" +
+    (sdChildPh(e) ? "Hair exactly as on the head sheet. " + SD_CHILD_PH_BODY + "\n\n" : "Hair exactly as on the head sheet: " + ne() + ".\n\n") +
     "BODY:\n" + body + "\n\n" +
     "OUTFIT:\n" + out + (st ? "\nCurrent state: " + st + "." : "") + "\n\n" +
     "LAYOUT:\nA 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop. From left to right: front view, exact left side view, back view, exact right side view; the two side views face opposite directions. Whole figure in every panel, from the top of the hair to the feet, at the same scale and on the same floor line, with some grey space above the head and below the feet.\n\n" +
-    "POSE:\nNeutral, relaxed standing pose, feet slightly apart, arms relaxed at the sides, hands visible. " + nX + "\n\n" +
+    "POSE:\nNeutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_C + ". " + nX + "\n\n" +
     "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + " Realistic hands with five fingers each.\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
@@ -1019,13 +2221,15 @@ function sdChildHair() {
   "shaved" === n.hairLen && (n.hairLen = "short");
   return n;
 }
-/* "Enfant au hasard": the child's own settings, face and hair at random, an everyday outfit; nothing of the adult body */
+/* "Enfant au hasard": the child's own settings, face and hair at random, an everyday outfit; nothing of the adult body.
+   v117: from a photo, the sex and age stay as set (they describe the child in the photo) */
 function sdChildRandom(s) {
   var n = Object.assign({}, s, SD_HEAD0, { faceSeed: rh(), faceGen: 2 }),
-    girl = Math.random() < 0.5,
+    ph = sdChildPh(s),
+    girl = ph ? "m" !== s.childSex : Math.random() < 0.5,
     prev = e;
   n.childSex = girl ? "f" : "m";
-  n.childAge = rY(3, 12);
+  ph || (n.childAge = rY(3, 12));
   n.childHeight = rK(["small", "avg", "avg", "tall"]);
   n.childBuild = rK(["slim", "avg", "avg", "sturdy"]);
   try {
@@ -1045,6 +2249,8 @@ function sdChildRandom(s) {
   n.top = n.bottom = n.shoes = n.acc = "";
   n.marks = "";
   n.eState = "";
+  /* v117 (reviews): the drawn outfit is what dresses the child, so the single text is switched off (its text kept) */
+  n.childOutfitFree = !1;
   return n;
 }
 function sdChildNote(t, gid) {
@@ -1055,14 +2261,28 @@ function sdChildNote(t, gid) {
     className: "my-4 rounded-2xl border p-4 text-sm",
     children: [
       "tenue" === gid
-        ? (0, l.jsx)("p", { className: "text-muted-foreground", children: "Enfant : toujours habillé avec la tenue choisie ici, en vêtements de tous les jours. Rien de coché : une tenue simple de tous les jours." })
+        ? (0, l.jsx)("p", {
+            className: "text-muted-foreground",
+            children: sdFreeSw(t)
+              ? "Enfant : toujours habillé avec ton texte, en vêtements de tous les jours. Texte vide ou refusé : une tenue simple de tous les jours."
+              : "Enfant : toujours habillé avec la tenue choisie ici, en vêtements de tous les jours. Rien de coché : une tenue simple de tous les jours.",
+          })
         : null,
       d.length
         ? (0, l.jsx)("p", {
             className: "mt-2 font-semibold text-destructive",
             children: sdT(
               "Ignoré pour un enfant (" + d.join(", ") + ") : seuls des vêtements de tous les jours et des signes ordinaires sont envoyés.",
-              "Ignored for a child (" + d.map(function (x) { return { tenue: "outfit", signes: "marks", "état du moment": "current state", cheveux: "hair", visage: "face", nom: "name" }[x] || x; }).join(", ") + "): only everyday clothes and ordinary marks are sent.",
+              "Ignored for a child (" + d.map(function (x) { return { tenue: "outfit", "tenue en un seul texte": "single-text outfit", signes: "marks", "état du moment": "current state", cheveux: "hair", visage: "face", nom: "name" }[x] || x; }).join(", ") + "): only everyday clothes and ordinary marks are sent.",
+            ),
+          })
+        : null,
+      d.length && sdChildBadWords(t).length
+        ? (0, l.jsx)("p", {
+            className: "mt-2 text-destructive",
+            children: sdT(
+              "Mots non acceptés pour un enfant : " + sdChildBadWords(t).join(", ") + ". Chaque champ n'accepte que ses mots courants (vêtements de tous les jours pour la tenue).",
+              "Words not accepted for a child: " + sdChildBadWords(t).join(", ") + ". Each field accepts only its everyday words (everyday clothes for the outfit).",
             ),
           })
         : null,
@@ -1215,22 +2435,88 @@ function sdHeadOutfit() {
     sdLining() + ", its plain hem ends just above the navel, no seams or bands across the front; seen from behind, the same top covers the upper back; mid-rise ankle-length cobalt-blue leggings whose waistband sits a few fingers below the navel, so the waist and navel show between them, the stretch fabric following the shape of the hips and glutes without flattening them; plain white training shoes"
   );
 }
-function sdPresetJoin() {
-  var a = +e.age || 30;
-  return sdJoinText(a + "-year-old " + (a < 21 ? "adult " : "") + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person"), sdPos());
+/* v127 (user: preparing image 1 is for Seedream only, make it clear; Nano Banana assembles well but smooths everything, flawless and
+   immaculate: a button to do it with Nano Banana, its own prompt, minding the body, forcing it to keep every detail and flaw): "Assembler"
+   can be written for Nano Banana (sdJoinFor). Image 1 as it is (no band), the figure scaled down evenly to make room for the head at an
+   adult's size (about 7.5 to 8 heads: Winter's head of 0.130 of the height is 7.7), and a long list of what must survive the edit,
+   since smoothing is what it does wrong. */
+function sdNanoJoin() {
+  return "join" === sdOp(e) && "nano" === e.sdJoinFor;
+}
+/* v134 (user: "assembler corps et tête dispo avec GPT aussi, car finalement aucun ne fait les choses bien mis à part Nano Banana";
+   "GPT dans le choix"): a third model for "Assembler", GPT Image 2.5, with the Nano Banana text (image 1 as it is, the figure scaled
+   down evenly, every flaw kept) plus what a GPT conversation needs: only the two attached images, the format, a measured check and a
+   limit on retries, as in the GPT head and body prompts. Not yet checked on renders. */
+function sdGptJoin() {
+  return "join" === sdOp(e) && "gpt" === e.sdJoinFor;
+}
+function sdJoinNoPrep() {
+  return sdNanoJoin() || sdGptJoin();
+}
+function sdJoinGptText(who, p) {
+  return (
+    sdJoinNanoText(who, p).replace("Combine these two reference sheets into one full-body reference sheet", "Combine the two reference sheets attached to this message into one full-body reference sheet") +
+    " Use only these two images, nothing from earlier images in this conversation. A 16:9 landscape image, like image 1." +
+    "\n\nProduce one image. Check by measuring, not by eye, in the front view: the head, top of the hair to the chin, 12.5 to 13.3% of the figure height, top of the hair to the soles (7.5 to 8 heads); the body, the outfit, the skin and every flaw as in image 1; the face as in image 2; the four panels laid out as in image 1. " +
+    "If a requirement is clearly missed, regenerate at most twice (three images in total), fixing the most visible miss first. A generation stopped by the safety filter does not count: retry it once unchanged. Then deliver the best attempt and stop."
+  );
+}
+function sdJoinNanoText(who, p) {
+  /* v128 review: a man's chest is never called a bust (sdRibs' rule), and no cellulite is listed for him */
+  var ch = "m" === e.pres || !(e.chest >= 1) ? "chest" : "bust";
+  return (
+    "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, cut at the collarbones; image 2 is " + p + " head. " +
+    "Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. " +
+    "From image 2 take only the face, hair and skin tone: ignore its layout, its framing, its scale and its three-quarter view. " +
+    "Proportions: scale each whole body down evenly, never stretched or reshaped, so the complete figure fits with the head; the head, top of the hair to the chin, is an adult's size for that body, the figure about 7.5 to 8 heads tall, with a natural neck joining it at the collarbones, never sized to image 2. The body keeps exactly its build, proportions, outfit and every shape of image 1. " +
+    "This is an unretouched photograph and must stay one: keep every detail and every flaw of both images exactly as they are, never smoothed, retouched, beautified, idealized or made symmetrical: " +
+    (sdPick(SD_FHAIR, "fHair") && "m" !== e.pres && "smooth" === e.fHair ? "the skin texture with its pores, fine lines" : "the skin texture with its pores, fine lines, " + (sdBodyHair() ? "body hair" : "faint body hair")) + ", redness and uneven tone; " + ("m" === e.pres ? "" : "cellulite, dimpling, ") + "stretch marks, soft folds, rolls and creases; moles, marks, scars and veins; " +
+    "the exact shape of the " + ch + ", belly, hips, glutes and thighs, including any sag, dip, flatness or asymmetry; the face exactly as in image 2, with its pores, lines and asymmetry, no makeup added. " +
+    "Same light, white balance and fine film grain as image 1; nothing airbrushed, plastic, glossy or doll-like. Where a detail is unclear, keep it as it is rather than cleaning it up. " +
+    "Framing, the same in every panel: the whole figure, top of the hair to the soles, with a band of plain grey backdrop above the hair and below the feet, nothing cut by the panel edges. Four panels laid out as in image 1, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
+  );
+}
+/* v134 review: with "Lunettes de vue" the joins take the glasses from the head sheet too */
+function sdJoinSpecs(x) {
+  return sdSpecsKey() && "string" == typeof x ? sdJoinGlasses(x) : x;
+}
+function sdJoinGlasses(x) {
+  return x.replace("take only the face, hair and skin tone:", "take only the face, hair, skin tone and glasses:").replace("same face, hair and skin tone as image 2", "same face, hair, skin tone and glasses as image 2");
+}
+function sdPresetJoin(nano) {
+  var a = +e.age || 30,
+    w = a + "-year-old " + (a < 21 ? "adult " : "") + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person"),
+    f = void 0 === nano ? e.sdJoinFor : !0 === nano ? "nano" : !1 === nano ? "seedream" : nano;
+  return sdJoinSpecs("nano" === f ? sdJoinNanoText(w, sdPos()) : "gpt" === f ? sdJoinGptText(w, sdPos()) : sdJoinText(w, sdPos()));
 }
 /* v101-v102: image 1 is cut at the collarbones and image 2 is a close-up sheet, so the figure is scaled down to make room for the head, framed with a margin (85% of the panel height) and given a head of one eighth of its height (8 heads, as in sdLegs); the three-quarter view of image 2 is not reused.
    Measured at the pixel (top of the hair, lower edge of the chin, soles): v101 text 6.7 to 7.0 heads; this text (6 results) 6.5 to 6.8 heads, so no gain on the head size,
    margins 1 to 3%, equal panels in 5 of 6. The text alone does not shrink the head: see the lessons file (canvas extended by 25% upward, to test) */
+/* v126 (user, two assembled sheets: "the body proportions are not right at all, it doesn't look like a human being"; audit measured at the
+   pixel on both: head, top of the hair to the lower edge of the chin, 0.155 of the height (6.4 to 6.5 heads) against 0.130 for an adult,
+   chin at 0.845 of the height against 0.870, shoulders at 0.795 against 0.818, chest at 0.72 as expected (Winter's proportions, quoted by
+   Yoo, Nixon and Harris 2002); below the chest the body is as asked (crotch 43.2% of the way down from the collarbones, 43% asked).
+   The head is too big and pushes the shoulders down. Same defect as v99 to v102 (9 sheets, 6.5 to 7.0 heads): asked in words, the
+   shrinking of the body is left to the model, which then fills the space it made with the close-up head of image 2.
+   Now the geometry is set in pixels: card 3 extends image 1 by 25% upward in the browser (sdPrepImage: a grey band above each body,
+   room for a neck and a head of 0.13 of the height, (1 - 0.818) / 0.818 = 22% plus a margin), and the prompt draws the head and neck in
+   that band without moving or resizing the bodies. To check on the user's next sheets, measured the same way. */
 function sdJoinText(who, p) {
-  return "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, image 2 is " + p +
-    " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck. Framing, the same in every panel: the whole figure, top of the hair to the soles, fills about 85% of the panel height, centred, with an equal band of plain grey backdrop above the hair and below the feet; nothing is cut by the panel edges. Head size: the head, top of the hair to the chin, is one eighth of the figure's height (the figure is 8 heads tall), sized to the neck and shoulders of image 1, not to image 2. Four panels of equal width, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark.";
+  return "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, cut at the collarbones, with an empty grey band above each body; image 2 is " + p +
+    " head. Keep the four views and their order from image 1 (front, left side, back, right side) and draw the matching head and neck from image 2 in the empty grey band above each body: the front face above the front view, an exact profile above each side view, facing the same way as that body, the back of the head above the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing, its scale and its three-quarter view. The bodies of image 1 stay exactly where they are, at the same size: never move, shrink or enlarge them. The neck joins each body at the collarbones and the head fits inside the band, the top of the hair a little below the top edge, sized to the shoulders of image 1, never to image 2. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. The four panels keep their widths from image 1, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark.";
 }
-/* Saved unedited presets: [0] v75 to v100, [1] v101, [2] this repository before v110b. */
+/* v151: the v126 to v150 text said "Four panels of equal width", which the sheets with the arms held out no longer have (sdPanelCuts):
+   kept to recognize it in saved sessions (sdJoinMigrate) */
+function sdJoinText150(who, p) {
+  return sdJoinText(who, p).replace("The four panels keep their widths from image 1, same scale", "Four panels of equal width, same scale");
+}
+/* older "Assembler" texts, kept to recognize them in saved sessions: [0] v75 to v100, [1] v101, [2] this repository before v110b, [3] v102 to v125 */
 function sdJoinOld(who, p, v) {
   return "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, image 2 is " + p +
     (2 === v
       ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view; on the left side view, the left profile from image 2; on the right side view, the right side of the face as shown in the three-quarter view of image 2, turned to an exact profile facing the right edge, never a mirror image of the left profile; the back of the head on the back view. Keep the body, outfit, proportions, skin texture and light of image 1 exactly, and the face and hair of image 2 exactly. Skin tone: image 2's tone over the whole body, so the neck shows no seam. Whole figure in every panel, hair to feet, same scale and floor line, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
+      : 3 === v
+      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck. Framing, the same in every panel: the whole figure, top of the hair to the soles, fills about 85% of the panel height, centred, with an equal band of plain grey backdrop above the hair and below the feet; nothing is cut by the panel edges. Head size: the head, top of the hair to the chin, is one eighth of the figure's height (the figure is 8 heads tall), sized to the neck and shoulders of image 1, not to image 2. Four panels of equal width, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
       : 0 === v
       ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, a profile on each side view facing the same way as that body, the back of the head on the back view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Whole figure in every panel, hair to feet, same scale and floor line, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
       : " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck: the head is drawn at natural adult size for that body, not at its size in image 2, and the whole figure, top of the head to the soles, is about 8 heads tall. Whole figure in every panel, hair to feet, with plain backdrop above the hair and below the feet: nothing touches or is cut by the panel edges. Same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark.");
@@ -1239,9 +2525,14 @@ function sdJoinOld(who, p, v) {
 function sdJoinMigrate(t) {
   var s = "join" === t.sdIterOp ? String(t.sdIter || "").trim() : "",
     m = /^Combine these two reference sheets into one full-body reference sheet of this ([^:]+): image 1 is (her|his|their) body/.exec(s);
-  if (m && (s === sdJoinOld(m[1], m[2], 0) || s === sdJoinOld(m[1], m[2], 1) || s === sdJoinOld(m[1], m[2], 2))) {
+  if (m && ([0, 1, 2, 3].some(function (v) { return s === sdJoinOld(m[1], m[2], v); }) || s === sdJoinText150(m[1], m[2]))) {
     t.sdIterPre === t.sdIter && (t.sdIterPre = sdJoinText(m[1], m[2]));
     t.sdIter = sdJoinText(m[1], m[2]);
+  }
+  /* v151 review: the v134 to v150 text with "Lunettes de vue" (sdJoinSpecs' words, applied here on the string: sdJoinSpecs reads e, not t) */
+  if (m && s === sdJoinGlasses(sdJoinText150(m[1], m[2]))) {
+    t.sdIterPre === t.sdIter && (t.sdIterPre = sdJoinGlasses(sdJoinText(m[1], m[2])));
+    t.sdIter = sdJoinGlasses(sdJoinText(m[1], m[2]));
   }
   return t;
 }
@@ -1256,7 +2547,7 @@ function sdPresetHeads() {
     p +
     " face as shown in the three-quarter view of image 2, turned to an exact profile, above the right side view, never a mirror image of the left profile, the rear of " +
     p +
-    " head above the rear body; same face, hair and skin tone as image 2, joined seamlessly to each neck"
+    " head above the rear body; " + (sdSpecsKey() ? "same face, hair, skin tone and glasses as image 2" : "same face, hair and skin tone as image 2") + ", joined seamlessly to each neck"
   );
 }
 function sdPos() {
@@ -1600,8 +2891,404 @@ var SD_GPT_NATURAL =
   "a natural teardrop bust line: a gently sloping upper part, the lower half slightly fuller, a slight natural drop; not round all over, not high";
 var SD_GPT_MARKED =
   "a heavy, low bust line with a clear natural drop that comes with age: the upper chest flat and slightly emptied below the collarbones, the volume settled in the lower half, the lowest point below the bottom of the ribcage, toward the waist; not round, not lifted, not high";
+/* v134 (user: "pour tombante il faut un curseur très tombante pour vraiment exagérer, une poitrine gant de toilette qui tombe sur le
+   ventre, c'est un vrai défaut, il faut réussir à le simuler"): "Chute de la poitrine", under "Forme de la poitrine", only with
+   "Tombante" chosen by hand (not the Auto tiers), a woman or an androgynous person with a bust, adults only. "Très tombante" is a severe
+   ptosis: the nipple below the fold under the breast and at its lowest point (Regnault grade 3, Martinez and Chung, StatPearls, 2023),
+   the breast emptied and long, lying on the belly; the levels on the belly are prompt landmarks, not measurements. Both engines. */
+function sdDropOn() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1 && "low" === e.bustShape && !e.sdAutoTier && !e.photo;
+}
+/* v136 (self-review: the outfit option still said "haut triangle" with "Très tombante"): the same test on the saved state, for the option label */
+function sdDropRaw(t) {
+  return !!t && "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && "low" === t.bustShape && "very" === t.bustDrop && !t.photo;
+}
+function sdDropX() {
+  return sdDropOn() && "very" === e.bustDrop;
+}
+/* v136 (self-review of v135, after the user's "Très tombante" + "Moyenne" sheet, "la poitrine c'est une catastrophe"): a B to C cup was
+   asked to reach a hand's width below the ribcage, onto the belly, a length its volume cannot hang to. The lowest point now goes down with
+   the size: a few fingers below the fold for "Menue", the bottom of the ribcage for "Moyenne", onto the belly from "Généreuse", the navel
+   at "Très généreuse" (prompt landmarks ordered by volume, not measurements) */
+var SD_DROP_LOW = [
+  "a few fingers' width below the fold under the bust",
+  "a few fingers' width below the fold under the bust",
+  "at the bottom of the ribcage",
+  "just below the bottom of the ribcage, touching the upper belly",
+  "a hand's width below the bottom of the ribcage, resting on the upper belly with a deep crease under it",
+  "resting on the belly about level with the navel, with a deep crease under it",
+];
+function sdDropLow() {
+  return "the lowest point " + SD_DROP_LOW[sdCi(e.chest)];
+}
+function sdDropUp() {
+  return sdPecsF() ? "the upper chest flat and firm with pectoral muscle" : "the upper chest flat and slightly hollow";
+}
+/* v135 (user, two Seedream sheets with "Très tombante", a "Moyenne" bust and the bikini: "la poitrine c'est une catastrophe"): the bikini
+   triangles came out as long, empty bags hanging from the neck tie. Two words did it: the breast said "like a soft, half-empty pouch",
+   an image the model gave to the fabric, and the triangles said to "cover each breast down to its lowest point and hang with it" (v134).
+   Now the breast is said by its skin and its shape, never as a pouch; and, the user's choice ("Top court ample"), with "Très tombante"
+   the tanga comes with the loose cropped top instead of the tied triangles, its fabric falling over the bust to its lowest point. */
+function sdDropSd() {
+  var c = sdCi(e.chest);
+  return c <= 1
+    ? "deflated and hanging, a real body flaw kept on purpose: the little volume emptied, the slack skin lying low against the ribs; " + sdDropUp() + "; " + sdDropLow() + ", the nipples pointing straight down; never lifted or firm"
+    : /* v136 (self-review): "little volume left" said next to "about an H cup"; the volume is said where it sits, its size kept */
+      "with a very strong natural drop, a real body flaw kept on purpose: deflated, emptied in the upper part, the volume settled at the bottom, the slack skin stretched down; " + sdDropUp() + "; " + sdDropLow() + "; in profile it hangs straight down, far below the fold under it; never lifted, round or firm";
+}
+function sdDropGpt() {
+  return "a very low, deflated bust line, a real body flaw kept on purpose: " + (sdCi(e.chest) <= 1 ? "the little volume emptied, the slack skin lying low against the ribs" : "each breast emptied in its upper part, the volume settled at the bottom, the slack skin stretched far down, below the fold under each breast") +
+    ", " + sdDropUp() + ", " + sdDropLow() + ", each breast pointing straight down at its lowest point; never lifted, round or firm";
+}
+/* the landmarks of a "Tombante" bust in the outfit and check texts of both engines (lowest point at the lower ribs or at elbow level, a hem
+   above the navel) follow "Très tombante" */
+function sdDropLm() {
+  return ["a few fingers' width below the fold under the bust", "a few fingers' width below the fold under the bust", "at the bottom of the ribcage", "just below the bottom of the ribcage, touching the upper belly", "a hand's width below the bottom of the ribcage, on the upper belly", "on the belly, about level with the navel"][sdCi(e.chest)];
+}
+function sdDropFix(txt) {
+  if (!sdDropX() || "string" != typeof txt) return txt;
+  var c = sdCi(e.chest),
+    lm = sdDropLm();
+  txt = txt
+    .replace("from the collarbone down to its lowest point at about the lower ribs, then hangs straight down", "from the collarbone down to its lowest point " + lm + ", then hangs straight down")
+    .replace("then the front sloping down to its lowest point just below the ribcage, at elbow level, never a high, rounded shelf.", "then the front sloping down to its lowest point " + lm + ", never a high, rounded shelf.")
+    .replace("its lowest point at the lower ribs; never lifted, round or high", "its lowest point " + lm + "; never lifted, round or high");
+  c >= 3 &&
+    (txt = txt
+      .split(", its plain hem ends just above the navel")
+      .join(", its plain hem ends a hand's width below the lowest point of the bust, covering it whole")
+      .replace("so the waist and navel show between them", "so a little skin shows between them")
+      .replace("and its heavy lower half reaches far forward and down, well beyond the line of the stomach", "and its heavy lower half hangs down onto the belly"));
+  /* v136 (self-review): from "Moyenne" up the lowest point reaches the bottom of the ribcage, the upper belly or the navel; a hem a hand's
+     width below it covered the navel or the abdomen said bare: the loose hem ends just below the bust (the Seedream loose top: sdLooseTop) */
+  c >= 2 &&
+    (txt = txt.replace(", ending on the upper abdomen, a hand's width below the bust, so the navel and the lower abdomen stay visible, hanging loose at the hem", ", ending just below the bust, so " + (c >= 3 ? "the lower abdomen stays" : "the navel and the lower abdomen stay") + " visible, hanging loose at the hem"));
+  return txt;
+}
+function sdDropM(m) {
+  if (!sdDropX() || "string" != typeof m.body) return m;
+  var o = {},
+    k;
+  for (k in m) o[k] = m[k];
+  /* v138: the loose top of the body sheet with a décolleté (the head sheet and the retouch texts keep their neckline) */
+  o.body = sdDropFix(m.body).split("a " + nm).join(sdDropNeck());
+  return o;
+}
+/* v134 (user: "on doit pouvoir ajouter en plus asymétrique ou non, car la plupart des poitrines des femmes sont asymétriques"; "Non /
+   Oui"): "Asymétrie de la poitrine" with every shape, "Très tombante" included, Auto too; the shape "Asymétrique" stays (saved sessions)
+   with its own text and hides it. The same words as that shape, in each engine. */
+var SD_ASYM_SD = "clearly asymmetric, the left side visibly fuller and slightly lower than the right in every view";
+var SD_ASYM_GPT =
+  "clearly asymmetric: the character's left side is visibly fuller and sits a little lower than the right side; in the front view the difference is easy to see, and in the left side view the bust projects further than in the right side view; models tend to make both sides identical, so keep this difference in every view";
+/* v157 (user: "il faut aussi des poitrines qui remontent très haut, là elle tombe toute finalement, et on devrait pouvoir cocher plusieurs
+   formes à la fois : une poitrine peut être très haute et athlétique", then "attention, tu as un double « écarté » … garde-le dans la forme
+   puisqu'on peut cliquer sur plusieurs à la fois"): "Forme de la poitrine" becomes one control where several can be ticked, one per
+   group: the shape (bustShape: Ronde, Goutte, En obus, Poire, Athlétique, Fine et allongée, Tombante; none ticked = Auto, by age), the
+   height (bustHigh: Haute, Très haute), the spacing (bustWide: Écartée "yes", Rapprochée "close", Vers l'extérieur "out", v157c Vers l'avant "fwd") and Asymétrique
+   (bustAsym). "Asymétrie" and "Écartement", their own controls since v134 and v140, are now in it. The saved shapes "high", "wide" and
+   "asym" (and the v157 preview's "close", "eastwest") are read into their group and keep their texts until the next click. A drooping,
+   pear or slender shape is never high: the height is not said with them. */
+var SD_BUST_POS = {
+  high: "set high on the chest, the upper part full just below the collarbones, the lowest point well above the bottom of the ribcage",
+  vhigh: "set very high on the chest and lifted: the upper part full right below the collarbones, the fullest point at about mid-upper-arm level, the lower crease well above the bottom of the ribcage; firm and natural, never implant-like",
+  close: "close-set: both sides sitting close to the center of the chest, little space between them, the inner edges nearly touching",
+  out: "each side angled outward, pointing away from the center of the chest toward the sides, a clear gap between them at the center",
+  /* v157c (user, on his reference: "c'est une poitrine qui goutte vers l'avant", the shape and the spacing groups gave no forward
+     projection): pointing ahead, the slight natural outward angle kept (his photos), the projection read in the side views */
+  fwd: "each side projecting straight forward, only slightly angled outward, the forward projection clear in the side views, never implant-like",
+};
+var SD_BUST_NOHIGH = ["low", "pear", "slender"];
+/* a drooping, pear, slender or athletic shape (flatter in profile) and a chute never point straight forward; v157c review: nor the conical
+   one, which already projects forward (and slightly down) in its own words */
+var SD_BUST_NOFWD = ["low", "pear", "slender", "athletic", "conical"];
+/* "Vers l'avant" said (sdMus then never says the bust soft and shaped by gravity, as with a height; GPT drops "gravity-affected"); v157c
+   review: read from the settings, not from the text */
+function sdBustFwdOn() {
+  return sdBustOk() && "fwd" === e.bustWide && SD_BUST_NOFWD.indexOf(e.bustShape) < 0 && !sdDropX() && e.chest >= 2;
+}
+/* "never implant-like" once in the bust phrase: the shape's own words may say it */
+function sdBustPosIn(x) {
+  return /never implant-like/.test(x || "") ? sdBustPos().split(", never implant-like").join("") : sdBustPos();
+}
+function sdBustOk() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1;
+}
+/* v157 review: a height is set (sdMus then never says the bust soft and shaped by gravity) */
+function sdBustHighOn() {
+  return /^set (?:very )?high/.test(sdBustPos());
+}
+function sdBustPos() {
+  if (!sdBustOk()) return "";
+  /* v157 review: no height below "Moyenne" (a nearly flat bust "set high, the upper part full" contradicts itself); "firm" never next to a
+     setting of "Peau de la poitrine" */
+  var h = SD_BUST_NOHIGH.indexOf(e.bustShape) >= 0 || sdDropX() || !(e.chest >= 2) ? "" : SD_BUST_POS[e.bustHigh] || "",
+    w = "close" === e.bustWide || "out" === e.bustWide ? SD_BUST_POS[e.bustWide] : "";
+  sdBustFwdOn() && (w = SD_BUST_POS.fwd);
+  /* "never implant-like" once */
+  "fwd" === e.bustWide && /never implant-like/.test(h) && (w = w.replace(", never implant-like", ""));
+  h && sdBustSkin() && (h = h.split("; firm and natural, never implant-like").join(", never implant-like"));
+  return [h, w].filter(Boolean).join("; ");
+}
+var SD_BUST_UI = [
+  ["round", "Ronde", "f"],
+  ["teardrop", "Goutte", "f"],
+  ["conical", "En obus", "f"],
+  ["pear", "Poire", "f"],
+  ["athletic", "Athlétique", "f"],
+  ["slender", "Fine et allongée", "f"],
+  ["low", "Tombante", "f"],
+  ["high", "Haute", "h"],
+  ["vhigh", "Très haute", "h"],
+  ["wide", "Écartée", "w"],
+  ["close", "Rapprochée", "w"],
+  ["out", "Vers l'extérieur", "w"],
+  ["fwd", "Vers l'avant", "w"],
+  ["asym", "Asymétrique", "a"],
+];
+/* the ticked items, read from the four keys (and the saved single shapes) */
+function sdBustSel(t) {
+  var f = t.bustShape,
+    o = [];
+  ["round", "teardrop", "conical", "pear", "athletic", "slender", "low"].indexOf(f) >= 0 && o.push(f);
+  ("high" === f || "high" === t.bustHigh) && o.push("high");
+  "vhigh" === t.bustHigh && o.indexOf("high") < 0 && o.push("vhigh");
+  /* v157 review: the spacing of a saved shape first, as the prompt says it */
+  var w = "wide" === f ? "wide" : "close" === f ? "close" : "eastwest" === f ? "out" : "yes" === t.bustWide ? "wide" : "close" === t.bustWide ? "close" : "out" === t.bustWide ? "out" : "fwd" === t.bustWide ? "fwd" : "";
+  w && o.push(w);
+  ("asym" === f || "yes" === t.bustAsym) && o.push("asym");
+  return o;
+}
+function sdBustClick(t, id) {
+  var sel = sdBustSel(t),
+    g = (SD_BUST_UI.filter(function (x) {
+      return x[0] === id;
+    })[0] || [])[2],
+    on = sel.indexOf(id) >= 0;
+  sel = sel.filter(function (x) {
+    var gx = (SD_BUST_UI.filter(function (y) {
+      return y[0] === x;
+    })[0] || [])[2];
+    return x !== id && (on || gx !== g);
+  });
+  on || sel.push(id);
+  /* a drooping, pear or slender shape and a height never together: the last click wins */
+  var nh = sel.some(function (x) {
+      return SD_BUST_NOHIGH.indexOf(x) >= 0;
+    }),
+    hh = sel.indexOf("high") >= 0 || sel.indexOf("vhigh") >= 0;
+  nh && hh && (sel = sel.filter(function (x) {
+    return SD_BUST_NOHIGH.indexOf(id) >= 0 ? "high" !== x && "vhigh" !== x : SD_BUST_NOHIGH.indexOf(x) < 0;
+  }));
+  /* v157c: "Vers l'avant" and a drooping, pear, slender or athletic shape never together: the last click wins */
+  var nf = sel.some(function (x) {
+    return SD_BUST_NOFWD.indexOf(x) >= 0;
+  });
+  nf && sel.indexOf("fwd") >= 0 && (sel = sel.filter(function (x) {
+    return SD_BUST_NOFWD.indexOf(id) >= 0 ? "fwd" !== x : SD_BUST_NOFWD.indexOf(x) < 0;
+  }));
+  var pick = function (gr) {
+    return sel.filter(function (x) {
+      return (SD_BUST_UI.filter(function (y) {
+        return y[0] === x;
+      })[0] || [])[2] === gr;
+    })[0] || "";
+  };
+  var w = pick("w");
+  return {
+    bustShape: pick("f") || "auto",
+    bustHigh: pick("h") || "auto",
+    bustWide: "wide" === w ? "yes" : w || "no",
+    bustAsym: pick("a") ? "yes" : "no",
+  };
+}
+/* v157 review: "Auto (âge)" clears the shape only; a saved "high", "wide", "asym", "close" or "eastwest" goes into its group first */
+function sdBustAuto(t) {
+  var sel = sdBustSel(t),
+    w = sel.indexOf("wide") >= 0 ? "yes" : sel.indexOf("close") >= 0 ? "close" : sel.indexOf("out") >= 0 ? "out" : sel.indexOf("fwd") >= 0 ? "fwd" : "no";
+  return { bustShape: "auto", bustHigh: sel.indexOf("high") >= 0 ? "high" : sel.indexOf("vhigh") >= 0 ? "vhigh" : "auto", bustWide: w, bustAsym: sel.indexOf("asym") >= 0 ? "yes" : "no" };
+}
+function sdBustChips(t, set, hint) {
+  if ("person" !== t.mode || sdChild(t) || "m" === t.pres || !(t.chest >= 1)) return null;
+  var sel = sdBustSel(t),
+    auto = !sel.some(function (x) {
+      return ["round", "teardrop", "conical", "pear", "athletic", "slender", "low"].indexOf(x) >= 0;
+    }),
+    cls = "relative inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ",
+    chip = function (id, lab, on, click) {
+      return (0, l.jsxs)(
+        "label",
+        {
+          className: cls + (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
+          "data-bust": id,
+          children: [
+            (0, l.jsx)("input", { type: "checkbox", className: "absolute inset-0 opacity-0 cursor-pointer", checked: on, onChange: click }),
+            sdTr(lab),
+          ],
+        },
+        id,
+      );
+    };
+  return (0, l.jsxs)("fieldset", {
+    className: "py-4 border-b last:border-0 min-w-0",
+    id: "sd-bust",
+    children: [
+      (0, l.jsx)("legend", { className: "float-left w-full font-semibold mb-3", children: sdTr("Forme de la poitrine") }),
+      (0, l.jsx)("div", {
+        className: "clear-both flex flex-wrap gap-2",
+        children: [
+          chip("auto", "Auto (âge)", auto, function () {
+            set(function (s) {
+              return Object.assign({}, s, sdBustAuto(s));
+            });
+          }),
+        ].concat(
+          SD_BUST_UI.filter(function (x) {
+            /* v157 review: the heights from "Moyenne" up, as the prompt says them; v157c: "Vers l'avant" too */
+            return ("h" !== x[2] && "fwd" !== x[0]) || t.chest >= 2;
+          }).map(function (x) {
+            return chip(x[0], x[1], sel.indexOf(x[0]) >= 0, function () {
+              set(function (s) {
+                return Object.assign({}, s, sdBustClick(s, x[0]));
+              });
+            });
+          }),
+        ),
+      }),
+      (0, l.jsx)("p", {
+        className: "mt-2 text-sm text-muted-foreground",
+        children: (0, l.jsx)(SdMore, {
+          text:
+            sdT(
+              "Coche plusieurs choix, un par groupe : la forme (Ronde, Goutte, En obus, Poire, Athlétique, Fine et allongée, Tombante), la hauteur (Haute, Très haute, dès « Moyenne »), l'écartement (Écartée, Rapprochée, Vers l'extérieur, Vers l'avant dès « Moyenne ») et Asymétrique. Goutte décrit le profil (le bas plus plein), pas l'orientation. Tombante, Poire et Fine et allongée ne vont pas avec une hauteur ; Tombante, Poire, Fine et allongée, Athlétique et En obus (déjà projetée vers l'avant) ne vont pas avec Vers l'avant. Sans forme cochée : Auto, selon l'âge, ronde avec une hauteur ou Vers l'avant.",
+              "Tick several, one per group: the shape (Round, Teardrop, Conical, Pear, Athletic, Slender, Drooping), the height (High, Very high, from “Average” up), the spacing (Wide-set, Close-set, East-west, Forward from “Average” up) and Asymmetric. Teardrop is the profile (the lower half fuller), not the direction. Drooping, Pear and Slender do not go with a height; Drooping, Pear, Slender, Athletic and Conical (already projecting forward) do not go with Forward. No shape ticked: Auto, by age, round with a height or Forward.",
+            ) + (hint ? " " + sdTr(hint) : ""),
+        }),
+      }),
+    ],
+  });
+}
+function sdAsymOn() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1 && "asym" !== e.bustShape && "yes" === e.bustAsym;
+}
+function sdAsymGpt(x) {
+  /* v140: "Écartement de la poitrine" first, then the skin of the bust, then the asymmetry */
+  /* v157: the height and the close-set or outward spacing before them */
+  x = sdBustPos() ? (x ? x + "; " : "") + sdBustPosIn(x) : x;
+  x = sdWideOn() ? (x ? x + "; " : "") + SD_WIDE_GPT : x;
+  x = sdBustSkin() ? (x ? x + "; " : "") + sdBustSkin() : x;
+  return sdAsymOn() ? (x ? x + "; " : "") + SD_ASYM_GPT : x;
+}
+/* v140 (user's reference photo: a low, teardrop bust that is also wide-set, two shapes the "Forme" choice kept apart): "Écartement de la
+   poitrine" with every shape but "Écartée" itself, the words of that shape in each engine */
+var SD_WIDE_SD = "wide-set, about a hand's width apart at the center, each side angled slightly outward";
+var SD_WIDE_GPT = "a wide-set bust line: a clearly wider space than average between the two sides at the center of the chest, about a hand's width, each side sitting toward the outer chest and angled slightly outward";
+/* v140 (user: "il peut y avoir aussi des plis sur la poitrine, la peau peut ne pas être tendue sur ce type de poitrine"): "Peau de la
+   poitrine" from "Moyenne" up, both engines; not with "Très tombante", whose text already says the slack skin. Words chosen away from
+   those that made Seedream block the drooping bust in v77 (lessons file): no "saggy", "breasts", "nipples", "hanging", "deflated" */
+/* v140 review: never "soft" (lessons file: 11 or more blocked every time), said only where the outfit leaves that skin bare (a skin texture
+   under the outfit pushed toward underwear, lessons §2) */
+var SD_BUST_SKIN = {
+  /* v144 (user's render: lines like stretch marks on the upper bust with "Souple"): no creases, the one fold where the bust rests */
+  soft: "the skin of the bust supple, settling with its weight, with a gentle fold only where the bust rests on the ribcage, wherever the outfit leaves it bare",
+  loose: "the skin of the bust relaxed, finely creased on the upper slope, with a gentle crease at the bottom, wherever the outfit leaves it bare",
+};
+function sdBustSkin() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && sdCi(e.chest) >= 2 && !sdDropX() && SD_BUST_SKIN[e.bustSkin] ? SD_BUST_SKIN[e.bustSkin] : "";
+}
+function sdWideOn() {
+  /* v157: never with the close-set shape */
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1 && ["wide", "close", "eastwest"].indexOf(e.bustShape) < 0 && "yes" === e.bustWide;
+}
+/* v134 (user, a GPT head sheet and a Seedream one with "Nez, largeur : Fin" and "Lèvres : Fines": "c'est tout sauf un nez fin, pareil pour
+   la bouche, ou alors il faut ajouter nez et bouche très fins"): "narrow nose" and "thin lips", two words in a list, drew an ordinary nose
+   with a full tip and wide nostrils. Said with landmarks a model can draw, in the head line both engines share (adults); "Très fin" and
+   "Très fines" below them. A nose as wide as the space between the inner corners of the eyes is the neoclassical canon, met by a minority
+   of real adults, the nose being most often wider (Farkas et al. 1985, as summarized by Al-Sebaei 2015): "Fin" asks that canon, "Très
+   fin" narrower. Not yet checked on renders. */
+var SD_NOSE_LM = {
+  /* v135 (user, two sheets with "Fin": "le nez fin ne marche toujours pas"; measured in the front view the width held, 1.0 and 0.75 of the
+     space between the inner corners of the eyes, but the tip came out round and fleshy and the nostrils showed): the tip and the nostril
+     wings said too */
+  narrow: " (a slim, straight bridge, a small tip with a fine, sharp outline, thin nostril wings close to the tip, the nostrils barely visible from the front: in the front view the nose is about as wide as the space between the inner corners of the eyes)",
+  xnarrow: " (a very slim, straight bridge, a very small tip with a fine, sharp outline, thin nostril wings close to the tip, the nostrils barely visible from the front: in the front view the nose is clearly narrower than the space between the inner corners of the eyes; in profile a fine, straight line down to the small tip)",
+};
+var SD_LIPS_LM = {
+  thin: "thin lips (a thin upper lip, the lower lip only slightly fuller, little red showing)",
+  xthin: "very thin lips (the upper lip a thin line, the lower lip thin too, both lying flat with very little red showing)",
+};
+/* v136 (self-review: the v135 nostril redness left out at one skin level only): with a fine nose, the redness of the skin lines of both
+   engines sits on the chin, never around the nose or the nostrils */
+function sdNoseSkin(x) {
+  return sdNoseLm() && "string" == typeof x ? x.replace("redness around the nose and chin", "redness on the chin").replace(", slight redness around the nostrils", "") : x;
+}
+function sdNoseM(m) {
+  /* v136 review: every prompt of the set (the GPT edit prompts carry the skin line too), not the head only */
+  if (!sdNoseLm()) return m;
+  var o = {},
+    k;
+  for (k in m) o[k] = sdNoseSkin(m[k]);
+  return o;
+}
+function sdNoseLm() {
+  var x = "person" === e.mode && !sdChild(e) ? SD_NOSE_LM[e.noseW] || "" : "";
+  /* v134 review: an aquiline or upturned profile set too: the bridge is not called straight */
+  x = x && ["aquiline", "upturned"].indexOf(e.noseP) >= 0 ? x.replace(", straight bridge", " bridge").replace("; in profile a fine, straight line down to the small tip", "") : x;
+  /* v135 review: an upturned tip shows the nostrils from the front */
+  return x && "upturned" === e.noseP ? x.replace(", the nostrils barely visible from the front", "") : x;
+}
+function sdLipsLm(x) {
+  return "person" === e.mode && !sdChild(e) && SD_LIPS_LM[e.lips] ? SD_LIPS_LM[e.lips] : x;
+}
+/* v134 (user: "ajoute un bouton dans Signes : lunettes de vue, avec différents styles et un Auto qui s'adapte en fonction de l'âge"):
+   "Lunettes de vue", adults, both engines, in the marks line of the head sheet and of a body sheet with the head (never a headless one).
+   Auto: two styles per age band, picked with the face draw (a style calibration, not a statistic). */
+var SD_SPECS = {
+  rect: "thin rectangular frames in dark metal",
+  round: "small round frames in thin gold metal",
+  square: "square frames in thick tortoiseshell acetate",
+  cat: "cat-eye frames in black acetate",
+  half: "half-rim frames with a thin dark browline on top and the lower edge of the lenses rimless",
+  rimless: "rimless frames, the lenses held by small screws, with thin metal temples",
+  big: "large, thick black acetate frames",
+};
+var SD_SPECS_AGE = [
+  [30, ["round", "square"]],
+  [50, ["rect", "square"]],
+  [65, ["half", "rect"]],
+  [1e3, ["rimless", "half"]],
+];
+/* v134 (user, three Seedream headless sheets with "wears prescription glasses" written in "Autres signes": "sur certaines images on voit
+   la tête"; the glasses and the chin showed above the collarbones): on a headless body sheet, the marks written by hand that belong to
+   the face or the head are left out, each part between commas or semicolons */
+var SD_FACE_MARK = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|eyebrows?|eyelids?|eyelashes|eyes?|lips?|nose|nostrils?|cheeks?|cheekbones?|chin|jaw|jawline|forehead|temples?|ears?|earlobes?|earrings?|face|facial|scalp|hairline|beard|moustache|mustache)\b/i;
+function sdBodyMarks(x) {
+  return String(x || "")
+    .split(/\s*[;,]\s*/)
+    .filter(function (p) {
+      return p && !SD_FACE_MARK.test(p);
+    })
+    .join(", ");
+}
+function sdSpecsKey() {
+  if ("person" !== e.mode || sdChild(e) || !e.specs || "none" === e.specs) return "";
+  if ("auto" !== e.specs) return SD_SPECS[e.specs] ? e.specs : "";
+  var a = +e.age || 30,
+    b = (
+      SD_SPECS_AGE.filter(function (x) {
+        return a < x[0];
+      })[0] || SD_SPECS_AGE[SD_SPECS_AGE.length - 1]
+    )[1];
+  return b[Math.abs(Math.floor(+e.faceSeed || 0)) % 2];
+}
+function sdSpecs() {
+  var k = sdSpecsKey();
+  return k ? "wears prescription glasses, " + SD_SPECS[k] + ", clear lenses with a faint natural reflection, the eyes clearly visible through them, the same glasses in every view, the temple arm running back over the ear in the profile" : "";
+}
 function sdAutoBust(t) {
   if (t.photo || "m" === t.pres || "auto" !== t.bustShape || !(t.chest >= 2)) return t;
+  /* v157: "Haute" or "Très haute" ticked without a shape: the young, round tier, never a drop; v157c review: "Vers l'avant" too (the
+     tiers of an older age give pear or drooping, never pointed forward) */
+  if ("high" === t.bustHigh || "vhigh" === t.bustHigh || "fwd" === t.bustWide) return Object.assign({}, t, { bustShape: "round", sdAutoTier: "young" });
   var a = +t.age || 30,
     sc = (a <= 25 ? 0 : a <= 35 ? 1 : a <= 50 ? 2 : a <= 65 ? 3 : 4) + (t.chest >= 4 ? 2 : t.chest >= 3 ? 1 : t.chest > 2 ? 0.5 : 0) + (t.fat >= 3 ? 1 : 0),
     tier = sc <= 1 ? "young" : sc <= 3 ? "natural" : sc <= 5 ? "moderate" : "marked";
@@ -1631,12 +3318,1021 @@ function sdForteFat(gpt) {
       : "") +
     "soft rolls on the back above the hips" +
     ("slim" === e.biceps ? "" : "; thick, soft upper arms") +
-    (e.thighs >= 3 ? "; thighs touching from groin to knees" : "")
+    (e.thighs >= 3 && !(sdPick(SD_THIGHGAP, "thighGap") && "gap" === e.thighGap) ? "; thighs touching from groin to knees" : "")
   );
 }
 var SD_FORTE_DETAIL = { "clearly visible collarbones": "softly padded collarbones", "a narrow ribcage": "a slightly wide ribcage", "a vertical, slit-like navel": "a deep, round navel", "bony, clearly drawn knees": "soft, rounded knees", "high calves with long lower tendons": "low, full calves", "slim ankles": "sturdy ankles", "long, slender fingers": "plump fingers" };
 function sdForteBuild(x) {
-  return 4 === e.fat && "slim" === e.biceps ? x.replace(" all over", "") : x;
+  x = 4 === e.fat && "slim" === e.biceps ? x.replace(" all over", "") : x;
+  /* v118: an athlete named for a slim build (dancer, swimmer, gymnast...) brings narrow hips and small glutes with it */
+  /* v128: soft fat in a zone ("Visible" or more) does not go with a slim athlete either */
+  x = sdCurvy() || SD_FAT_Z.some(function (z) {
+    return sdFatOn(z[0]) >= 2;
+  })
+    ? x.replace(/,? like an? (swimmer or a dancer|dancer|long-distance runner|rock climber|gymnast)(: [^.]*)?$/, "")
+    : x;
+  /* v119: at the top of the scale the slimness is the waist's */
+  /* v128 review: fat on the belly, flanks or back from "Visible" up: the build is slim, not lean or wiry, and never a fitness model's;
+     fat at the waist: never slim-waisted */
+  /* v136 (self-review: "Very lean and wiry" next to soft upper arms that sag): the soft upper arms too */
+  /* v139: the front of the thighs too */
+  x = sdFatTorso() >= 2 || sdArmFat() >= 2 || sdFatOn("fatThighs") >= 2 || sdFatOn("fatKnees") >= 2 ? x.replace(/^(very )?lean( and (wiry|sinewy))?\b/, "$1slim").replace(", like a fitness model", "") : x;
+  x = sdCurvyMax() && !sdFatWaist() ? x.replace(/^(very )?slim\b/, "$1slim-waisted") : x;
+  /* v130 (user: the fat did not show under "well-developed but lean muscles") */
+  x = SD_FAT_Z.some(function (z) {
+    return sdFatOn(z[0]) >= 2;
+  })
+    ? x.replace("well-developed but lean muscles", "well-developed muscles under a layer of soft fat")
+    : x;
+  /* v121 (user, from two v120 sheets: the glutes grew, the hips did not, and the body came out as a fitness model's, abs and veins
+     showing): at the top of the scale a slim woman with ordinary muscle is curvy, not "athletic" or "toned" */
+  return sdCurvyMax() && e.fat <= 1 && e.muscle <= 2 ? x.replace(/ and (lightly toned|athletic)$/, " and curvy") : x;
+}
+/* v121: in the front view the width of the hips is drawn by the upper thighs, so "slim" or "average" thighs cap it (the v120 sheets:
+   slim thighs with a gap between them, hips no wider than the shoulders); at the top of the hip scale the upper thighs are full and
+   carry that width (the user allowed fuller thighs), slimmer from mid-thigh down. Both engines. */
+var SD_THIGH_CURVE = "full upper thighs that touch at the top, their outer line continuing the curve of the hips, slimmer from mid-thigh to the knees";
+function sdThighCurve() {
+  return 4 === e.hips && sdCurvy() && e.thighs <= 2;
+}
+function sdThighs() {
+  /* v140: "Intérieur des cuisses" on "Écart": the full upper thighs no longer touch */
+  var x = sdThighs0();
+  return sdPick(SD_THIGHGAP, "thighGap") && "gap" === e.thighGap ? x.replace(" that touch at the top", "").replace(" touching at the top", "") : x;
+}
+function sdThighs0() {
+  return sdThighCurve()
+    ? /* v122: square glutes or hip dips: the outer line is not a curve from the hip into the thigh */
+      sdGlDefOn("dips")
+      ? "full upper thighs touching at the top, as wide as the hips below the dip, slimmer from mid-thigh down"
+      : sdGlDefOn("square")
+        ? "full upper thighs touching at the top, as wide as the hips, slimmer from mid-thigh down"
+        : SD_THIGH_CURVE
+    : t1("thighs", e.thighs);
+}
+/* v122 (user: the glutes always came out perfect; wanted malformed ones, by their name): "Fessiers : défauts", ticked on top of the
+   volume and the shape, adult person only (a child's Corps tab shows only the child's own controls). Names from plastic surgery: the
+   square frame of Mendieta's classification (the upper hip and the outer thigh standing out equally; Centeno and Bossert, "Gluteal
+   contouring and rejuvenation"), the depression on the side below the hip ("hip dips"; the retrotrochanteric depression, Lee, Roberts
+   and Bruner 2009), gluteal ptosis (the lower part drooping below the crease) with a transverse roll of fat just below the crease
+   ("banana roll", same 2009 paper). Both engines. */
+function sdGlDefOn(k) {
+  /* v157: "Fessiers : côtés" set (not Auto) decides the dip: Creux and Légèrement creux say it, Pleins and Très pleins take it away */
+  if ("dips" === k && sdGlSide() >= 0) return sdGlSide() <= 1;
+  /* v157 review: full sides never next to square sides; glute muscles from "Toniques" up never next to "Mous" */
+  if ("square" === k && sdGlSide() >= 3) return !1;
+  if ("soft" === k && +e.gluteMus >= 2 && "person" === e.mode && !sdChild(e)) return !1;
+  return "person" === e.mode && !sdChild(e) && (e.glutesDef || []).indexOf(k) >= 0;
+}
+/* v157 (user, his render with "Très bombés": "sur les côtés il doit pouvoir aussi être plus rempli, avec un curseur, regarde bien il y a un
+   creux"): "Fessiers : côtés", from a clear hollow on each side to very full sides, Auto in the middle (2, nothing said, as before); a
+   woman's or an androgynous person's (a man has his own flaw "Pleins sur les côtés"); -1 when Auto or not shown */
+/* v157 (user: "je dois pouvoir faire des jambes fuselées aussi, de coureur ; là les jambes ont toujours finalement la même forme"):
+   "Forme des jambes", the outline of the whole leg, after the thighs (both engines); the size of the thighs and of the calves keep their
+   own sliders: with "Mollets" set, the calves are its own, and the calves drawn at random go whenever a shape names them */
+/* v157 review: the shape of the leg, never its size (the thigh size set above stays), and the quadriceps of "Puissantes" left to "Cuisses :
+   avant" when it is set */
+var SD_LEGSHAPE = {
+  runner: ["long, tapered runner's legs: lean, elongated thigh muscles, the thighs narrowing steadily from the hips to slim knees", "; high, compact calves and slim ankles"],
+  sprinter: ["powerful sprinter's legs: muscular thighs%q, the legs tapering firmly to the ankles", "; thick, muscular calves"],
+  straight: ["straight legs with little taper: the thighs, knees and calves close in width, a straight outline from the hips to the ankles", ""],
+  curvy: ["shapely legs: rounded upper thighs, a clear inward curve at the knees", "; rounded calves and slim ankles"],
+};
+/* v157 (ui_v157): the calves of a shape after a semicolon, never read as part of "within the thigh size set above" */
+function sdLegShape() {
+  var x = sdPick(SD_LEGSHAPE, "legShape");
+  /* v157 (user, his render with these sliders near the top: "j'ai toujours des jambes qui sont les mêmes … les mollets qui doivent être
+     musclés, ça se voit pas"): the calves set by "Mollets" said here, with the legs, no longer at the end of the body details */
+  /* v157b (GPT audit of v157, checked: "Droites" with "Cuisses" Très fortes and "Mollets" Minces said the thighs, knees and calves close in
+     width): with the calves set, "Droites" says the straight axis of the leg, the widths left to the thighs and calves set */
+  x && "straight" === e.legShape && +e.calves >= 1 && (x = ["straight legs: no inward curve at the knees, each leg running straight down from the hip to the ankle", ""]);
+  var t = x ? x[0].replace("%q", +e.thighFront >= 1 ? "" : " with a visible sweep of the quadriceps above the knee") + ", within the thigh size set above" + (+e.calves >= 1 ? "" : x[1]) : "";
+  /* v157 review: "Forte" or soft knees: no lean muscles, slim knees or slim ankles said with the shape */
+  (+e.fat >= 3 || sdFatOn("fatKnees") >= 2) && (t = t.split("to slim knees").join("to the knees"));
+  +e.fat >= 3 && (t = t.split("lean, elongated").join("elongated").split(" and slim ankles").join(""));
+  return [t, sdThighFront(), sdCalvesTxt()].filter(Boolean).join("; ");
+}
+function sdCalvesTxt() {
+  return "person" === e.mode && !sdChild(e) && +e.calves >= 1 ? t1("calves", Math.min(4, Math.round(+e.calves))) : "";
+}
+/* v157 (same render): Seedream weights the start of the prompt most (Runware, Seedream prompting guide, v129): muscular legs or glutes
+   set by these sliders are also said in the first sentence, with the age, height and weight */
+function sdLegMus() {
+  return "person" === e.mode && !sdChild(e) && ("sprinter" === e.legShape || +e.thighFront >= 3 || +e.calves >= 3);
+}
+function sdLegLead() {
+  var l = sdLegMus(),
+    g = "person" === e.mode && !sdChild(e) && +e.gluteMus >= 3;
+  return l || g ? ", with strong, muscular " + (l && g ? "legs and glutes" : l ? "legs" : "glutes") : "";
+}
+/* the shape names the ankles (runner, shapely), "Mollets" left on Auto: the drawn ankles go */
+function sdLegAnkles() {
+  var x = sdPick(SD_LEGSHAPE, "legShape");
+  return !!x && !(+e.calves >= 1) && /ankles/.test(x[1]);
+}
+/* v157 (user: "il faut que je puisse changer l'avant de la jambe, le haut de la cuisse, qui est finalement toujours pareil quel que soit le
+   curseur"): "Cuisses : avant", the front of the thighs in profile, from flat to a powerful quadriceps sweep (Auto: nothing written);
+   said with the leg shape (sdLegShape), both engines and the body text of "Itérer" and of a locked edit */
+var SD_THIGHFRONT = [
+  "",
+  "the front of the thighs flat, running almost straight from the hip to the knee in profile",
+  "the front of the thighs gently rounded in profile, a soft forward curve from the hip to the knee",
+  "muscular front thighs: the quadriceps rounded and bowing forward in profile, the inner teardrop muscle visible just above the knee",
+  "very muscular front thighs: a powerful sweep of the quadriceps, the front of the thigh bowing clearly forward in profile and widening the outer thigh in the front view, the inner teardrop muscle bulging above the knee",
+];
+function sdThighFront() {
+  return "person" === e.mode && !sdChild(e) ? SD_THIGHFRONT[Math.max(0, Math.min(4, Math.round(+e.thighFront || 0)))] || "" : "";
+}
+function sdGlSide() {
+  var v = Math.round(+e.glutesSide);
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && !isNaN(v) && 2 !== v && v >= 0 && v <= 4 ? v : -1;
+}
+/* v156 (user: "les fessiers défaut pour les hommes c'est pas les mêmes"): a man's list (glutesDefOptsM). A shallow hollow on the side of a
+   man's glutes (the trochanteric depression) is the look rated most attractive for men, not a flaw (Kollu et al., Plastic and
+   Reconstructive Surgery, December 2023, via HealthDay, 3 January 2024): so no "Creux sur les côtés" offered to a man, and its opposite,
+   the sides filled out with no hollow, is one of his flaws; no "Carrés" either (a man's frame is commonly square). "Tombants" is shared.
+   v156 review: a flaw ticked from the other list (a man saved by v155 with "Carrés", a character whose presentation changed) is still
+   said, as before, and shown after the list (sdOpts) so it can be unticked. */
+/* a sagging glute is never high */
+function sdGlShape(x) {
+  return sdGlDefOn("sag") ? String(x).replace(/\b(very )?high and /, "") : x;
+}
+function sdGlDef() {
+  var a = [];
+  sdGlDefOn("square")
+    ? a.push("square from behind, the sides running almost straight into the thighs" + (sdGlDefOn("dips") ? (0 === sdGlSide() ? " apart from a clear hollow below each hip" : " apart from a shallow dip below each hip") : ""))
+    : sdGlDefOn("dips") && a.push(0 === sdGlSide() ? "a clear hollow on each side between the hip and the thigh" : "a shallow dip on each side between the hip and the thigh");
+  /* v157 review: with visible or marked saddlebags, filled out down to the saddlebag, which keeps its bulge */
+  var sb = rM() && "light" !== e.saddle;
+  3 === sdGlSide() && a.push(sb ? "full at the sides, the glutes and hips rounded outward from the hip down to the saddlebag, no hollow between them" : "full at the sides, the glutes and hips rounded outward between the hip and the thigh in one smooth curve");
+  4 === sdGlSide() && a.push(sb ? "very full at the sides: the side of the hips and glutes filled out from the waist down to the saddlebag, no hollow between them, in the front and back views" : "very full at the sides: the side of the hips and glutes filled out in one round, continuous curve from the waist to the thigh in the front and back views");
+  sdGlDefOn("sag") &&
+    a.push("low" === e.glutesShape ? "a soft roll of fat just below the crease on each thigh" : "the lower part drooping over the crease, a soft roll of fat just below it on each thigh");
+  /* v156: a man's own flaws */
+  sdGlDefOn("full") && a.push("full at the sides, rounded out between the hip and the thigh, with no hollow on the side");
+  /* v157 (user: "il faut aussi des muscles dans les fessiers, car la partie sur le côté des fessiers peut être très musclée ; là il n'y a pas
+     de curseur, du coup ça donne un creux au niveau des fesses sur les côtés"): "Fessiers : muscles", the gluteus maximus and, from
+     "Musclés", the gluteus medius filling the upper side of each hip (no hollow there, unless "Fessiers : côtés" sets one). Both engines,
+     the body text of "Itérer" and of a locked edit too (with the flaws, sdGlDef) */
+  var gm = "person" === e.mode && !sdChild(e) ? Math.max(0, Math.min(4, Math.round(+e.gluteMus || 0))) : 0,
+    hollow = sdGlDefOn("dips");
+  gm &&
+    a.push(
+      [
+        "",
+        /* v157c (user: "je ne peux pas dire plein et doux, ça existe pas"): "Doux", supple flesh, never loose, unless another setting makes the
+           glutes sag (a man's "Mous", "Tombants", the low shape, glute fat from "Marquée", the "Forte" build); no "soft" added (the filter,
+           lessons 1) */
+        "smooth, supple glutes with little muscle tone" + (sdGlDefOn("soft") || sdGlDefOn("sag") || "low" === e.glutesShape || sdFatOn("fatGlutes") >= 3 || 4 === +e.fat ? "" : ", never loose or sagging"),
+        "toned, firm glute muscles",
+        "muscular glutes: a firm, well-developed gluteus maximus, and the gluteus medius visibly full on the upper side of each hip" + (hollow ? "" : ", filling it into a smooth, full curve"),
+        "very muscular glutes: a powerful, sharply shaped gluteus maximus and a thick gluteus medius bulging on the upper side of each hip" + (hollow ? "" : ", the side of the hips full and firm") + ", as on a sprinter or a weightlifter",
+      ][gm],
+    );
+  sdGlDefOn("soft") && a.push("soft and untoned, little muscle under the skin, the shape slightly loose");
+  return a.join("; ");
+}
+/* v122: with a flaw ticked the glutes are plainly natural: "naturally shaped, not surgically enhanced" goes (word budget) */
+function sdGlNat(x) {
+  return sdGlDef() ? String(x).replace("; naturally shaped, not surgically enhanced", "") : x;
+}
+/* v122 (user: from a description, Seedream never draws very large glutes or very wide hips, but it enlarges them at once in an edit of the
+   body sheet it generated): with "Très gros" glutes or "Très larges" hips, card 2b gives that edit, to run on the body sheet of card 2
+   (Seedream, native adult person only: where card 3 exists) */
+/* v144 (user, card 2b on his render: "c'est toujours pas comme la fille"; the waist kept, the width added down the whole thigh): with the
+   hourglass (sdHourglass) card 2b also exists from "Larges" hips, and narrows the waist as it widens the hips */
+function sdGrowOn(t) {
+  return "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) && (4 === +t.hips || 4 === +t.glutes || rq(t, sdHourglass));
+}
+/* v143 (user: "quand on choisit le max, mettre un mot qui dit : si on veut plus, cliquer Agrandir"): the hint of "Hanches" and "Fessiers :
+   volume" at the top of the scale, where card 2b exists (sdGrowOn). His three renders kept the hips at about 1.4 times the waist in the
+   front view whatever the text asked (v143 lessons), the v121 sheets too. */
+function sdGrowHint(k) {
+  /* the first sentence is the one shown before "Plus" (SdMore cuts at the first . ! ? » or ")"): the whole step, no quote marks in it */
+  if (!sdGrowOn(e) || 4 !== +e[k]) return "";
+  return "hips" === k
+    ? sdT("Au maximum : pour des hanches plus larges, génère la planche corps, puis clique sur Agrandir et lance ce prompt dans Seedream sur l'image obtenue, une ou deux fois. Seedream ne va guère plus loin à partir du texte seul (carte 2b, retouche de la planche).",
+        "At the maximum: for wider hips, generate the body sheet, then click Enlarge and run that prompt in Seedream on the image you got, once or twice. Seedream goes hardly further from the text alone (card 2b, an edit of the sheet).")
+    : sdT("Au maximum : pour des fessiers plus gros, génère la planche corps, puis clique sur Agrandir et lance ce prompt dans Seedream sur l'image obtenue, une ou deux fois. Seedream ne va guère plus loin à partir du texte seul (carte 2b, retouche de la planche)." + (sdHourglass() ? " Avec le sablier, cette retouche affine aussi la taille et élargit les hanches." : ""),
+        "At the maximum: for larger glutes, generate the body sheet, then click Enlarge and run that prompt in Seedream on the image you got, once or twice. Seedream goes hardly further from the text alone (card 2b, an edit of the sheet)." + (sdHourglass() ? " With the hourglass, that edit also narrows the waist and widens the hips." : ""));
+}
+function sdGrowPrompt() {
+  var hg = sdHourglass(),
+    h = 4 === +e.hips,
+    g = 4 === +e.glutes,
+    p = "m" === e.pres ? "his" : "f" === e.pres ? "her" : "their",
+    a = [],
+    f = [];
+  /* v123 (user: "Agrandir" is a bit too much, 25% less): every amount one step down ("much" to "noticeably", "clearly wider" to "wider",
+     "much further" to "further"), "a moderate step" said, and "at the top of what real bodies show" removed, since it pushed toward the
+     maximum. Wording, not a measured 25%: a text prompt sets no exact amount; a step too small is run again (card 2b, step 3). */
+  /* v144: the hourglass, the waist narrowed and the width added at the top of the hips, the thighs tapering to the knees */
+  hg
+    ? a.push(
+        /* the narrowest point where "Hauteur de la taille" puts it (the body prompt says the same); the inner thighs before the taper */
+        /* review: "wider than the shoulders" only where the body says so; the widest point as "Point le plus large des hanches" says
+           ("Haut" has no effect at "Très larges", sdHipPos); the inner thighs as "Intérieur des cuisses" says, nothing on "Auto" */
+        /* v145 (user, on two edits of his sheet: "ça me semble pas réaliste en agrandissant, c'est bizarre"; measured: the hips +7 and
+           +15%, the waist -4 and -5%, but pinched just above the bikini line and flaring at once, the upper thighs bulging): the waist
+           curving in smoothly, the hips widening gradually and, without a dip, saddlebags or square glutes (which break that outline, as
+           in sdHipPos), one long curve down to the knees with the width spread along the thighs; "Haut" keeps its curve just below the
+           waist, as the body prompt says */
+        "in the front and back views the sides of the torso curve in smoothly to the narrower waist, its narrowest point " +
+          ("high" === e.waistPos ? "just below the ribs" : "low" === e.waistPos ? "close to the top of the hips" : "a little above the navel") +
+          ("high" === e.hipPos && 4 !== +e.hips ? ", then curve out just below the waist into the hips, widest at the hip bones" : sdHipFlare() ? ", then swing out in a full, rounded curve that starts just below the navel, already far wider than the waist a hand's width below it, widest at the top of the thighs" : ", then widen gradually into the hips, widest at the top of the thighs") +
+          (+e.shoulders < +e.hips ? " and wider than the shoulders" : "") +
+          /* v145 review: not with "Haut" (its width at the hip bones, as sdHipPos says it without the sweep); the width on the hips and the
+             upper thighs, fading toward the knees (the v144 card put it down the whole thigh: a heavy pear) */
+          (("high" === e.hipPos && 4 !== +e.hips) || sdHipFlare() || sdGlDefOn("dips") || sdGlDefOn("square") || rM() ? "" : ", the outline one long, smooth curve from the waist down to the knees, the extra width spread over the hips and upper thighs, fading out toward the knees") +
+          "; " +
+          ({ touch: "the inner thighs touching at the top, ", touchlong: "the inner thighs touching from the top down to just above the knees, " }[sdPick(SD_THIGHGAP, "thighGap") ? e.thighGap : ""] || "") +
+          "the thighs then taper smoothly to the knees",
+      )
+    : h && a.push("in the front and back views the hips and upper thighs become wider than the shoulders" + (sdHipFlare() ? ", swinging out in a full, rounded curve that starts just below the navel" : "") + ", the upper thighs fuller" + (sdPick(SD_THIGHGAP, "thighGap") && "gap" === e.thighGap ? "" : " and touching at the top"));
+  g && a.push("in the side views the glutes project further behind the lower back" + (h || hg ? "" : ", and from behind they fill the whole width of the hips"));
+  /* v122 (user: with this prompt, never a caricature; every flaw kept, even made stronger: with glutes that big, flaws are a must).
+     v144 (user: "de la cellulite, de la graisse, je n'ai jamais demandé ça"): every flaw kept at its strength, none made stronger */
+  sdGlDefOn("square") && f.push("the glutes stay square from behind, the sides almost straight into the thighs");
+  sdGlDefOn("dips") && f.push("the dip below each hip stays, next to the wider hips");
+  sdGlDefOn("sag")
+    ? f.push("the lower part keeps its droop, its long crease and the roll of fat just below it")
+    : "low" === e.glutesShape && f.push("the glutes stay low and heavy, fullest just above the crease, never lifted");
+  return (
+    "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + ": make " + p + " " +
+    (hg ? "waist noticeably narrower and " + p + " hips noticeably wider" + (g ? ", and " + p + " glutes noticeably larger" : "") : h && g ? "hips noticeably wider and " + p + " glutes noticeably larger" : h ? "hips noticeably wider" : "glutes noticeably larger") +
+    /* v145: with the hourglass, a small step (the user found two moderate steps unrealistic); run again if it is not enough */
+    " in all four views, " + (hg ? "a small step" : "a moderate step") + ", by the same amount in every view: " + a.join("; ") + "." +
+    /* v144 (user: "quand on agrandit c'est horrible, de la cellulite apparaît, de la graisse, je n'ai jamais demandé ça"): the added
+       volume is flesh like the rest of the body, the skin and its flaws kept at the strength image 1 has (v122 made them grow) */
+    " The result stays a believable real body, never a cartoon, inflated or caricatured shape: the added volume is natural flesh that settles with gravity like the rest of the body." +
+    " The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength, simply following the new shape" +
+    (f.length ? "; " + f.join("; ") : "") + "." +
+    /* v145 (tested on his sheet): wider hips need room beside the arms, which "Keep the arms" and "pose" pinned against the body; and
+       the edit turned the full-coverage top into a plunging one ("same cut and coverage" not kept): every garment said */
+    " Keep " + (nw() ? "" : "the head and face, ") +
+    (hg ? "the bust, the shoulders, the knees, the lower legs" : "the waist, the upper body, the lower legs") +
+    " and everything else exactly as in image 1: framing, pose" + (hg || h ? " (the arms may move outward just enough that a clear gap of backdrop still shows between each arm and the wider hips and thighs)" : "") +
+    /* v145 review: every garment, not "top and bottom" (a shirtless man, a one-piece swimsuit, the user's own outfit) */
+    ", skin tone, marks, outfit (" + ("m" === e.pres ? "the same garments as in image 1, with the same cut and coverage" : "every garment exactly as in image 1, with the same cut, neckline, straps and coverage") + ", simply following the new shape), light, backdrop and panel layout. Not surgically enhanced."
+  );
+}
+/* v132 (user, two Seedream body sheets from the v131 prompt, audited in pixels: the deltoids sharper but the width across them +1.5% and
+   +3.6% only, deltoids / hips 1.17 and 1.15 for 1.4 asked, a small bust drawn on "Très menue" in both; then "oui, fais-le"): the
+   method of card 2b, which works for the hips and glutes (v122, seen by the user), for the upper body: broader shoulders and larger
+   deltoids, wider lats, a flat chest, as an edit of the body sheet Seedream generated. Seedream, native adult person only, as card 2b.
+   Not checked on renders yet. */
+function sdGrowUpParts() {
+  var d = sdMusLv("delts");
+  return {
+    big: ["big", "huge"].indexOf(d) >= 0,
+    sh: ["big", "huge"].indexOf(d) >= 0 || e.shoulders >= 3,
+    la: ["big", "huge"].indexOf(sdMusLv("lats")) >= 0,
+    fl: "m" !== e.pres && sdCi(e.chest) <= 0,
+  };
+}
+function sdGrowUpOn(t) {
+  return (
+    "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
+    rq(t, function () {
+      var p = sdGrowUpParts();
+      return p.sh || p.la || p.fl;
+    })
+  );
+}
+function sdGrowUpPrompt() {
+  var p = sdGrowUpParts(),
+    pr = "m" === e.pres ? "his" : "f" === e.pres ? "her" : "their",
+    r = sdShoulderRatio(),
+    v = e.waist <= 2 && sdFatOn("fatFlanks") < 2 && 4 !== +e.fat,
+    fat = sdArmFat() >= 2 || sdFatOn("fatBack") >= 2 || e.fat >= 3,
+    a = [];
+  p.sh &&
+    a.push(
+      "make " + pr + " shoulders noticeably broader" +
+        (p.big ? " and " + pr + " deltoids larger and rounder, their caps standing out further past the upper arms" : "") +
+        (r ? ", the shoulders reaching about " + r + " times the hip width across the deltoids in the front view" : ""),
+    );
+  p.la && a.push("make " + pr + " lats wider, flaring further out below the armpits" + (v ? ", the back clearly wider there than at the waist" : ""));
+  p.fl &&
+    a.push(
+      /* v134: in positive terms only (SD_PECS_FLAT_SD) */
+      "make " + pr + " chest completely flat, like " + (sdPecsF() ? "a male athlete's" : "a slim man's") + " chest: in the side views the chest line runs straight down from the collarbones" +
+        (sdPecsF() ? ", shaped only by the firm pectoral muscles" : "") +
+        ", the top lying flat on it",
+    );
+  return (
+    "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
+    ": retouch the upper body only, in all four views, a moderate step, by the same amount in every view: " + a.join("; ") + "." +
+    " The result stays a believable real body, never a cartoon or a caricature" +
+    (p.sh || p.la ? ": the added muscle is dense, real muscle with its natural shape" + (fat ? ", under the same soft layer of fat as in image 1" : "") : "") + "." +
+    " Keep " + (nw() ? "" : "the head and face, ") +
+    "the waist, the belly, the hips, the glutes, the legs, the skin texture, the marks and soft folds, the outfit (same cut and coverage, following the new shape), the light, the backdrop, the framing, the pose and the panel layout exactly as in image 1."
+  );
+}
+/* v147 (user, after three edits of his sheet measured in both profiles, "oui, fais-le"): the bust retouch, for "Très généreuse" +
+   "Tombante" (the v146 text; not "Très tombante", not the moderate Auto drop), Seedream, native adult. From a description Seedream draws
+   that bust full and domed in profile whatever the text (four renders, three texts: the upper slope 12 to 18 px above a straight line);
+   in an edit "lower" alone added volume (+14 to 35%), "less deep" alone lifted it and halved it in profile; the lowest point held and the
+   lost depth sent to the sides (this text, tested as it is): one render in two, the depth -8 to -11%, the dome -30 to -38%, the drop kept,
+   the profile volume -11 to -19%. A small effect: run twice, keep the better, never again on a retouched image (more volume lost). */
+function sdGrowBustOn(t) {
+  return (
+    "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
+    rq(sdAutoBust(t), function () {
+      /* v147 review: not when the body comes from the dressed sheet ("Source du corps : Ma planche habillée"), whose prompt has no bust text */
+      return "m" !== e.pres && 4 === +e.chest && "low" === e.bustShape && "moderate" !== e.sdAutoTier && !sdDropX() && !sdUseBodyImg();
+    })
+  );
+}
+function sdGrowBustPrompt() {
+  return (
+    "Edit image 1, a four-view body reference sheet of one adult " + ("f" === e.pres ? "woman" : "person") +
+    ": change the bust only, by the same amount in every view: in the two side views it sits closer to the chest, its front about two fingers' width nearer the ribcage, the front of the bust a straight slope from below the collarbones down to its fullest point; its lowest point stays exactly at the same level as in image 1, a hand's width above the navel, so it keeps its low, heavy drop; the depth it loses goes to the sides: in the front view it spreads slightly wider toward the arms, at the same height." +
+    " The result stays a believable real body: natural flesh that settles with gravity like the rest of the body. The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +
+    "framing, pose, shoulders and arms, waist, hips, glutes, legs, skin tone, marks, outfit (every garment exactly as in image 1, with the same cut, neckline, straps and coverage, simply following the new shape), light, backdrop and panel layout. Not surgically enhanced."
+  );
+}
+/* v123 (user: the buttons of the bottom bar need a tooltip on hover, Tête, Corps, Agrandir, Ma tenue..., translated): what each one copies.
+   French here, English through the interface map (the title prop is translated like the labels). */
+function sdBarTip(k, off) {
+  /* this repository's animal and object bars: the animal sheet first, its head close-ups optional; one card per object or place view */
+  if ("animal" === e.mode && "body" === k) return sdT("Copier le prompt de la planche de l'animal (carte 1)", "Copy the prompt of the animal sheet (card 1)");
+  if ("animal" === e.mode && "head" === k) return sdT("Copier le prompt des gros plans de tête (carte 2)", "Copy the prompt of the head close-ups (card 2)");
+  var v = "object" === e.mode && /^obj(\d?)$/.exec(k);
+  if (v) return sdT("Copier le prompt de la vue " + (v[1] || 1) + " (carte " + (v[1] || 1) + ")", "Copy the prompt of view " + (v[1] || 1) + " (card " + (v[1] || 1) + ")");
+  if ("head" === k) return sdBaby(e) ? "Copier le prompt de la planche bébé (carte 1)" : "Copier le prompt de la planche tête (carte 1)";
+  if ("body" === k) return nw() || sdChildHl(e) ? "Copier le prompt de la planche corps sans tête (carte 2)" : "Copier le prompt de la planche corps (carte 2)";
+  if ("grow" === k) return sdHourglass() ? (4 === +e.glutes ? "Copier le prompt de la carte 2b : affiner la taille, élargir les hanches et agrandir les fessiers de ta planche corps" : "Copier le prompt de la carte 2b : affiner la taille et élargir les hanches de ta planche corps") : "Copier le prompt de la carte 2b : agrandir hanches et fessiers de ta planche corps";
+  if ("growUp" === k) return "Copier le prompt de la retouche du haut du corps de ta planche corps (épaules, dos, poitrine)";
+  if ("fin" === k) return "Copier le prompt de la carte 4 : finition photo de ta planche finale";
+  if ("growBust" === k) return "Copier le prompt de la retouche de la poitrine de ta planche corps (moins bombée de profil, la chute gardée)";
+  if ("iter" === k) {
+    if (off) return "Carte 3 : choisis ou écris d'abord une retouche";
+    var op = sdOp(e);
+    return "join" === op
+      ? sdNanoJoin()
+        ? "Copier le prompt de la carte 3 pour Nano Banana : assembler ta planche corps sans tête et la planche tête"
+        : sdGptJoin()
+        ? "Copier le prompt de la carte 3 pour GPT Image 2.5 : assembler ta planche corps sans tête et la planche tête"
+        : "Copier le prompt de la carte 3 : assembler ta planche corps sans tête et la planche tête"
+      : "dress" === op
+        ? "Copier le prompt de la carte 3 : habiller ta planche corps sans tête"
+        : "dressMine" === op
+          ? String(e.sdIter || "").trim()
+            ? "Copier le prompt de la carte 3 : habiller ta planche corps selon ton texte de la carte 3"
+            : "Copier le prompt de la carte 3 : habiller ta planche corps avec la tenue de l'onglet Tenue"
+          : "heads" === op
+            ? "Copier le prompt de la carte 3 : ajouter les têtes à ta planche habillée"
+            : "Copier le prompt de la carte 3 : ta retouche";
+  }
+  return { obj: "Copier le prompt de la planche (carte 1)", editHead: "Copier le prompt de retouche de la planche tête", editBody: "Copier le prompt de retouche de la planche corps", editObj: "Copier le prompt de retouche de la planche" }[k] || "";
+}
+/* v125 (user: "we should be able to export and import the data, or we get lost every time finding the things, the people and what we
+   had set; a new Import / Export button, in colour, prominent and working"): "Exporter" saves the whole saved state (every setting, the
+   settings kept for the other modes, the name, the last head sheet copied) as a .json file named after the character; "Importer" reads
+   such a file back. The file is checked (format tag, then each key against the type of its default; unknown keys dropped, list items
+   other than text or numbers dropped), a confirmation is asked (it replaces the current settings), then it is written to the storage the
+   tool reads and the page reloads, so an imported file goes through the same migrations as a saved state. Photos are never stored by the
+   tool, so never exported: a "Partir d'une photo" setting comes back on, the photo has to be attached again in Seedream or GPT. */
+var SD_IO_APP = "planches-seedance";
+function sdIoVal(v, d) {
+  if (null === d) return null === v || ("object" == typeof v && !Array.isArray(v));
+  if (Array.isArray(d)) return Array.isArray(v);
+  return typeof v === typeof d && ("number" != typeof v || isFinite(v));
+}
+/* v130 (GPT audit of v129, checked: an exported file edited to "fat": 500 was saved, then the page broke, blank; "state": [] replaced
+   every setting): each value is also checked against the choices of its control (every option list of the tabs, a range for the
+   numbers typed in, the type and engine switches); a value outside them is dropped, never saved; a file with nothing usable is refused
+   and the session is kept. 2.5 stays allowed for the bust (an option of its list). */
+var SD_IO_DOM = null,
+  sdIoDrop = 0;
+function sdIoDom() {
+  if (SD_IO_DOM) return SD_IO_DOM;
+  /* v138 (review): "tangaTop" is set by its own radio, outside the tabs: its two values here */
+  var d = { mode: ["person", "animal", "object"], style: ["photo", "3d", "2d"], model: ["gpt", "seedream"], tangaTop: ["loose", "bikini"] };
+  /* v143 review: the last "Silhouette type" button clicked, an empty value or a button's id */
+  d.sdShapePick = [""].concat(SD_SHAPES.map(function (x) {
+    return x[0];
+  }));
+  /* v157c review: the spacing and the height of "Forme de la poitrine" (since v157 their values were not all in tZ: "close", "out", "fwd"
+     dropped at import, any height accepted) */
+  d.bustWide = ["no", "yes", "close", "out", "fwd"];
+  d.bustHigh = ["auto", "high", "vhigh"];
+  [t2, t3, t4].forEach(function (tabs) {
+    (tabs || []).forEach(function (tb) {
+      (tb.items || []).forEach(function (it) {
+        if (!it || "string" != typeof it.k) return;
+        if ("num" === it.t) {
+          "number" == typeof it.min && "number" == typeof it.max && (d[it.k] = { min: it.min, max: it.max });
+          return;
+        }
+        var names = "function" == typeof it.o
+          ? ["f", "m", "x"].map(function (p) {
+              return rq(Object.assign({}, e, { pres: p }), it.o);
+            })
+          : [it.o || it.k],
+          v = Array.isArray(d[it.k]) ? d[it.k] : [];
+        names.forEach(function (n) {
+          (tZ[n] || []).forEach(function (o) {
+            v.indexOf(o[0]) < 0 && v.push(o[0]);
+          });
+        });
+        v.length && (d[it.k] = v);
+      });
+    });
+  });
+  return (SD_IO_DOM = d);
+}
+function sdIoClean(s, nested) {
+  var o = {};
+  if (!s || "object" != typeof s || Array.isArray(s)) return o;
+  var dom = sdIoDom();
+  for (var k in tJ) {
+    if (!Object.prototype.hasOwnProperty.call(s, k) || (nested && "modeCfg" === k)) continue;
+    var v = s[k],
+      dm = dom[k];
+    if (!sdIoVal(v, tJ[k])) {
+      sdIoDrop++;
+      continue;
+    }
+    Array.isArray(v) &&
+      (v = v.filter(function (x) {
+        return ("string" == typeof x || ("number" == typeof x && isFinite(x))) && !(Array.isArray(dm) && dm.indexOf(x) < 0);
+      }));
+    if (!Array.isArray(v) && dm && (Array.isArray(dm) ? dm.indexOf(v) < 0 : "number" == typeof v && (v < dm.min || v > dm.max))) {
+      sdIoDrop++;
+      continue;
+    }
+    o[k] = v;
+  }
+  o.base && (o.base = sdIoClean(o.base, !0));
+  if (o.modeCfg) {
+    var m = {};
+    /* v137: "sdObj" and "sdPlace" keep the object and the place of the shared mode "object" apart (sdKindSwap) */
+    ["person", "animal", "object", "sdObj", "sdPlace"].forEach(function (k) {
+      o.modeCfg[k] && "object" == typeof o.modeCfg[k] && !Array.isArray(o.modeCfg[k]) && (m[k] = sdIoClean(o.modeCfg[k], !0));
+    });
+    o.modeCfg = m;
+  }
+  return o;
+}
+function sdIoFile(t) {
+  var d = new Date(),
+    p = function (x) {
+      return (x < 10 ? "0" : "") + x;
+    };
+  return (
+    "planches_" +
+    (t8("object" === t.mode ? t.objName : t.name) || ("object" === t.mode ? "objet" : "animal" === t.mode ? "animal" : "perso")) +
+    "_" + d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "_" + p(d.getHours()) + "h" + p(d.getMinutes()) + ".json"
+  );
+}
+function sdExport(t, h) {
+  try {
+    var f = sdIoFile(t),
+      b = new Blob([JSON.stringify({ app: SD_IO_APP, format: 1, exported: new Date().toISOString(), state: t }, null, 1)], { type: "application/json" }),
+      u = URL.createObjectURL(b),
+      a = document.createElement("a");
+    a.href = u;
+    a.download = f;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () {
+      URL.revokeObjectURL(u);
+    }, 1e3);
+    h(sdT("Exporté : " + f + ". Garde ce fichier : « Importer » le recharge.", "Exported: " + f + ". Keep this file: “Import” loads it back."));
+  } catch (x) {
+    h(sdT("Export impossible dans ce navigateur.", "Export is not possible in this browser."));
+  }
+}
+function sdImport(ev, h) {
+  var fl = ev.target.files && ev.target.files[0];
+  ev.target.value = "";
+  if (!fl) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var j;
+    try {
+      j = JSON.parse(String(rd.result));
+    } catch (x) {
+      return h(sdT("Fichier illisible : ce n'est pas un export de Planches de référence.", "Unreadable file: not a Reference sheets export."));
+    }
+    if (!j || j.app !== SD_IO_APP || !j.state || "object" != typeof j.state || Array.isArray(j.state))
+      return h(sdT("Ce fichier n'est pas un export de Planches de référence.", "This file is not a Reference sheets export."));
+    sdIoDrop = 0;
+    var cl = sdIoClean(j.state),
+      nd = sdIoDrop;
+    if (!Object.keys(cl).length || !cl.mode)
+      return h(sdT("Ce fichier ne contient aucun réglage utilisable : rien n'a été changé.", "This file holds no usable setting: nothing was changed."));
+    /* v133 (user: in the app's preview, "Importer" did nothing, the settings stayed, "Exporter" worked): the preview runs the page in a
+       sandboxed frame where window.confirm is ignored (it returns false at once) and the storage may be refused, so the import stopped
+       without a word. The question is now asked in the page, and the settings are applied to the page state directly (through the same
+       loader as at start-up, ac), with no reload; the page saves them itself where the browser allows it. */
+    sdIoPending = {
+      name: fl.name,
+      state: cl,
+      /* v155: the settings this older file does not hold (sdNewMissing), marked once the import is confirmed */
+      missing: sdNewMissing(j.state),
+      q: sdT("Remplacer tous les réglages actuels par ceux de « " + fl.name + " » ? Exporte d'abord les réglages actuels si tu veux les garder." + (nd ? " " + nd + " valeur" + (nd > 1 ? "s" : "") + " hors des choix possibles " + (nd > 1 ? "seront ignorées" : "sera ignorée") + "." : ""), "Replace all the current settings with those of “" + fl.name + "”? Export the current settings first if you want to keep them." + (nd ? " " + nd + " value" + (nd > 1 ? "s" : "") + " outside the possible choices will be ignored." : "")),
+    };
+    h(sdT("Confirme l'import en haut de la page.", "Confirm the import at the top of the page."));
+  };
+  rd.onerror = function () {
+    h(sdT("Fichier illisible.", "Unreadable file."));
+  };
+  rd.readAsText(fl);
+}
+var sdIoPending = null;
+/* the import, once confirmed in the page: the same loader as at start-up (ac) on the imported settings, no reload */
+function sdIoApply(n, h) {
+  var p = sdIoPending;
+  sdIoPending = null;
+  if (!p) return;
+  sdNewSetAll(p.missing);
+  var st = ac(p.state),
+    /* v155 review: what the imported page will show (a hidden setting, step 4 where it does not exist, are not announced) */
+    nm = rq(sdG(st), sdNewCount);
+  n(st);
+  h(sdT("Importé : " + p.name + (nm ? ". Nouveautés depuis ce fichier marquées en rouge, sur leur valeur par défaut." : ""), "Imported: " + p.name + (nm ? ". What is new since this file is marked in red, on its default value." : "")));
+}
+function sdIoButtons(t, h, n) {
+  var cls = "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    st = { background: "hsl(var(--ok))" },
+    ic = function (up) {
+      return (0, l.jsx)("svg", {
+        width: 16,
+        height: 16,
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: 2.4,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        "aria-hidden": !0,
+        children: (0, l.jsx)("path", { d: up ? "M12 19V5M5 12l7-7 7 7M4 21h16" : "M12 3v14M5 10l7 7 7-7M4 21h16" }),
+      });
+    };
+  return (0, l.jsxs)("div", {
+    className: "flex flex-wrap items-center gap-2",
+    role: "group",
+    "aria-label": "Sauvegarde des réglages",
+    children: [
+      (0, l.jsxs)("button", {
+        type: "button",
+        className: cls,
+        style: st,
+        title: "Enregistre tous tes réglages dans un fichier .json (personne, animal, objet, nom, dernière planche tête copiée). Exporte avant « Nouveau personnage » pour ne rien perdre.",
+        onClick: function () {
+          sdExport(t, h);
+        },
+        children: [ic(!1), "Exporter"],
+      }),
+      (0, l.jsxs)("button", {
+        type: "button",
+        className: cls,
+        style: st,
+        title: "Recharge un fichier exporté : il remplace tous les réglages actuels.",
+        onClick: function () {
+          var i = document.getElementById("sd-io-file");
+          i && i.click();
+        },
+        children: [ic(!0), "Importer"],
+      }),
+      (0, l.jsx)("input", {
+        id: "sd-io-file",
+        type: "file",
+        accept: ".json,application/json",
+        "aria-label": "Fichier à importer",
+        style: { display: "none" },
+        onChange: function (ev) {
+          sdImport(ev, h);
+        },
+      }),
+      sdNewNotice(h),
+      sdIoPending &&
+        (0, l.jsxs)("div", {
+          role: "alertdialog",
+          "aria-label": "Confirmer l'import",
+          className: "w-full rounded-xl border-2 border-[hsl(var(--tape))] bg-card p-3 text-sm",
+          children: [
+            (0, l.jsx)("p", { className: "font-semibold", children: sdIoPending.q }),
+            (0, l.jsxs)("div", {
+              className: "mt-2 flex flex-wrap gap-2",
+              children: [
+                (0, l.jsx)("button", {
+                  type: "button",
+                  className: cls,
+                  style: st,
+                  onClick: function () {
+                    sdIoApply(n, h);
+                  },
+                  children: "Remplacer",
+                }),
+                (0, l.jsx)("button", {
+                  type: "button",
+                  className: "inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  onClick: function () {
+                    sdIoPending = null;
+                    h(sdT("Import annulé : rien n'a changé.", "Import cancelled: nothing changed."));
+                  },
+                  children: "Annuler",
+                }),
+              ],
+            }),
+          ],
+        }),
+    ],
+  });
+}
+/* v126: image 1 of "Assembler" / "Ajouter les têtes", extended by 25% upward in the browser (nothing is sent anywhere): the body keeps
+   its pixels and its size, and a band of backdrop grey above it leaves room for the neck and the head (the band, column by column,
+   below). */
+var SD_PREP = 0.25;
+/* v134 (user, in the app's preview: "Image illisible" on a real sheet): the image was read through a blob: URL, which a page whose
+   Content-Security-Policy leaves blob: out of img-src refuses to load (reproduced: the same message). The file is now decoded with
+   createImageBitmap, which takes the file itself and no URL; then a data: URL, then the blob: URL. Only a file that none can decode is
+   "illisible"; a failure after decoding says so, with its error name. */
+function sdDecodeImage(f, ok, bad) {
+  var viaUrl = function (u, next) {
+      var im = new Image();
+      im.onload = function () {
+        ok(im, im.naturalWidth, im.naturalHeight, function () {
+          /^blob:/.test(u) && URL.revokeObjectURL(u);
+        });
+      };
+      im.onerror = function () {
+        /^blob:/.test(u) && URL.revokeObjectURL(u);
+        next();
+      };
+      im.src = u;
+    },
+    viaBlob = function () {
+      try {
+        viaUrl(URL.createObjectURL(f), bad);
+      } catch (z) {
+        bad();
+      }
+    },
+    viaData = function () {
+      try {
+        var r = new FileReader();
+        r.onload = function () {
+          viaUrl(String(r.result || ""), viaBlob);
+        };
+        r.onerror = viaBlob;
+        r.readAsDataURL(f);
+      } catch (z) {
+        viaBlob();
+      }
+    };
+  /* the EXIF orientation applied, as an <img> does; a browser that does not know the option rejects it and the data: URL is used */
+  var pr = null;
+  try {
+    pr = "function" == typeof window.createImageBitmap ? window.createImageBitmap(f, { imageOrientation: "from-image" }) : null;
+  } catch (z) {
+    pr = null;
+  }
+  pr && "function" == typeof pr.then
+    ? pr.then(
+        function (bm) {
+          ok(bm, bm.width, bm.height, function () {
+            bm.close && bm.close();
+          });
+        },
+        viaData,
+      )
+    : viaData();
+}
+/* v151 (self-review, his renders measured: with the arms held out (v145) Seedream widens the front and back panels, their boundaries near
+   550 to 625, 930 to 985 and 1510 to 1535 px of 1920 instead of 480, 960 and 1440; the arms-down render had 482, 961 and 1436): the panel
+   boundaries are found on the image, one within 35% of a quarter around each quarter line, as a column where nearly every row has a
+   sharp vertical edge (a gap or a change of backdrop from one panel to the next), with the other edge of a gap when there is one (up to
+   2.5% of the width apart); a boundary not found stays at the quarter. Each boundary is [left, right].
+   v151 review: a straight line inside a figure (a pinstripe, a pleat, a coat's edge) also has an edge in nearly every row it crosses: a
+   candidate counts only if just outside it, on both sides, the image is backdrop (grey, little colour, smooth from row to row, the film
+   grain allowed) in at least 85% of the rows (his renders: 89 to 99% beside the boundaries, at most 77% at a figure's edge); the strongest
+   such candidate wins */
+function sdPanelCuts(d, W, H) {
+  var q = W / 4, ys = [], y, i, j, k, wide = Math.round(W * 0.025) + 4, E = [], out = [],
+    lum = function (i, y) {
+      var o = 4 * (y * W + i);
+      return 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
+    },
+    bgCol = function (x) {
+      if (x < 0 || x >= W) return 1;
+      var n = 0;
+      for (var j = 0; j < ys.length; j++) {
+        var o = 4 * (ys[j] * W + x), r = d[o], g = d[o + 1], b = d[o + 2],
+          nx = j + 1 < ys.length ? lum(x, ys[j + 1]) : lum(x, ys[j]);
+        Math.max(r, g, b) - Math.min(r, g, b) < 22 && Math.abs(lum(x, ys[j]) - nx) < 8 && n++;
+      }
+      return ys.length ? n / ys.length : 0;
+    };
+  for (y = Math.round(H * 0.05); y < Math.round(H * 0.95); y += 4) ys.push(y);
+  for (i = 0; i < W; i++) {
+    var n = 0;
+    if (ys.length && i >= 2 && i < W - 2) for (j = 0; j < ys.length; j++) Math.abs(lum(i + 2, ys[j]) - lum(i - 2, ys[j])) > 6 && n++;
+    E.push(ys.length ? n / ys.length : 0);
+  }
+  for (k = 1; k <= 3; k++) {
+    var lo = Math.max(4, Math.round((k - 0.35) * q)), hi = Math.min(W - 5, Math.round((k + 0.35) * q)), cand = [], got = null;
+    for (i = lo; i <= hi; i++) E[i] >= 0.7 && cand.push(i);
+    cand.sort(function (a, b) {
+      return E[b] - E[a] || Math.abs(a - k * q) - Math.abs(b - k * q);
+    });
+    for (var c = 0; c < cand.length && c < 60 && !got; c++) {
+      /* the other edge of a gap: past a low stretch (the gap's flat inside), the next strong edge within 2.5% of the width, the nearer side */
+      var m = cand[c], side = function (dir) {
+          for (var i = m + dir, low = !1; i >= lo && i <= hi && Math.abs(i - m) <= wide; i += dir) {
+            if (E[i] < 0.3) low = !0;
+            else if (low && E[i] >= 0.7) return i;
+          }
+          return -1;
+        },
+        rr = side(1), ll = side(-1),
+        o2 = rr < 0 ? ll : ll < 0 ? rr : rr - m <= m - ll ? rr : ll;
+      var l = o2 < 0 ? m : Math.min(m, o2), r = o2 < 0 ? m : Math.max(m, o2);
+      bgCol(l - 6) >= 0.85 && bgCol(r + 6) >= 0.85 && (got = [l, r]);
+    }
+    out.push(got || [k * q, k * q]);
+  }
+  return out;
+}
+function sdPrepImage(f, done) {
+  sdDecodeImage(f, function (im, W, H, free) {
+    try {
+      var B = Math.round(H * SD_PREP),
+        c = document.createElement("canvas");
+      c.width = W;
+      c.height = H + B;
+      var x = c.getContext("2d");
+      x.drawImage(im, 0, B);
+      var R = Math.min(3, H),
+        top = x.getImageData(0, B, W, R).data,
+        band = x.createImageData(W, B),
+        q = W / 4,
+        C = sdPanelCuts(x.getImageData(0, B, W, H).data, W, H),
+        px = function (i) {
+          var r = 0, g = 0, b = 0, j;
+          for (j = 0; j < R; j++) (r += top[4 * (j * W + i)]), (g += top[4 * (j * W + i) + 1]), (b += top[4 * (j * W + i) + 2]);
+          return [r / R, g / R, b / R];
+        },
+        med = function (a) {
+          a.sort(function (m, n) {
+            return m - n;
+          });
+          return a[a.length >> 1] || 0;
+        };
+      /* each column of the band continues its own top pixel where that pixel is backdrop, or a thin, isolated panel gap near a panel boundary; where the
+         body (or hair) is cut by the top edge, the band is the backdrop of its panel (median of the top rows near the panel's side
+         edges), so no skin or hair is carried upward (v151: the panels as found on the image, sdPanelCuts; before, the quarters) */
+      var T0 = [], far = [], bgs = [], i, y, k;
+      for (i = 0; i < W; i++) T0.push(px(i));
+      for (k = 0; k < 4; k++) {
+        /* v151: the panels as found (sdPanelCuts), between the boundaries, the backdrop sampled near their own edges; the columns of a gap
+           take the backdrop of the panel on their left (they keep their own colour as a gap below) */
+        var x0 = k ? Math.round(C[k - 1][1]) + 1 : 0,
+          x1 = 3 > k ? Math.round(C[k][0]) : W,
+          pw = Math.max(1, x1 - x0),
+          rs = [], gs = [], bs = [];
+        for (i = Math.round(x0 + pw * 0.02); i < Math.round(x0 + pw * 0.12); i++) rs.push(T0[i][0]), gs.push(T0[i][1]), bs.push(T0[i][2]);
+        for (i = Math.round(x1 - pw * 0.12); i < Math.round(x1 - pw * 0.02); i++) rs.push(T0[i][0]), gs.push(T0[i][1]), bs.push(T0[i][2]);
+        /* v151 review: the grey samples only (little colour), so skin, hair or a garment at the panel's edge never sets the band's colour;
+           none: all of them, as before */
+        var gi = rs.map(function (v, n) {
+            return Math.max(v, gs[n], bs[n]) - Math.min(v, gs[n], bs[n]) < 22 ? n : -1;
+          }).filter(function (n) {
+            return n >= 0;
+          });
+        gi.length && ((rs = gi.map(function (n) {
+          return rs[n];
+        })), (gs = gi.map(function (n) {
+          return gs[n];
+        })), (bs = gi.map(function (n) {
+          return bs[n];
+        })));
+        var bg = [med(rs), med(gs), med(bs)];
+        for (i = x0; i < (3 > k ? Math.round(C[k][1]) + 1 : W); i++) (bgs[i] = bg), (far[i] = Math.hypot(T0[i][0] - bg[0], T0[i][1] - bg[1], T0[i][2] - bg[2]) > 24);
+      }
+      var col = T0.slice(), thin = Math.max(3, Math.round(W * 0.015)), edge = Math.max(4, Math.round(W * 0.005)), runs = [];
+      for (i = 0; i < W; ) {
+        if (!far[i]) {
+          i++;
+          continue;
+        }
+        var a0 = i;
+        while (i < W && far[i]) i++;
+        runs.push([a0, i - 1]);
+      }
+      runs.forEach(function (r, n) {
+        var c = (r[0] + r[1]) / 2,
+          gap =
+            r[1] - r[0] + 1 <= thin &&
+            /* the outer edges count too, as the quarter lines 0 and 4 did before v151 (a light frame strip at the image's sides) */
+            Math.min.apply(null, [c, W - c].concat(C.map(function (z) {
+              return Math.abs(c - (z[0] + z[1]) / 2);
+            }))) <= q * 0.1 &&
+            (!n || r[0] - runs[n - 1][1] > 4 * thin) &&
+            (n === runs.length - 1 || runs[n + 1][0] - r[1] > 4 * thin),
+          /* v151: a run that meets a gap found from top to bottom (sdPanelCuts), however wide or close to a shoulder: within the gap, the
+             columns of the gap's own colour go up; any other column of the run (skin or hair touching it) takes the backdrop (review) */
+          gz = gap ? null : C.filter(function (z) {
+            return z[1] - z[0] >= 4 && r[1] >= z[0] - edge - 2 && r[0] <= z[1] + edge + 2;
+          })[0],
+          gc = gz ? T0[Math.round((gz[0] + gz[1]) / 2)] : null;
+        /* plus a few pixels on each side: the soft edge of the body or the hair is not carried upward either */
+        if (!gap)
+          for (var z = Math.max(0, r[0] - edge); z <= Math.min(W - 1, r[1] + edge); z++)
+            (gz && z >= gz[0] - 2 && z <= gz[1] + 2 && Math.hypot(T0[z][0] - gc[0], T0[z][1] - gc[1], T0[z][2] - gc[2]) < 30) || (col[z] = bgs[z]);
+      });
+      for (i = 0; i < W; i++)
+        for (y = 0; y < B; y++) {
+          var o = 4 * (y * W + i);
+          band.data[o] = col[i][0];
+          band.data[o + 1] = col[i][1];
+          band.data[o + 2] = col[i][2];
+          band.data[o + 3] = 255;
+        }
+      x.putImageData(band, 0, 0);
+      /* v127 (user: accept JPEG too): the output keeps the input's format (JPEG and WebP at the highest quality, 1: still re-encoded, the
+         body pixels move by a few levels at most), PNG otherwise */
+      var ty = /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/png",
+        ext = (/\.(jpe?g|png|webp)$/i.exec(f.name || "") || [0, "image/jpeg" === ty ? "jpg" : "image/webp" === ty ? "webp" : "png"])[1],
+        n = String(f.name || "planche").replace(/\.[a-z0-9]+$/i, "") + "_place-tete." + ("image/png" === ty ? "png" : ext);
+      free();
+      c.toBlob(function (bl) {
+        if (!bl) return done("toBlob");
+        /* v128 review: a browser that cannot encode the type gives a PNG; the name follows */
+        bl.type && bl.type !== ty && (n = n.replace(/\.[a-z0-9]+$/i, "." + (bl.type.split("/")[1] || "png").replace("jpeg", "jpg")));
+        var a = document.createElement("a"),
+          v = URL.createObjectURL(bl);
+        a.href = v;
+        a.download = n;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(v);
+        }, 1e3);
+        done(!1, n, W, H + B);
+      }, ty, 1);
+    } catch (z) {
+      free();
+      done(String((z && z.name) || "Error"));
+    }
+  }, function () {
+    done(!0);
+  });
+}
+function SdPrep(pr) {
+  var st = (0, s.useState)(""),
+    msg = st[0],
+    set = st[1],
+    t = pr.t || {},
+    nano = !pr.heads && "nano" === t.sdJoinFor,
+    gp = !pr.heads && "gpt" === t.sdJoinFor,
+    sw = function (v) {
+      /* v127: "Assembler" written for one model or the other; switching puts that model's text in place (v134: three models) */
+      pr.g("sdJoinFor", v);
+      pr.g("sdIter", sdPresetJoin(v));
+      pr.g("sdIterOp", "join");
+    };
+  return (0, l.jsxs)("div", {
+    className: "mt-3 rounded-xl border px-3 py-2",
+    children: [
+      !pr.heads &&
+        (0, l.jsxs)("div", {
+          className: "mb-3",
+          children: [
+            (0, l.jsx)("p", { className: "mb-2 text-sm font-semibold", children: "Assembler avec" }),
+            /* v134: three models; short labels and a box that scrolls rather than widening the page on a phone */
+            (0, l.jsx)("div", {
+              style: { width: 0, minWidth: "100%", overflowX: "auto" },
+              children: (0, l.jsx)(ab, {
+                label: "Modèle pour assembler",
+                value: nano ? "nano" : gp ? "gpt" : "seedream",
+                onChange: sw,
+                options: [
+                  ["seedream", "Seedream"],
+                  ["nano", "Nano Banana"],
+                  ["gpt", "GPT"],
+                ],
+              }),
+            }),
+          ],
+        }),
+      /* v126 (user: say that Nano Banana assembles head and body best for an overall view of the character, ChatGPT second, and that
+         Seedream can be tried with 3 generations at once for more precision): the user's own ranking, shown as advice */
+      (0, l.jsxs)("p", {
+        role: "note",
+        className: "mb-3 rounded-xl border border-[hsl(var(--tape))] p-3 text-sm",
+        children: gp
+          ? [
+              (0, l.jsx)("b", { children: "GPT Image 2.5 : " }),
+              "le prompt de Nano Banana, avec ce qu'il faut à une conversation ChatGPT : seulement les deux images jointes, le format et une vérification mesurée. Comme Nano Banana, il lisse : ce prompt l'oblige à garder la peau, la cellulite, les plis et chaque défaut. Joins ta planche corps sans tête telle quelle et la planche tête dans le même message : pas de préparation.",
+            ]
+          : nano
+          ? [
+              (0, l.jsx)("b", { children: "Nano Banana : " }),
+              "il assemble le mieux la tête et le corps pour une vue d'ensemble du personnage, mais il lisse tout : peau sans défaut, corps immaculé. Ce prompt l'oblige à garder la peau, la cellulite, les plis et chaque défaut. Joins ta planche corps sans tête telle quelle : pas de préparation.",
+            ]
+          : [
+              (0, l.jsx)("b", { children: "Conseil pour assembler : " }),
+              /* v128 review: the v126 advice said "this same prompt" for Nano Banana, which now has its own (no preparation) */
+              "Nano Banana assemble le mieux la tête et le corps pour une vue d'ensemble du personnage : choisis « Nano Banana » ci-dessus, sans préparation. ChatGPT ensuite : choisis « GPT » ci-dessus. Avec Seedream, prépare l'image 1 ci-dessous, lance 3 générations en même temps et garde la plus juste.",
+            ],
+      }),
+      /* v134 (user: "là j'ai rien compris ce qu'il faut faire, c'est pas explicite"): what to do, in order, then why */
+      !nano && !gp && (0, l.jsx)("p", { className: "text-sm font-semibold", children: "Avec Seedream : prépare d'abord l'image 1, en trois étapes" }),
+      !nano && !gp &&
+        (0, l.jsxs)("ol", {
+          className: "mt-1 list-decimal space-y-1 pl-5 text-sm",
+          children: [
+            (0, l.jsx)("li", {
+              children: pr.heads
+                ? "Clique sur « Choisir ma planche et préparer l'image 1 » ci-dessous, puis choisis le fichier de ta planche habillée sans tête."
+                : "Clique sur « Choisir ma planche et préparer l'image 1 » ci-dessous, puis choisis le fichier de ta planche corps sans tête validée.",
+            }),
+            (0, l.jsx)("li", {
+              children: "L'outil agrandit l'image vers le haut : il ajoute au-dessus des corps une bande vide de la couleur du fond, haute de 25 % de l'image, la place du cou et de la tête. L'image prête se télécharge aussitôt.",
+            }),
+            (0, l.jsx)("li", { children: "Dans Seedream : l'image téléchargée en image 1, ta planche tête en image 2, puis copie le prompt de cette carte." }),
+          ],
+        }),
+      !nano && !gp &&
+        (0, l.jsx)("p", {
+          className: "mt-2 text-sm text-muted-foreground",
+          children: pr.heads
+            ? "Pourquoi : sans cette bande, Seedream rétrécit les corps pour faire de la place aux têtes, et les têtes sortent trop grandes. Rien n'est envoyé : tout se fait dans ton navigateur."
+            : "Pourquoi : sans cette bande, Seedream rétrécit les corps pour faire de la place aux têtes, et les têtes sortent trop grandes. Avec Nano Banana, pas de préparation : joins ta planche telle quelle. Rien n'est envoyé : tout se fait dans ton navigateur.",
+        }),
+      !nano && !gp &&
+        (0, l.jsx)("button", {
+          type: "button",
+          className: "mt-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          style: { background: "hsl(var(--ok))" },
+          title: "Choisis ta planche : l'outil ajoute une bande vide de 25 % au-dessus des corps et télécharge l'image 1 prête",
+          onClick: function () {
+            var i = document.getElementById("sd-prep-file");
+            i && i.click();
+          },
+          children: "Choisir ma planche et préparer l'image 1",
+        }),
+      !nano && !gp &&
+        (0, l.jsx)("input", {
+          id: "sd-prep-file",
+          type: "file",
+          accept: "image/*,.png,.jpg,.jpeg,.webp",
+          "aria-label": "Planche à préparer",
+          style: { display: "none" },
+          onChange: function (ev) {
+            var f = ev.target.files && ev.target.files[0];
+            ev.target.value = "";
+            f &&
+              sdPrepImage(f, function (err, n, w, h) {
+                set(
+                  "string" == typeof err
+                    ? sdT("L'image est lue, mais la préparation a échoué dans cette page (" + err + "). Ouvre le fichier HTML de l'outil directement dans Chrome, Firefox ou Safari et recommence.", "The image was read, but the preparation failed in this page (" + err + "). Open the tool's HTML file directly in Chrome, Firefox or Safari and try again.")
+                    : err
+                    ? sdT("Image illisible : choisis un PNG, un JPEG (.jpg ou .jpeg) ou un WebP.", "Unreadable image: choose a PNG, a JPEG (.jpg or .jpeg) or a WebP.")
+                    : sdT("Image 1 prête et téléchargée : " + n + " (" + w + " × " + h + " px). Ajoute-la dans Seedream en image 1, puis la planche tête en image 2, puis copie le prompt de cette carte.", "Image 1 ready and downloaded: " + n + " (" + w + " × " + h + " px). Add it in Seedream as image 1, then the head sheet as image 2, then copy the prompt of this card."),
+                );
+              });
+          },
+        }),
+      !nano && !gp && msg && (0, l.jsx)("p", { role: "status", className: "mt-2 text-sm font-semibold", children: msg }),
+    ],
+  });
+}
+function sdGrowCopyMsg() {
+  return sdT("Copié. Dans Seedream, ajoute ta planche corps de la carte 2 (image 1).", "Copied. In Seedream, add your body sheet from card 2 (image 1).");
+}
+/* v118 (user: a slim woman with "Larges" hips or "Gros" glutes came out with ordinary hips: "slim", "like a dancer", "hip bones" and
+   "no extra padding" spoke against them): a woman whose hips or glutes are set large keeps her slimness above the hips only */
+function sdCurvy() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && (e.hips >= 3 || e.glutes >= 3);
+}
+/* v119 (user: the top of both sliders still gave an ordinary body; "about 57 kg" at 171 cm told the model "thin"): the top of the scale
+   is said as the top ("extremely", out of proportion with a slim waist), and the weight counts the volume of the hips and glutes, as a
+   BMI step (prompt calibration, not a measured figure) */
+/* v135 (user, a slim Seedream body with "Hanches : Étroites" and "Fessiers : Gros": the prompt said "narrow hips" and then "with full
+   hips and glutes"): the curvy build names only what is set large, the hips, the glutes or both */
+function sdCurvyWhat() {
+  return e.hips >= 3 && e.glutes >= 3 ? "hips and glutes" : e.hips >= 3 ? "hips" : "glutes";
+}
+/* v135: where the extra width of a curvy or high-glute body sits, in both engines: never "the hips" when they are set narrow */
+function sdExtraWho() {
+  var gw = e.glutes >= 3 || "high" === e.glutesShape || "shelf" === e.glutesShape;
+  return gw && e.hips < 3 ? "glutes" : !gw && e.hips >= 3 ? "hips" : !gw && e.hips < 3 ? "outer upper thighs" : "hips and glutes";
+}
+function sdCurvyMax() {
+  return sdCurvy() && (4 === e.hips || 4 === e.glutes);
+}
+function sdCurvyKg() {
+  /* only for a slim or average build: from "Enrobée" up, the BMI of the build already carries that volume */
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.fat <= 2 ? ([0, 0, 0, 0.7, 2][e.glutes] || 0) + ([0, 0, 0, 0.5, 1.5][e.hips] || 0) : 0;
 }
 function sdForteDetail(x) {
   return SD_FORTE_DETAIL[x] || x;
@@ -1645,17 +4341,34 @@ function sdG(t) {
   sdChild(t) && ((t.photo || t.photoOnly) && (t = Object.assign({}, t, { photo: !1, photoOnly: !1 })), (t = sdChildClean(t)));
   /* v114 (UI audit): grey hair, a receding hairline and heels are neither offered to nor sent for a child (a saved value falls back to the default) */
   sdChild(t) && (t = sdChildOpts(t));
-  /* v113: never the free outfit for a child or a baby */
-  sdChild(t) && (t.outfitFree || t.outfitText) && (t = Object.assign({}, t, { outfitFree: !1, outfitText: "" }));
+  /* v113: never the free outfit for a baby; v117: a child has its own (sdChildMap: the adult's text never dresses the child), refused whole
+     (an empty text: a plain everyday outfit) unless every word is a known clothing word and the list finds nothing */
+  sdChild(t) && ((t = sdChildMap(t)), t.outfitFree && !sdChildFreeOk(t.outfitText) && (t = Object.assign({}, t, { outfitText: "" })));
   t = sdForteParts(t);
   /* "several in the same GPT conversation" names the subject within a GPT conversation (its toggle is hidden in Seedream: P13) */
   "seedream" === t.model && t.multiChar && (t = Object.assign({}, t, { multiChar: !1 }));
   t = sdIterNorm(t);
   return sdAutoBust(sdShift(sdRndOutfit(!sdNat(t) && ("tanga" === t.refCover || "brief" === t.refCover || "sport" === t.refCover || "fitted" === t.refCover) ? Object.assign({}, t, { refCover: "sport" === t.refCover || "fitted" === t.refCover ? "short" : "swim" }) : t)));
 }
+/* v129 (user: a shade button for the eye color, dark, light and very, very light, for blue eyes so pale they look almost white): "Teinte
+   des yeux" (eyeShade: auto, dark, light, pale), adults only (hidden for a child, never applied to one), both engines through the eye
+   color word (t7); no effect with an eye color written by hand; "Marron foncé" keeps its shade with "Claire" and "Très claire". The very
+   pale blue and grey keep a darker outer ring and a sharp pupil, so the eye never reads as white, glowing or blind. */
+var SD_EYE_TONE = {
+  dark: { darkbrown: "very dark brown, almost black", brown: "deep brown", hazel: "dark hazel", amber: "deep amber", green: "dark green", blue: "deep blue", grey: "dark grey" },
+  light: { brown: "light brown", hazel: "light hazel", amber: "light amber", green: "light green", blue: "light blue", grey: "light grey" },
+  pale: { brown: "light honey-brown", hazel: "pale hazel", amber: "pale golden amber", green: "very pale green", blue: "very pale, icy blue", grey: "very pale silver-grey" },
+};
+function sdEyeTone(c) {
+  var m = !sdChild(e) && SD_EYE_TONE[e.eyeShade];
+  return (m && m[e.eyeColor]) || c;
+}
 function sdIris() {
   if (t5(e.eyeColorCustom))
     return "Natural iris texture with visible fibres, the color not oversaturated.";
+  var tn = sdEyeTone("");
+  if (tn && "pale" === e.eyeShade && ("blue" === e.eyeColor || "grey" === e.eyeColor))
+    return t6(tn) + " irises, so light they look almost silver-white in the light, with a thin darker outer ring and a sharp, dark pupil that keep them clearly eyes, never white, glowing or blind-looking.";
   return (
     {
       blue: "Natural blue irises with grey flecks and a darker outer ring, not saturated.",
@@ -1666,7 +4379,9 @@ function sdIris() {
       brown: "Natural brown irises with visible fibres.",
       darkbrown: "Natural dark brown irises with visible fibres in the light.",
     }[e.eyeColor] || ""
-  );
+  ).replace(/^Natural (dark brown|brown|hazel|amber|muted green|green|blue|grey)\b/, function (m0, w) {
+    return tn ? "Natural " + tn : m0;
+  });
 }
 function sdOrigin() {
   var o = nt();
@@ -1697,14 +4412,48 @@ function sdFace() {
     .replace(/Individual details, kept identical in every panel: /, "Individual details: ")
     .replace(/ They set this face apart from a generic face: keep every one of them\./, "");
 }
+/* v118 (user: the head sheets crop the hair, so its length never shows): the hair can run past the bottom edge of a head sheet. An adult
+   head is framed down to the collarbones (long and very long hair pass it), a child's down to the base of the neck (shoulder-length hair
+   passes it too); from a photo the length is unknown, so it may pass. One rule for the crop note and the back view of every head sheet. */
+function sdHairPast() {
+  if ("bald" === e.hairStyleSel || "shaved" === e.hairLen) return !1;
+  return sdChild(e) ? sdChildPh(e) || ["shoulder", "long", "vlong"].indexOf(e.hairLen) >= 0 : !!e.photo || "long" === e.hairLen || "vlong" === e.hairLen;
+}
+/* the back view of a head sheet; v118: when the hair can pass the bottom edge, the back view no longer asks to show its length (an
+   impossible order in that frame, which can make the model pull the camera back or shorten the hair): the length shows on the body sheet */
+var SD_HAIR_PAST = "; hair longer than the frame runs on past its bottom edge, never shortened to fit";
+/* v118 (user: the nose is sometimes cut in the profile): a 16:9 sheet in four vertical panels gives panels about 4:9; at head-and-shoulders
+   scale the head in profile, from the tip of the nose to the back of the head, is wider than the panel, and nothing said what may be cut.
+   The face never is: only the back of the head and the hair may pass the far edge (adult head sheets, both engines; the child's and the
+   baby's head panels are 16:9 or wider and keep their text) */
+var SD_FACE_IN = "In the three-quarter view and the profile, the whole face stays inside the panel, with grey space between the tip of the nose and the nearest panel edge; only the back of the head and the hair may run past the opposite edge, never the nose or the chin.";
 function sdBackHair() {
+  /* v130 (GPT audit of v129, checked: with a photo, adult or child, the back view still followed the hairstyle left in the hidden form,
+     "worn down" or "gathered ... the tie"): the hair is the photo's */
+  if ((e.photo && !sdChild(e)) || sdChildPh(e))
+    return ", showing the hair from behind as the photo has it: the same length and style, worn down, tied or braided exactly as in the photo" + SD_HAIR_PAST;
+  /* v129: from "Marquée" up the hair loss shows on the crown in the back view */
+  var b = sdBackHair0();
+  return sdHairLossLv() >= 3
+    ? b.replace("the parting and the tie", "the tie").replace(" and its parting", "").replace(", its length and parting", ", its length").replace("its length, the parting and the tie", "its length and the tie") +
+        ", the thinning or bald crown seen from behind"
+    : b;
+}
+function sdBackHair0() {
+  var past = sdHairPast();
   return "bald" === e.hairStyleSel || "shaved" === e.hairLen
     ? ""
     : ["ponytail", "bun", "braid"].indexOf(e.hairStyleSel) >= 0
-      ? ", showing how the hair is gathered at the back: its length, the parting and the tie"
+      ? past && "bun" !== e.hairStyleSel
+        ? ", showing how the hair is gathered at the back: the parting and the tie" + SD_HAIR_PAST
+        : ", showing how the hair is gathered at the back: its length, the parting and the tie"
       : ["boxbraids", "cornrows", "locs", "twists", "afro", "undercut", "mohawk", "receding"].indexOf(e.hairStyleSel) >= 0
-        ? ", showing the hairstyle from behind, its length and pattern"
-        : ", showing how the hair falls at the back, its length and parting, worn down with no tie or clip";
+        ? past && ["boxbraids", "cornrows", "locs", "twists"].indexOf(e.hairStyleSel) >= 0
+          ? ", showing the hairstyle from behind and its pattern" + SD_HAIR_PAST
+          : ", showing the hairstyle from behind, its length and pattern"
+        : past
+          ? ", showing how the hair falls at the back and its parting, worn down with no tie or clip" + SD_HAIR_PAST
+          : ", showing how the hair falls at the back, its length and parting, worn down with no tie or clip";
 }
 function sdLooks() {
   /* Scale recalibrated on renders (Seedream v80, GPT v82): the former "Quelconque" text renders as "Ordinaire", so it moves to 2.
@@ -1713,13 +4462,20 @@ function sdLooks() {
   if (e.looks >= 2) return sdLooksText(e.looks);
   var b = "f" === e.pres ? "Beautiful" : "m" === e.pres ? "Handsome" : "Good-looking";
   if (0 === e.looks && "m" === e.pres)
-    return "Handsome in a natural, clearly male way, like a real male model in an unretouched agency polaroid: harmonious, well-balanced proportions close to the average of real faces rather than unusual ones, a lean face" +
-      ("auto" === e.jaw ? ", a clearly defined jaw" : "") +
-      ("auto" === e.brows ? ", thick natural eyebrows" : "") +
-      ", clear, healthy skin with warm, even color, neither feminized nor exaggerated, with the slight asymmetry of a real face; an original person who resembles no celebrity.";
+    /* v128: shorter (the head stayed over 600 words with a character): no "thick natural eyebrows" (the eyebrows are the face's), no
+       "neither feminized nor exaggerated" ("clearly male" says it), the skin only when the skin slider leaves it healthy. v128 review:
+       "neither feminized nor exaggerated" ("clearly male" says it), the skin only when the skin slider leaves it healthy. v128 review:
+       "a lean face" only for a slim or average build, as for a woman. The defined jaw only while the jaw is on Auto (PR #55 review) */
+    return "Strikingly handsome in a clearly male way, like a top male model in an unretouched agency polaroid: harmonious proportions close to the average of real faces" + (sdCanonSlim() ? ", a lean face" : "") + ("auto" === e.jaw ? ", a clearly defined jaw" : "") + (e.imperf <= 2 ? ", healthy skin with warm, even color" : "") + ", with the slight asymmetry of a real face; an original person who resembles no celebrity.";
+  /* v128 (user: "Canon" should be the beauty that leaves people speechless): stronger for a woman or an androgynous person; a leaner face
+     (Coetzee, Perrett and Stephen 2009); the skin stays the skin slider's. v129 (user, a "Canon" sheet still far from canon): "close to
+     the average of real faces" is gone. An average face shape is attractive but not optimally attractive: the mean shape of attractive
+     faces is preferred to the mean of the sample, and more so once its differences from the mean are exaggerated (Perrett, May and
+     Yoshikawa, Nature, 1994); feminized shapes of a female face are preferred to the average one (Perrett et al., Nature, 1998). The
+     features that carry the beauty are set in the face structure (sdCanonFace), so a feature the user chose is never contradicted here. */
   return (
     (0 === e.looks
-      ? b + " in a natural, individual way, like a real model in an unretouched agency polaroid"
+      ? "Strikingly " + b.toLowerCase() + ", like a top model in an agency polaroid: refined, harmonious features" + (sdCanonSlim() ? ", a lean face" : "")
       : "Attractive in a natural, everyday way") +
     ", with the slight asymmetry of a real face; an original person who resembles no celebrity."
   );
@@ -1734,9 +4490,17 @@ function sdLean() {
 function sdSlim() {
   return +e.fat <= 1;
 }
-/* New and saved face signatures must ignore the same clothing-only instructions. */
+/* New and saved face signatures must ignore the same clothing-only instructions, and the v118 framing lines (the face kept
+   inside the panel; with a photo, the back view's hair as the photo has it), which change no face: a head copied before v118
+   is still the same face */
 function sdSigWithoutOutfit(sig) {
   return sig
+    .split("\n" + SD_FACE_IN)
+    .join("")
+    .replace(
+      "showing the hair from behind as the photo has it: the same length and style, worn down, tied or braided exactly as in the photo" + SD_HAIR_PAST,
+      "showing how the hair falls at the back, its length and parting, worn down with no tie or clip",
+    )
     .replace(/^Clothing and accessories of this outfit,[^\n]*(?:\n|$)/gm, "")
     .replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "")
     .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), except any logo or print this outfit description names\.$/gm, "$1.")
@@ -1837,6 +4601,18 @@ function sdLooksText(lv) {
       " right, the mouth sitting crooked, its right corner lower."
   );
 }
+/* the head sheet's facial hair or peach fuzz (sdSkinHead, with Imperfections 1 or more), also said by "Finition photo" (v154) */
+function sdFaceFuzz() {
+  return 0 === e.looks && "m" === e.pres
+    ? "clean-shaven" === (t1("facialHair", e.facialHair) || "clean-shaven")
+      ? "a faint, even beard shadow on the jaw and upper lip"
+      : "fine, natural facial hair texture"
+    : /* v129 review: a beard or stubble is never "peach fuzz" (v128 already had it with the short and long beards) */
+      "f" !== e.pres && t1("facialHair", e.facialHair)
+      ? "fine, natural facial hair texture"
+      : /* v157: the face's peach fuzz in the color set in "Couleur des poils"; from "Ordinaire" up, under the clinical light, it does not catch the light */
+        "fine " + (sdBodyHairPick() ? sdBodyHairPick() + " " : "") + "peach fuzz" + (e.looks >= 2 ? "" : " catching the light") + " on the cheeks and jaw";
+}
 function sdSkinHead() {
   var x = [
     [
@@ -1845,26 +4621,44 @@ function sdSkinHead() {
       /* v104: with "Canon", "Naturelles" keeps the skin texture but not the redness or the spots, as the Beauté hint says and as GPT already does (ru) */
       0 === e.looks
         ? "Real, unretouched skin with visible pores and a natural, healthy texture, clear and even-toned"
-        : "Real, unretouched skin: visible pores on the nose and cheeks, slight redness around the nostrils, small blemishes, slightly uneven tone, faint shadows under the eyes",
+        : "Real, unretouched skin: visible pores on the nose and cheeks" + (sdNoseLm() ? "" : ", slight redness around the nostrils") + ", small blemishes, slightly uneven tone, faint shadows under the eyes",
       "Clearly imperfect skin: enlarged pores on the nose and cheeks, several small spots and blemishes, redness around the nose and chin, dark under-eye circles, an oily shine on the forehead and nose, an uneven, slightly blotchy tone",
       "Rough skin: acne scars, a few active spots, broken capillaries, under-eye bags, an oily shine, a blotchy tone",
     ][e.imperf] || "Natural skin with fine pores",
   ];
-  e.imperf >= 1 &&
-    x.push(
-      0 === e.looks && "m" === e.pres
-        ? "clean-shaven" === (t1("facialHair", e.facialHair) || "clean-shaven")
-          ? "a faint, even beard shadow on the jaw and upper lip"
-          : "fine, natural facial hair texture"
-        : e.looks >= 2 ? "fine peach fuzz on the cheeks and jaw" : "fine peach fuzz catching the light on the cheeks and jaw",
-      "natural lip texture with fine lines",
-    );
+  e.imperf >= 1 && x.push(sdFaceFuzz(), "natural lip texture with fine lines");
   "bald" !== e.hairStyleSel && "shaved" !== e.hairLen && x.push("a few flyaway hairs");
-  var m = r8();
-  "none" === m ? x.push("no makeup") : !r9() && e.looks <= 1 && x.push("little or no makeup");
-  return x.join(", ") + "." + ("none" !== m && r9() ? " Makeup: " + r9() + "." : "");
+  /* v116: makeup named in the free outfit text wins over the Maquillage setting (no "no makeup" next to "thin black eyeliner") */
+  var m = sdFreeMk() ? "free" : r8();
+  "none" === m ? x.push("no makeup") : "free" === m || (!r9() && e.looks <= 1 && x.push("little or no makeup"));
+  return x.join(", ") + "." + ("none" !== m && "free" !== m && r9() ? " Makeup: " + r9() + "." : "");
+}
+/* v157 (user, a head sheet of a man: "il devrait être torse nu, sinon Seedance va vouloir utiliser le haut … ne pas dire torse nu, mais on ne
+   doit pas voir le vêtement, sans tronquer l'image"): an adult's head sheet with the placeholder top (no top chosen, the reference outfit's
+   t-shirt or top) shows the bare neck and shoulders, the frame unchanged, ending above the clothing; a top chosen, typed or taken from the
+   photo is the character's costume and keeps its neckline; a child keeps the top (both engines) */
+var SD_BARE_NECK_SD = "Bare neck, shoulders and collarbones at the bottom edge of each panel, the frame ending above the clothing: no top, strap or neckline shows.";
+var SD_BARE_NECK_GPT = "Bare neck and shoulders: the frame ends just below the collarbones, above the clothing, so no clothing, strap or neckline shows in any panel.\n";
+/* v157 review 3: with something worn on the head and face (a scarf, a hood, a necklace), the neck is bare apart from it */
+var SD_BARE_NECK_SD_ACC = "Neck, shoulders and collarbones at the bottom edge of each panel, bare apart from what is worn on the head and face, the frame ending above the clothing: no top, strap or neckline shows.";
+var SD_BARE_NECK_GPT_ACC = "Bare neck and shoulders apart from what is worn on the head and face: the frame ends just below the collarbones, above the clothing, so no top, strap or neckline shows in any panel.\n";
+function sdBareNeckSd() {
+  return nz() ? SD_BARE_NECK_SD_ACC : SD_BARE_NECK_SD;
+}
+function sdBareNeckGpt() {
+  return nz() ? SD_BARE_NECK_GPT_ACC : SD_BARE_NECK_GPT;
+}
+function sdBareNeck() {
+  if ("person" !== e.mode || sdChild(e) || e.child) return !1;
+  /* v157 review 3: the reference outfit replaces the photo's clothes too */
+  if (nv() && !an()) return !0;
+  if (sdPhotoClothes()) return !1;
+  if (nv()) return !0;
+  if (sdFreeOn()) return !sdFreeText();
+  return !nh("topSel", "topOpts", "top").length;
 }
 function sdNeck() {
+  if (sdBareNeck()) return sdBareNeckSd();
   if (nv()) {
     /* a face sheet never shows undress or swimwear: always a plain, clothed neckline */
     return (
@@ -1882,12 +4676,15 @@ function sdNeck() {
 }
 function sdHead() {
   var p = sdPos(),
-    lg = "long" === e.hairLen || "vlong" === e.hairLen,
+    lg = sdHairPast(),
     pr =
       0 === e.looks
-        ? "In profile: the lips just behind the line from nose tip to chin, " +
-          ("auto" === e.jaw && !sdCharOn() ? ("m" === e.pres ? "a strong, projected chin, " : "a gently projected chin, ") : "") +
-          "a clean jaw-to-neck line."
+        ? /* v129 review: not with a beard that covers the chin and the jaw line */
+          "f" !== e.pres && ["short", "full", "long", "chinstrap"].indexOf(e.facialHair) >= 0
+          ? "In profile: the lips just behind the line from nose tip to chin."
+          : "In profile: the lips just behind the line from nose tip to chin, " +
+            ("auto" === e.jaw && !sdCharOn() ? ("m" === e.pres ? "a strong, projected chin, " : "a gently projected chin, ") : "") +
+            "a clean jaw-to-neck line."
         : "",
     s =
       (e.looks >= 2
@@ -1897,6 +4694,10 @@ function sdHead() {
           ("f" === e.pres ? "she is" : "m" === e.pres ? "he is" : "they are") +
           "."
         : "Unretouched studio photograph, 16:9 landscape, four equal vertical panels separated by thin mid-grey gaps: an identity reference sheet of one " +
+          /* v129 (user, a "Canon" + "Méchant" sheet far from canon beauty): the guide for Seedream says it weights the start of the prompt most
+             heavily and asks for the subject's defining attributes in the first clause (Runware, Seedream 4.5 prompting guide); with "Canon"
+             the beauty was said only after the face structure */
+          (0 === e.looks ? ("m" === e.pres ? "strikingly handsome " : "f" === e.pres ? "strikingly beautiful " : "strikingly good-looking ") : "") +
           sdWho() +
           ", the same person in all four panels.") +
       "\nFirst panel: front view, looking straight into the lens. Second panel: three-quarter view, " +
@@ -1913,13 +4714,15 @@ function sdHead() {
       sdBackHair() +
       ". Each panel is a tight head-and-shoulders close-up, from just above the top of the hair to just below the collarbones; the head has the same size and height in all four panels" +
       (lg ? ", long hair may be cropped by the panel edges" : "") +
-      ".\n\n";
+      ". " +
+      SD_FACE_IN +
+      "\n\n";
   s +=
     t6(rS()) +
     ": " +
     nn() +
     ". " +
-    t6(ne()) +
+    t6(sdCurls(ne())) +
     ". " +
     t6(nT()) +
     "." +
@@ -1928,8 +4731,13 @@ function sdHead() {
     "\n";
   var f = sdCharFace(sdFace());
   f && (s += f + "\n");
-  sdChar() && (s += sdChar() + "\n");
+  /* v156: "Graisse : visage" */
+  sdFaceFatLine() && (s += sdFaceFatLine() + "\n");
+  /* v128: with "Canon" or "Beau" the beauty comes first, the character after it (Seedream) */
+  var cb = +e.looks <= 1 && sdChar(!1, !0);
+  cb || (sdChar(!1, !0) && (s += sdChar(!1, !0) + "\n"));
   s += sdLooks() + (pr ? " " + pr : "") + "\n";
+  cb && (s += sdChar(!0, !0) + "\n");
   var mk = rg(!0);
   mk && (s += "Distinctive marks, each on the stated side: " + mk + ".\n");
   rl() &&
@@ -1947,6 +4755,14 @@ function sdHead() {
       ? " Accurate, neutral colors and sharp detail, not airbrushed, not a 3D render. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text, labels, scale bars, markings or watermark.")
       : " Natural colors, fine film grain, not airbrushed, not a 3D render. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text, labels or watermark."));
   return s;
+}
+/* v131 (user, two Seedream head sheets with "Bouclés": loose waves drawn, GPT drew the curls): the curls said as they look, right after
+   the hair (Seedream head and body), with the styles where the curls show (not braids, cornrows, locs or twists) */
+function sdCurls(t) {
+  var i = "string" == typeof t ? t.indexOf(" hair") : -1;
+  if (i < 0 || "curly" !== e.hairTex || "shaved" === e.hairLen || ["loose", "ponytail", "bun", "afro", "fringe", "undercut", "mohawk", "receding"].indexOf(e.hairStyleSel || "loose") < 0) return t;
+  var rest = t.slice(i + 5);
+  return t.slice(0, i + 5) + ", in defined, springy curls from the roots to the ends, never loose waves" + (rest ? "," + rest : "");
 }
 function sdLegs(hl) {
   var L = at[e.legs] || 47,
@@ -2015,13 +4831,89 @@ function sdHeadWarn(t, k) {
 /* "Très mince": a lower scoop neckline so the bony upper chest shows (collarbones, breastbone, first ribs), never the bust itself */
 function sdTopNeck() {
   return "m" !== e.pres && 0 === e.fat
-    ? "a lower, wider scoop neckline showing the collarbones, the breastbone and the first ribs under the thin skin, down to about a hand's width below the collarbones (never the bust itself)"
+    ? "a lower, wider scoop neckline showing " + (sdClavFlesh() ? "" : "the collarbones, ") + "the breastbone and the first ribs under the thin skin, down to about a hand's width below the collarbones (never the bust itself)"
     : "a modest round neckline";
 }
 /* "Très généreuse": loose sleeveless top, arms bare, the side of the bust visible through the armholes (wanted by the user to judge the drop).
    A fitted top at this size was replaced as sensitive content after generation (v84 to v86), the loose top passed. */
 function sdLooseTop() {
-  return "a loose cobalt-blue sleeveless cropped top in medium-weight, opaque cotton jersey, with " + sdTopNeck() + " and wide armholes, so the whole arms and shoulders are bare; it covers the whole bust and drapes over it without " + ("low" === e.bustShape ? "lifting or pressing it" : "clinging, lifting or flattening it") + ", double-layered at the front so no detail shows through, no padding, no underwire; " + ("low" === e.bustShape ? "the soft jersey settles onto the bust, never forming a high shelf or a forward point on the chest;" : "in the side views its front falls straight down from the fullest point of the bust, so the full size of the bust reads clearly;") + " in the side views the wide armholes show the bare side of the bust and its full outline from the armpit down to its lowest point, so its size and its drop read clearly; its hem hangs loose a hand's width below the bust, so the navel and the lower abdomen are bare; seen from behind, it covers the upper back";
+  /* v136 (user: "la poitrine a tendance à sortir au-delà du soutien-gorge"; self-review: with "Très tombante" the wide armholes showed "the
+     bare side of the bust ... down to its lowest point", on the belly): the fabric follows the bust and covers its sides; a shorter text */
+  /* v138 (user: "juste très tombante on laisse le haut ample mais essaye de mettre au moins un décolleté"): a deep neckline, which also
+     shows the long, flat upper chest of the drop */
+  if (sdDropX())
+    return "a loose cobalt-blue sleeveless cropped top in medium-weight cotton jersey, with " + sdDropNeck() + " and armholes hugging the shoulder joints; it covers the whole bust, sides included, draping over it without lifting or pressing it, double-layered at the front, no padding; in the side views it follows the bust down to its lowest point; its hem hangs loose " + (sdCi(e.chest) <= 1 ? "a hand's width below the bust, the navel and lower abdomen bare" : "just below the bust, " + (sdCi(e.chest) >= 3 ? "the lower abdomen bare" : "the navel and lower abdomen bare")) + ", the upper back covered";
+  return "a loose cobalt-blue sleeveless cropped top in medium-weight, opaque cotton jersey, with " + sdTopNeck() + " and wide armholes, so the whole arms and shoulders are bare; it covers the whole bust and drapes over it without " + ("low" === e.bustShape ? "lifting or pressing it" : "clinging, lifting or flattening it") + ", double-layered at the front so no detail shows through, no padding, no underwire; " + ("low" === e.bustShape ? "the soft jersey settles onto the bust, never forming a high shelf or a forward point on the chest;" : "in the side views its front falls straight down from the fullest point of the bust, so the full size of the bust reads clearly;") + " in the side views the wide armholes show the bare side of the bust and its full outline from the armpit down to its lowest point, so its size and its " + (sdBustHighOn() || sdBustFwdOn() ? "shape" : "drop") + " read clearly; its hem hangs loose a hand's width below the bust, so the navel and the lower abdomen are bare; seen from behind, it covers the upper back";
+}
+/* v138 (review): below "Moyenne" the drop text empties the little volume against the ribs: no "cleavage" there, the same depth */
+function sdDropNeck() {
+  return sdCi(e.chest) >= 2 ? "a deep scoop neckline down to the top of the cleavage" : "a deep scoop neckline down to the middle of the breastbone";
+}
+/* v138 (user: "il faut que je puisse avoir la possibilité d'avoir une très grosse poitrine tombante avec un haut de maillot, pas juste un
+   bustier ample"): with the tanga and "Très généreuse", "Haut de maillot" (tangaTop "bikini") gives a full-coverage bikini top instead of
+   the loose top, never with "Très tombante" (its loose top stays, the user's word). Seedream blocked "Très généreuse" in v75 (every
+   outfit) and v76 (triangles and tanga; lessons file); since v79 this size has the loose top with the tanga: "Haut ample" stays the
+   default and the hint says it. */
+function sdBigTopOn(t) {
+  return "person" === t.mode && !sdChild(t) && "tanga" === sdShownCover(t) && t.chest >= 4 && !sdDropRaw(t);
+}
+function sdBigTop() {
+  /* v141 (user's render, "Tombante" with "Haut de maillot": "la poitrine un peu trop bombée sur le dessus"; the top came out as a structured,
+     lifted bra, the upper part filled out): for "Tombante", unlined fabric panels lying flat on the upper slope, no "cups", no negated
+     "underwire" (a negated word stays a word, lessons file) */
+  if ("low" === e.bustShape)
+    /* v146 (user's v145 render: the top's lower edge across the middle of the bust, its lower part below it, two masses; a stretched panel
+       fills the upper slope): the panels reach down into the crease under the bust; the fabric rests on the skin, settling with the bust */
+    /* v146 review: "unstructured" kept (v141, against a structured bra); no "lower edge ... along the crease" (a bra band's place, support
+       and lift) and no "slack" (gaping): each panel reaching down into the crease */
+    /* v148 (11 renders of the user's sheet, v146 text, 1023 and 729 words: a plunging top in all 11, the inner half of each breast bare, the
+       relief showing through the fabric in several; user: "oui" to a closed, covering, opaque top): a straight neckline a hand's width
+       below the collarbones (a landmark, as sdTopNeck), the whole bust covered from side to side; opaque and
+       double-layered in place of "thin, unlined" (the see-through; the relief of a clinging fabric may stay, v77); "soft, unstructured"
+       kept (v141, against a lifted bra). v148 review: no "one front panel" (a flat sheet across his wide-set bust would merge the two
+       sides; "panel" is also the sheet layout's word); second review: the neckline lying on the breastbone (the middle closed), the bust
+       covered "from side to side" (no "each breast", which with "bikini top" reads as two cups; no "between them", a pronoun without a
+       plural), "settling with the bust" (no "settling with it so its"); "fully lined" not taken (a lining gave the lifted bra of v141),
+       "wide" straps kept (the hint says them); "a strap across the back" as the other shapes say it; no negated "plunge" or "cleavage"
+       (a negated word stays a word); the same number of words (70), "soft" once as before */
+    return "a cobalt-blue full-coverage bikini top with wide shoulder straps and a strap across the back, in soft, opaque, double-layered, unstructured fabric; its straight neckline, a hand's width below the collarbones, lies on the breastbone; the fabric covers the bust from side to side and down into the crease beneath it, settling with the bust so its low, heavy shape and its drop read clearly; the abdomen bare below the top";
+  return (
+    "a cobalt-blue full-coverage bikini top with wide shoulder straps and a strap across the back: two large, soft cups with no padding and no underwire, each covering the whole breast, " +
+    /* v138 (review): "Tombante" without "sides and underside included", kept off its triangles since v135 (they follow the drop) */
+    ("low" === e.bustShape
+      ? "resting on it without lifting it, so its low, heavy shape and its drop read clearly"
+      : "conical" === e.bustShape
+        ? "sides and underside included, following its long, forward-projecting shape without lifting or pressing it"
+        : "sides and underside included, following its natural shape without lifting or pressing it") +
+    "; the abdomen bare below the top"
+  );
+}
+function sdBigTopUI(t, g) {
+  return sdBigTopOn(t)
+    ? (0, l.jsx)(
+        "div",
+        {
+          className: "mt-3",
+          children: (0, l.jsx)(ay, {
+            name: "c-tangaTop",
+            label: sdT("Haut avec le tanga", "Top with the tanga"),
+            opts: [
+              ["loose", sdT("Haut ample", "Loose top")],
+              ["bikini", sdT("Haut de maillot", "Swimsuit top")],
+            ],
+            value: "bikini" === t.tangaTop ? "bikini" : "loose",
+            onChange: function (v) {
+              g("tangaTop", v);
+            },
+            hint: sdT(
+              "« Haut de maillot » : un haut de bikini couvrant, à larges bretelles, sans armature ni rembourrage, qui ne remonte pas la poitrine. Seedream a bloqué « Très généreuse » en v75 (toutes les tenues) et en v76 (triangle et tanga) ; depuis la v79, cette taille a un haut ample avec le tanga. Si l'image est bloquée ou retirée, repasse sur « Haut ample ».",
+              "“Swimsuit top”: a full-coverage bikini top with wide straps, no underwire and no padding, that does not lift the bust. Seedream blocked “Very generous” in v75 (every outfit) and in v76 (triangles and tanga); since v79 this size has had a loose top with the tanga. If the image is blocked or removed, go back to “Loose top”.",
+            ),
+          }),
+        },
+        "sd-tanga-top",
+      )
+    : null;
 }
 /* fitted top from "Généreuse" up: heavyweight matte jersey with a little ease, close but not skin-tight, so it shows the size and the low position of the bust but no surface detail.
    v85 tried a built-in lining: the bust looked supported and details still showed; Seedream then replaced the image as sensitive content after display. */
@@ -2048,6 +4940,8 @@ function sdHardLight() {
 }
 /* very slim build: the ribs show where the torso is uncovered (Seedream and GPT) */
 function sdRibs() {
+  /* v128 review: never next to fat on the belly, the flanks or the back */
+  if (sdFatTorso()) return "";
   return ", the ribs showing clearly under the thin skin wherever the torso is uncovered, along the sides of the ribcage and below the " + ("m" === e.pres || !(e.chest >= 1) ? "chest" : "bust") + " in the front view and along the flanks in the side views";
 }
 /* bust values: 0, 1, 2, 2.5 (intermediate), 3, 4 -> positions 0..5 */
@@ -2061,7 +4955,8 @@ function sdBust() {
     ci = sdCi(c),
     size =
       [
-        "a completely flat chest",
+        /* v130 (user: "Très menue" drew a bust): what flat shows in profile. v134: in positive terms only (SD_PECS_FLAT_SD) */
+        "a completely flat chest like a slim man's: in profile the chest line runs straight down from the collarbones",
         "a very small bust, almost flat in profile",
         "a medium bust",
         "a fairly full bust, larger than average",
@@ -2076,17 +4971,28 @@ function sdBust() {
               : "a large, full natural bust",
         "a very large, heavy natural bust, out of proportion with her " + (e.fat <= 1 ? "slim " : "") + "frame",
       ][ci] || "a medium bust",
-    cup = ["", "", "about a B to C cup", "about a D cup", "about a D to E cup", "about an H cup"][ci] || "",
+    /* v140 (user: "je pense que c'est du F ou G"): "Bonnet écrit (Très généreuse)", H by default or F to G; the rest of the text kept */
+    cup = ["", "", "about a B to C cup", "about a D cup", "about a D to E cup", "fg" === e.cupTG ? "about an F to G cup" : "about an H cup"][ci] || "",
     sh =
       c >= 1
         ? {
-            round: "a rounded shape" + ("young" === e.sdAutoTier ? ", naturally full and firm" : ""),
+            round: "a rounded shape" + ("young" === e.sdAutoTier && !sdBustSkin() ? ", naturally full and firm" : ""),
             high: "a high-set shape",
-            low:
-              c >= 3 && "moderate" === e.sdAutoTier
+            low: sdDropX()
+              ? sdDropSd()
+              : c >= 3 && "moderate" === e.sdAutoTier
                 ? "soft, with a visible natural drop: the upper chest slightly emptied below the collarbones, the volume settled in the lower half, the lowest point near the bottom of the ribcage; never round, firm or high"
                 : c >= 4
-                ? "with a strong natural drop, heavy and soft rather than firm, round or pointed, like a heavy, well-filled soft pouch: the upper chest stays long and flat for about two hands' width below the collarbones before the bust begins; the volume spreads wide toward the sides and settles low, its lowest point a hand's width above the navel, resting against the ribcage with a soft crease beneath it; in profile the upper slope is long, flat and slightly hollow, and all the volume sits in a heavy, full lower part that projects well forward of the stomach, low on the ribcage; the fullest point is low, near the bottom of the bust, never in the middle; slightly uneven, the left side a little lower; never round, conical, firm, high or lifted"
+                ? /* v144 (user's render: "la poitrine est en obus au lieu d'être tombante en goutte"): the shape said in positive terms only
+                     (no "round, conical, pointed, firm, high or lifted", negated words drawn; no "projects well forward", which pointed it).
+                     v146 (user's v145 render, "une poitrine qui ressemble à un obus plus qu'à une poitrine tombante en forme de goutte"; measured
+                     in profile: the upper slope 12 to 14 px above a straight line, a full, projecting bust): a teardrop (straight or slightly
+                     concave upper slope, nipple turned upward; Mallucci and Branford) is not a drop (Regnault: the nipple at or below the fold,
+                     pointing down), and his reference photo is neither: with the arm down, the upper part full and sloping gently, the volume
+                     low and spreading outward, the weight pulling down and to the sides. Said so (the user agreed), no longer "long and flat for
+                     two hands' width" or "slightly hollow"; no "soft" added (word count). v146 review: no "rounded" (the "round" v144 took out,
+                     a shape word drawn at full strength), no "pointing" (the nipple wording this size leaves out, close to "pointed") */
+                  "with a strong natural drop, heavy and soft, settling low and out to the sides under its weight: the upper part relaxed, sloping gently down from below the collarbones; most of the volume in the lower part, which spreads toward the sides and rests low against the ribcage with a soft crease beneath it, its lowest point a hand's width above the navel; in profile its weight carries it down, the front sloping gently down from the chest; the fullest point is low, near the bottom of the bust; slightly uneven, the left side a little lower"
                 : c >= 3
                 ? "with a pronounced natural drop: the upper chest flat below the collarbones, the volume settled low, the lowest point only a hand's width above the navel, resting against the ribcage; in profile the bust falls downward more than it projects forward; slightly uneven, the left side a little lower; never round, firm, high or lifted"
                 : c >= 2
@@ -2104,31 +5010,336 @@ function sdBust() {
                 : "small, flatter at the top, the little volume sitting in the lower half",
             wide: "wide-set, about a hand's width apart at the center, each side angled slightly outward",
             asym: "clearly asymmetric, the left side visibly fuller and slightly lower than the right in every view",
+            /* v157 (user: "il manque des formes de seins, il y a des femmes avec des seins de formes différentes qui ne sont pas dans le style ;
+               il faut impérativement que tu audites et que tu rajoutes ce qu'il faut"): audited against the twelve common shapes of
+               Healthline ("Breast shapes", Maisha Johnson, medically reviewed by Catherine Hannan, M.D., 26 April 2019): round, conical,
+               side set (Écartée), bell (Poire), relaxed (Tombante), asymmetrical were here; teardrop, athletic, close set, east west and
+               slender were missing. No nipple wording (the filter, v76). */
+            teardrop: "a natural teardrop shape: rounded, the upper slope gently sloping, the lower half slightly fuller than the upper, no real drop",
+            athletic: "athletic: a wide base over firm pectoral muscle, little breast tissue, flatter in profile, the outer edges reaching toward the armpits",
+            close: "close-set: both sides sitting close to the center of the chest, little space between them, the inner edges nearly touching",
+            eastwest: "each side angled outward, pointing away from the center of the chest toward the sides, a clear gap between them at the center",
+            slender: "slender: narrow at the base and longer than wide, sitting a little low and pointing slightly downward, little fullness at the top",
           }[e.bustShape]
         : "";
+  sdBustPos() && (sh = (sh ? sh + "; " : "") + sdBustPosIn(sh));
+  sdWideOn() && (sh = (sh ? sh + "; " : "") + SD_WIDE_SD);
+  sdBustSkin() && (sh = (sh ? sh + "; " : "") + sdBustSkin());
+  sdAsymOn() && (sh = (sh ? sh.replace("; slightly uneven, the left side a little lower", "") + "; " : "") + SD_ASYM_SD);
   var big = 5 === ci,
     out =
       size +
       (cup ? " (" + cup + ")" : "") +
       /* "Assez généreuse": same front landmark as the GPT text (v93); not with the conical shape, whose base is narrow */
       (3 === ci && "conical" !== e.bustShape ? ", its base covering most of the width of the chest in the front view" : "") +
+      /* v135 (user: with "Moyenne" on a slim body the bust came out small in every sheet, the profile 1.4 to 1.5% of the body height ahead of
+         the ribs; one step up, 2.1%, was the bust wanted): on a slim build (Mince, Très mince) the medium bust is said full for the frame,
+         with the front landmark of "Assez généreuse" (calibration on the user's renders, not a measurement) */
+      (2 === ci && e.fat <= 1 && "conical" !== e.bustShape && !sdDropX() ? ", full for " + ("f" === e.pres ? "her" : "the") + " slim frame, covering most of the chest width" : "") +
       (c >= 3 && !big && ["low", "conical"].indexOf(e.bustShape) < 0 ? " with a wide base" : "") +
       (3 === c && ["pear", "conical"].indexOf(e.bustShape) >= 0 ? ", clearly larger than average" : "") +
       (sh ? ", " + sh : "");
   /* "Très généreuse": visibly bigger than "Généreuse" through landmarks and its cup (about an H, v80), no nipple wording */
-  return big
+  /* v131: a woman's pectorals, when set, instead of the flat chest or above the bust */
+  return sdPecsBust(big
     ? out.replace(/,? the nipples pointing[^,;.]*/, "") +
         "; in the front view the bust fills the whole width of the chest, its outer sides " + ("low" === e.bustShape ? "spreading" : "bulging") + " past the ribcage against the inner arms" +
         ("low" !== e.bustShape ? "; in profile it projects forward from the ribcage by a little more than the length of her hand, far beyond the stomach" : "")
-    : out;
+    : out, 1);
+}
+/* v128 (user: "Discrets" and "Présents" abs gave the same body; and: add abdominal fat with a slider, and fat next to the other zones too,
+   to mix muscle and fat, more realistic, as Nano Banana does with fat here and there): (1) each level of abs definition says what it
+   shows and what it does not, so "Discrets" (a hint, no segments) and "Présents" (segments readable) differ; (2) "Graisse" sliders for
+   the belly, the flanks (love handles), the arms and the back, next to their "Muscles apparents", 0 to 4, adults, both engines, after the
+   existing "Graisse : hanches et cuisses". The fat sits over the muscles: where both are set, the muscles read as soft shapes under it,
+   and the definition never slims those zones; belly fat from "Visible" up hides fine abs. Words that said the opposite (slender arms,
+   hip bones, no extra padding) go when the zone carries fat. The weight counts the fat, as a BMI step for a slim or average build
+   (prompt calibration, not a measure). */
+var SD_ABS_DEF = {
+  subtle: "abs only hinted: a faint vertical line above the navel, no visible segments or horizontal lines",
+  clear: "visible abs: the upper segments and the centre line readable, with soft shadows",
+  strong: "sharply visible abdominal segments with deep shadows between them",
+};
+/* v128 review: the same two levels inside GPT's "Muscles apparents : toutes les zones" text (rT), which said "a soft outline" and "a
+   visible outline" of the abdominal muscles, two words apart */
+var SD_ABS_GPT = {
+  subtle: "abs only hinted by a faint vertical line above the navel",
+  clear: "visible upper abs with a readable centre line",
+};
+var SD_FAT_Z = [
+  /* v156 (user: "pectoraux pour les hommes tu peux mettre graisse"): soft fat over a man's pectorals, never a bust; first, head to toe, so
+     the fat line of every other character is unchanged */
+  ["fatChest", "chest", [0, 0.1, 0.25, 0.45, 0.7]],
+  ["fatBelly", "belly", [0, 0.4, 0.9, 1.6, 2.5]],
+  ["fatFlanks", "love handles", [0, 0.2, 0.5, 0.9, 1.4]],
+  ["fatArms", "upper arms", [0, 0.1, 0.25, 0.45, 0.7]],
+  /* v149: fat on the front of the upper arms, over the biceps; no weight step (the arm's own step is "Graisse : bras (arrière, triceps)") */
+  ["fatBiceps", "front of the upper arms", [0, 0, 0, 0, 0]],
+  ["fatBack", "back", [0, 0.1, 0.25, 0.45, 0.7]],
+  /* v130 (user: the glutes had no fat slider): soft fat within the glute size set by "Fessiers : volume", so no weight step */
+  ["fatGlutes", "glutes", [0, 0, 0, 0, 0]],
+  /* v139 (user: "de la graisse sur la face avant haute des cuisses", "des bourrelets"): soft fat on the front of the upper thighs, from
+     "Visible" a fold, from "Marquée" a roll at the top along the hip crease, within the thigh size set by "Cuisses", so no weight step */
+  ["fatThighs", "front of the upper thighs", [0, 0, 0, 0, 0]],
+  /* v140 (user: settings for real bodies he had not thought of): soft fat pads above the knees, no weight step */
+  ["fatKnees", "knees", [0, 0, 0, 0, 0]],
+];
+/* v128 review: a whole level from 0 to 4 (an imported file may hold anything); none with "Forte", whose text already gives the fat of
+   every zone (a big belly, rolls on the back, thick upper arms) and whose sliders are hidden */
+function sdFatOn(k) {
+  /* v149 (user: "il faudrait pouvoir ajouter du gras sur le biceps, il n'y a pas ce curseur, et mettre Auto si besoin"; asked, "Auto" follows
+     the back of the arm): "Graisse : bras (avant, biceps)", "Auto" by default, one step below "Graisse : bras (arrière, triceps)"; a level
+     set by hand ("0" to "4") overrides it */
+  /* v149 review: "auto", empty or not a number is "Auto"; a number is rounded and kept between 0 and 4, as every other zone */
+  if ("fatBiceps" === k && ("auto" === e.fatBiceps || null == e.fatBiceps || "" === e.fatBiceps || isNaN(+e.fatBiceps))) return Math.max(0, sdFatOn("fatArms") - 1);
+  /* v156: "Graisse : pectoraux" is a man's only (a woman's chest is the bust's) */
+  if ("fatChest" === k && "m" !== e.pres) return 0;
+  return "person" === e.mode && !sdChild(e) && 4 !== +e.fat ? Math.max(0, Math.min(4, Math.round(+e[k] || 0))) : 0;
+}
+/* v149: the fat of the upper arm, back or front, for the muscle, vein and build words that follow it (with "Auto" the front is one step
+   below the back, so these words are as in v148 unless the front is set higher by hand; the fat line itself gains the front item from
+   "Visible" at the back) */
+function sdArmFat() {
+  return Math.max(sdFatOn("fatArms"), sdFatOn("fatBiceps"));
+}
+/* fat on the torso (belly, flanks or back): no ribs showing, no "lean" build word */
+function sdFatTorso() {
+  /* v156: a man's chest fat too */
+  return Math.max(sdFatOn("fatBelly"), sdFatOn("fatFlanks"), sdFatOn("fatBack"), sdFatOn("fatChest"));
+}
+/* the waist carries fat from "Visible" up: never said slim */
+function sdFatWaist() {
+  /* v130 (GPT audit of v129: "Taille : Très large" with "Hanches : Très larges" also said a waist-to-hip ratio of 0.6): the same with a
+     wide waist set by hand */
+  /* v142: love handles under a waist set narrow by hand ("Fin", "Très fin") sit at the top of the hips (SD_FLANKS_NW): the waist stays slim */
+  return sdFatOn("fatBelly") >= 2 || (sdFatOn("fatFlanks") >= 2 && !sdFlanksLow()) || ("m" !== e.pres && e.waist >= 3);
+}
+/* v142 (user, with his reference photos and a Seedream render of his settings: "la taille n'est pas fine du tout", the love handles said
+   "at the sides of the waist" or "over the hip line" had widened it): under a waist set to "Fin" or "Très fin" (woman, adult), the love
+   handles are said at the top of the hips, below the waist, which is said to stay narrow (both engines, the fat line; calibration to
+   check on renders). "Visible" keeps its own words for the outline (v135, SD_FAT_OUTLINE, which no longer matches it here). Review: not
+   with belly fat from "Visible" up, which keeps the waist from being said slim (sdFatWaist); "Moyenne" says its general softness at the
+   top of the hips too. A woman or an androgynous adult, as the curvy texts (sdCurvy). */
+function sdFlanksLow() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && +e.waist <= 1 && sdFatOn("fatBelly") < 2;
+}
+var SD_FLANKS_NW = {
+  "a slight softness at the sides of the waist": "a slight softness at the top of the hips, just below the %w waist",
+  "small love handles, soft rolls at the sides of the waist": "small love handles: soft rolls at the top of the hips, showing in the outline, just below the %w waist",
+  "clear love handles spilling slightly over the hip line": "clear love handles at the top of the hips, spilling slightly over the hip line, the waist above them still %w",
+  "large love handles wrapping to the lower back, spilling over the hip line": "large love handles at the top of the hips, wrapping to the lower back and spilling over the hip line, the waist above them still %w",
+};
+/* v142: a narrow waist set by hand between wide hips and a large bust, from "Très mince" to "Moyenne", is an hourglass: said so in the
+   lead of the Seedream photo prompt, the waist compared with the bust and the hips, and never "a dramatic pear shape" or "a pear-shaped
+   build" (both engines). Review: not with belly fat from "Visible" up (sdFlanksLow) */
+function sdHourglass() {
+  return sdFlanksLow() && +e.hips >= 3 && sdCi(e.chest) >= 4 && +e.fat <= 2;
+}
+var SD_CELL_FRONT = {
+  "light cellulite dimpling on the backs of the thighs and just under the glutes, faint but visible in a full-body view": "light cellulite dimpling on the front and back of the upper thighs and just under the glutes, faint but visible in a full-body view from the front as well as from behind",
+  "visible cellulite dimpling on the thighs and the lower glutes where the skin is uncovered": "visible cellulite dimpling on the front and back of the thighs and on the lower glutes, in the front view as well as from behind, where the skin is uncovered",
+  "marked cellulite with clear dimpling on the thighs, hips and lower glutes where the skin is uncovered": "marked cellulite with clear dimpling on the front and back of the thighs, the hips and the lower glutes, in the front view as well as from behind, where the skin is uncovered",
+};
+/* v128 review: the option texts that call the waist slim, when the waist carries fat (t1, both engines) */
+function sdOptFix(k, x) {
+  /* v156: a man's chest carrying fat from "Visible" up is never said flat */
+  if ("pecs" === k) return "flat chest" === x && sdFatOn("fatChest") >= 2 ? "chest with little muscle under the fat" : x;
+  if ("thighs" === k) {
+    /* v139: thighs carrying fat at the front from "Visible" up are never said lean */
+    sdFatOn("fatThighs") >= 2 && (x = x.replace("slim, lean thighs", "slim thighs"));
+    /* v140: "Intérieur des cuisses" set to touching: no gap said by the size */
+    sdPick(SD_THIGHGAP, "thighGap") && "gap" !== e.thighGap && (x = x.replace(" with a clear gap between them", ""));
+    /* v141 (prompt check): "not bulky" never next to visible saddlebags, marked hip and thigh fat or front thigh fat */
+    (sdFatOn("fatThighs") >= 2 || ("m" !== e.pres && (e.fatLower >= 3 || "visible" === e.saddle || "marked" === e.saddle))) && "person" === e.mode && !sdChild(e) && (x = x.replace(", not bulky", ""));
+    /* v157: never "not bulky" next to muscular front thighs */
+    sdThighFront() && +e.thighFront >= 3 && (x = x.replace(", not bulky", ""));
+    return x;
+  }
+  if ("fatFlanks" === k) return sdFlanksLow() && SD_FLANKS_NW[x] ? SD_FLANKS_NW[x].replace("%w", 0 === +e.waist ? "very narrow" : "narrow") : x;
+  /* v150 (user: "le gras et le défaut du corps au niveau de la face avant de la cuisse : il se concentre toujours sur l'arrière"; the light
+     cellulite said "on the backs of the thighs"): with fat on the front of the thighs, the cellulite there too, said in the front view as
+     well as from behind; the end " where the skin is uncovered" kept (sdSkinBody cuts it on a reference-outfit sheet, nv). v150 review: only
+     where the reference outfit leaves the front of the upper thighs bare (the tanga, a one-piece swimsuit; not the bike or swim shorts,
+     GPT's included, nor a sheet in the user's own clothes) */
+  if ("cellulite" === k && sdFatOn("fatThighs") >= 1 && nv() && ["tanga", "onepiece"].indexOf(sdShownCover(e)) >= 0) return SD_CELL_FRONT[x] || x;
+  /* v139 review: on slim thighs ("Très fines", "Fines") the front fat stays soft, never heavy or padded */
+  if ("fatThighs" === k && e.thighs <= 1) return x.replace("heavy, padded front upper thighs", "padded front upper thighs").replace("clearly padded front upper thighs", "padded front upper thighs");
+  return "glutes" === k && sdFatWaist() ? x.replace("out of proportion with a slim waist", "out of proportion with the waist") : x;
+}
+/* v139: soft thighs (saddlebags, "Graisse : hanches et cuisses" or cellulite: rN; or fat on the front of the thighs from "Visible" up):
+   the leg definition says the knees and calves, the thighs soft (both engines). rN itself is unchanged: it also writes GPT's pear-shaped
+   "Fat distribution" sentence for women */
+function sdKneeLeg(m) {
+  var o = {},
+    k;
+  for (k in m)
+    o[k] = m[k].replace("drawn knees, ", "").replace("sharp knees and calves", "sharp calves").replace(/^lean, /, "").replace(/^lean legs/, "legs") + ", rounded knees";
+  return o;
+}
+/* v157d review: the leg definition with "Genoux : Lisses" (the smooth knees are said in the body details) */
+function sdKneeSmoothLeg(m) {
+  var o = {},
+    k;
+  for (k in m) o[k] = m[k].replace("drawn knees, ", "").replace("sharp knees and calves", "sharp calves");
+  return o;
+}
+function sdThighSoft() {
+  return rN() || sdFatOn("fatThighs") >= 2;
+}
+function sdListOr(a) {
+  var s = sdList(a),
+    i = s.lastIndexOf(" and ");
+  return i < 0 ? s : s.slice(0, i) + " or " + s.slice(i + 5);
+}
+function sdFatKg() {
+  return e.fat <= 2
+    ? SD_FAT_Z.reduce(function (a, z) {
+        return a + (z[2][sdFatOn(z[0])] || 0);
+      }, 0)
+    : 0;
+}
+function sdFatList() {
+  return SD_FAT_Z.filter(function (z) {
+    return sdFatOn(z[0]) > 0;
+  }).map(function (z) {
+    return t1(z[0], sdFatOn(z[0]));
+  });
+}
+function sdFatZones() {
+  return SD_FAT_Z.filter(function (z) {
+    /* v149: "upper arms" already holds the front of the upper arms */
+    return sdFatOn(z[0]) > 0 && !("fatBiceps" === z[0] && sdFatOn("fatArms") > 0);
+  }).map(function (z) {
+    return z[1];
+  });
+}
+/* the soft fat, over the muscles, in one sentence. v128 review: how muscle and fat go together is said in the muscle line of each zone
+   carrying fat from "Visible" up (soft shapes under the fat), not in a general sentence that contradicted a zone left sharp */
+/* v135 (user, a slim Seedream body with love handles and upper arms "Visible": "la graisse ne me semble pas visible comme il le faudrait";
+   neither showed, the body read lean): on a slim build (Mince, Très mince) the "Visible" fat is said where it changes the outline, in
+   the fat line both engines share (calibration to check on renders) */
+var SD_FAT_OUTLINE = [
+  ["small love handles, soft rolls at the sides of the waist", ", breaking the waistline"],
+  ["soft upper arms that sag slightly", ", their soft underside visible"],
+  ["a small soft pooch below the navel, a shallow crease at the navel", ", rounding out in profile", "a small soft pooch below the navel"],
+  ["small soft folds at the sides of the back, below the armpits", ", visible from behind"],
+];
+function sdFatText() {
+  var f = sdFatList();
+  e.fat <= 1 &&
+    (f = f.map(function (x) {
+      var r = SD_FAT_OUTLINE.filter(function (o) {
+        return o[0] === x;
+      })[0];
+      return r ? (r[2] ? x.replace(r[2], r[2] + r[1]) : x + r[1]) : x;
+    }));
+  return f.length ? "Soft body fat, real and uneven, clearly visible and kept exactly in every view: " + f.join("; ") + "." : "";
+}
+/* v128 review: GPT's muscle text, rewritten where a zone carries fat (the same rules as sdMus and sdAbs for Seedream); unchanged without fat */
+function sdFatGpt(s) {
+  /* v157d review: "Genoux : Lisses", never drawn or sharp knees in line 4 (before the early return: soft thighs without any fat zone, as
+     with cellulite, write them too) */
+  sdKneesSmooth() &&
+    "string" == typeof s &&
+    (s = s
+      .replace("clearly drawn knees and visible calf muscles, the thighs soft", "visible calf muscles, the thighs soft")
+      .replace("sharply defined knees and calves, the thighs soft", "sharply defined calves, the thighs soft"));
+  if (!sdFatList().length) return s;
+  var b = sdFatOn("fatBelly"),
+    a = sdArmFat();
+  s = s
+    .replace("; slim, dense, wiry muscles, not massive: a dry, lean physique like a lightweight martial artist, with the muscles clearly visible but small", "; slim, dense muscles, not massive, clearly visible but small")
+    .replace(", as on a very lean athlete", "");
+  a && (s = s.replace("; the arms look dry and wiry, like a lightweight martial artist's: lean, with sharp separations, not bulky", ""));
+  b &&
+    (s = s
+      .replace(", deep shadow lines and low body fat on the abdomen", " and deep shadow lines")
+      .replace(/with (very )?low body fat on the abdomen and /g, "with "));
+  b >= 2 &&
+    (s = s
+      .replace(SD_ABS_DEF.clear, "the abs only as soft shapes under the belly fat")
+      .replace(SD_ABS_DEF.strong, "the upper abs as soft shapes under the belly fat")
+      .replace(SD_ABS_GPT.clear, "the abs only as soft shapes under the belly fat")
+      .replace("sharply visible abdominal segments, ", "the upper abs as soft shapes under the belly fat, "));
+  a >= 2 &&
+    (s = s
+      .replace("deep grooves between the biceps and triceps that visibly hollow the upper arms", "biceps and triceps as soft shapes under the arm fat")
+      .replace("deep grooves between the deltoid, biceps and triceps that visibly hollow the upper arms", "the deltoid, biceps and triceps as soft shapes under the arm fat")
+      .replace(/(a )?visible separation between biceps and triceps/, "biceps and triceps as soft shapes under the arm fat")
+      .replace(", the forearms and the inner upper arms", " and the forearms")
+      /* v130 (GPT audit): slim biceps under heavy arm fat, not "slim upper arms" next to "heavy upper arms" */
+      .replace("Arms: slim upper arms", "Arms: slim biceps and triceps under the arm fat")
+      /* v131: the other arm sizes under the arm fat too, as in Seedream (v130) */
+      .replace(/Arms: (moderately developed biceps and triceps|well-developed, rounded biceps and triceps|very large, bulging biceps and triceps)/, "Arms: $1 under the arm fat")
+      .replace("the forearms, the biceps and the front of the shoulders", "the forearms and the front of the shoulders"));
+  /* v139: fat on the front of the thighs from "Visible" up: never lean legs (the clear and strong texts are said by sdThighSoft) */
+  sdFatOn("fatThighs") >= 2 &&
+    (s = s.replace("lean, softly toned legs", "softly toned calves, soft thighs").replace(" and arm muscles, lean legs", " and arm muscles, soft thighs"));
+  /* v140 (review): fat above the knees from "Visible" up: rounded knees, never drawn, sharp or lean */
+  sdFatOn("fatKnees") >= 2 &&
+    (s = s
+      .replace("clearly drawn knees and visible calf muscles, the thighs soft", "visible calf muscles, the thighs soft, the knees rounded")
+      .replace("sharply defined knees and calves, the thighs soft", "sharply defined calves, the thighs soft, the knees rounded")
+      .replace("softly toned calves, soft thighs", "softly toned calves, soft thighs, the knees rounded")
+      .replace("lean, softly toned legs", "softly toned legs, the knees rounded")
+      .replace("lean, slender legs with subtle muscle tone", "slender legs with subtle muscle tone, the knees rounded")
+      .replace("lean, slender legs with defined but slim muscles", "slender legs with defined but slim muscles, the knees rounded")
+      .replace(" and arm muscles, lean legs", " and arm muscles, slender legs with rounded knees"));
+  sdFatOn("fatBack") >= 2 &&
+    (s = s
+      .replace("a defined back with visible shoulder blades and a groove along the spine", "the back muscles as soft shapes under the back fat")
+      .replace("a sharply defined back: clear lats, visible separations around the shoulder blades and a deep groove along the spine", "the back muscles as soft shapes under the back fat"));
+  /* v156: a man's chest fat from "Visible" up, as in Seedream */
+  sdFatOn("fatChest") >= 2 &&
+    (s = s
+      .replace("a defined chest and shoulder outline", "a defined shoulder outline, the pectorals as soft shapes under the chest fat")
+      .replace("defined chest and shoulders", "defined shoulders, the pectorals as soft shapes under the chest fat")
+      .replace("a sharply defined chest outline", "the pectorals as soft shapes under the chest fat")
+      .replace(/\ba defined chest\b/, "the pectorals as soft shapes under the chest fat"));
+  return s;
+}
+/* v134 (user: "Muscles apparents : abdos, j'ai mis Présents, du coup ça contredit Plat, lisse : on peut être plat et lisse et distingué
+   derrière une musculature, non ?"): with "Plat, lisse" the "Muscles apparents : abdos" set by hand were dropped, the stomach said with no
+   visible segments; now a flat, smooth stomach with the abdominal muscles readable under the skin at that level (both engines) */
+var SD_FLAT_ABS = {
+  subtle: "a flat, smooth stomach, the abdominal muscles only hinted under the skin by a faint vertical line above the navel",
+  clear: "a flat, smooth stomach with the abdominal muscles readable under the skin: the centre line and the upper segments as soft shapes",
+  strong: "a flat, smooth stomach with the abdominal muscles clearly readable under the skin: the centre line and the segments outlined by soft shadows",
+};
+function sdFlatAbs() {
+  return "flat" === e.absStyle ? SD_FLAT_ABS[e.defAbs] || "" : "";
 }
 function sdAbs() {
   var r = "m" !== e.pres && "dadbod" === e.absStyle ? "belly" : e.absStyle;
   if (!r || "auto" === r) return "";
+  /* v128 review: belly fat from "Visible" up; a flat or smooth stomach no longer said, the segments only under the fat (both engines:
+     GPT takes this line in place of its own) */
+  var bf = sdFatOn("fatBelly"),
+    u = 2 === bf ? ", only as soft shapes under the belly fat" : ", only faintly hinted under the belly fat";
+  if (bf >= 2)
+    return (
+      "Abdomen: " +
+      ({
+        soft: "a soft belly with no visible abs",
+        flat: "no visible abdominal segments",
+        line: "a single soft vertical groove above the navel, no horizontal lines",
+        groove: "a shallow vertical groove down the middle of the belly, above the navel, no visible abs",
+        four: "four segments above the navel" + u,
+        six: "six segments in three rows" + u,
+        eight: "eight segments in four rows" + u,
+        staggered: "abdominal segments in an uneven, staggered pattern" + u,
+        belly: "a soft lower belly, no visible abs",
+        dadbod: "a soft, rounded belly over a solid, broad frame, no visible abs",
+      }[r] || "no visible abdominal segments") +
+      "."
+    );
   var m = {
       soft: "a soft, flat to slightly rounded belly with no visible abs",
-      flat: "a flat, smooth stomach with no visible abdominal segments",
+      flat: sdFlatAbs() || "a flat, smooth stomach with no visible abdominal segments",
       line: "a flat stomach with a single vertical groove down the middle and no horizontal lines",
+      /* v139 (user: "un ventre plat mais avec une fente au milieu"): flat and soft, the groove not from muscle (no definition level) */
+      /* v140 (lessons: "soft" 11 times or more blocked every time): the same stomach without the word */
+      groove: "a flat stomach with a shallow vertical groove down the middle, from below the breastbone to the navel, between two slightly fuller sides; no segments, no horizontal lines, no visible muscle",
       four: "four segments above the navel, the lower belly smooth and flat",
       six: "six segments in three rows",
       eight: "eight segments in four rows, down to below the navel",
@@ -2139,11 +5350,11 @@ function sdAbs() {
     seg = ["four", "six", "eight", "staggered", "line"].indexOf(r) >= 0,
     lv =
       {
-        none: ", barely visible",
-        subtle: ", softly visible",
-        clear: ", with clear shadow lines",
-        strong: ", sharply outlined with deep shadow lines",
-      }[e.defAbs] || ", with clear shadow lines";
+            none: ", barely visible",
+            subtle: ", only faintly hinted, no deep shadows",
+            clear: ", with clear shadow lines",
+            strong: ", sharply outlined with deep shadow lines",
+          }[e.defAbs] || ", with clear shadow lines";
   return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
 }
 /* The Muscles line's zones at "Discrets" share one phrase when they are at least as many as its zones at "Présents" or
@@ -2166,12 +5377,140 @@ function sdSoft() {
 function sdNoBulk() {
   return e.muscle <= 2 && ["big", "huge"].indexOf(e.biceps) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
 }
+/* v131 (user: at the top of "Épaules" with a strong build, the shoulders and the back hardly change, the deltoids should be very developed;
+   and: pectorals for women, for a muscular woman). Measured on the user's two Seedream body sheets (front view, settings "Épaules : Très
+   larges", "Musculature : Forte"): width across the deltoids / width of the hips = 1.24 and 1.20, at or below the median woman of ANSUR II
+   (Gordon et al., 2014, as tabled by The Ergonomics Center of North Carolina, 2017: bideltoid breadth 17.72 in, hip breadth 13.90 in, 1.27).
+   Causes in the prompt: "Épaules" said a width word only, the hips a number (the model followed the number); no control for the volume of
+   the deltoids or of the lats (the "Muscles apparents" say sharpness only, "Musculature" a whole-body comparison); a woman's pectorals were
+   ruled out by three texts. Now: "Deltoïdes" and "Dorsaux" (sizes, both engines, adults; Auto follows "Musculature" from "Forte" up), said
+   with the shoulders at the start of the build line; from "Larges" up, when the shoulders are wider than the hips, a width across the
+   deltoids as a multiple of the hip width (prompt calibration from the ANSUR II medians and 5th to 95th percentiles, not a measure);
+   "Pectoraux (muscles)" for a woman or an androgynous person (Auto: only on a "Très menue" chest, from "Forte" up). */
+var SD_DELTS = {
+  small: "small, flat deltoids",
+  medium: "moderately developed deltoids",
+  big: "well-developed, rounded deltoids that stand out past the upper arms",
+  huge: "very large, round deltoids bulging past the upper arms, the widest part of the upper body",
+};
+var SD_PECS_FLAT = {
+  small: "no breast volume: a flat chest with faint, flat pectoral muscles under the skin",
+  /* v133 (user, two Seedream sheets with "Développés": "les pecs ressemblent beaucoup à des seins"; both drew rounded mounds filling the
+     triangles): never "projecting in profile", which reads as a bust on a woman; said as flat plates of muscle, never round mounds */
+  medium: "no breast volume: a flat chest with visible pectoral muscles, two flat muscle plates from the sternum to the armpits, never round mounds",
+  big: "no breast volume: a flat chest of developed pectoral muscles, two broad, flat, squared-off muscle plates from the sternum to the armpits, never round mounds",
+  huge: "no breast volume: a flat chest of very developed pectoral muscles, two thick, broad, squared-off muscle plates from the sternum to the armpits, never round mounds",
+};
+/* v134 (user, a Seedream sheet with the top left off, prompt v133, "Développés" on "Très menue": a medium bust, round in profile, and no
+   pectoral muscle to be seen): every flat-chest text named what it ruled out ("no breast volume", "never round mounds"), words a text
+   encoder may read as the thing itself (negation is poorly understood by CLIP-like vision-language models, Alhamoud et al., CVPR 2025;
+   not verified for Seedream 5). In a native Seedream body the flat chest is said in positive terms only: a male athlete's chest as the
+   visual reference, and the landmarks of the pectorals that can be drawn. GPT unchanged. Not yet checked on renders. */
+var SD_PECS_FLAT_SD = {
+  small: "a flat chest like a slim man's: faint, flat pectoral muscles under the skin; in the side views the chest line runs straight down from the collarbones",
+  medium: "a flat, muscular chest like a male athlete's: two flat pectoral muscles from the sternum to the armpits, their lower edge a straight line rising toward the armpit, a firm fold at the front of each armpit; in the side views the chest line runs straight down from the collarbones",
+  big: "a flat, muscular chest like a male athlete's: two broad, thick, squared-off pectoral muscles from the sternum to the armpits, a firm shelf just below the collarbones, a clear line where they meet the deltoids, their lower edge a straight line rising toward the armpit, a thick fold at the front of each armpit; in the side views the chest line runs straight down from the collarbones",
+  huge: "a flat, very muscular chest like a male bodybuilder's: two very thick, broad, squared-off pectoral muscles from the sternum to the armpits, a thick shelf just below the collarbones, a deep line where they meet the deltoids, their lower edge a straight line rising toward the armpit, a thick fold at the front of each armpit; in the side views the chest line runs straight down from the collarbones",
+};
+var SD_PECS_ON = {
+  small: "faint pectoral muscles at the top of the chest, above the bust",
+  medium: "visible pectoral muscles that firm the upper chest above the bust",
+  big: "developed pectoral muscles, firm and visible on the upper chest above the bust and toward the armpits",
+  huge: "very developed pectoral muscles, thick and wide across the upper chest above the bust and toward the armpits",
+};
+function sdUpOn() {
+  return "person" === e.mode && !sdChild(e) && !(e.photo && e.bodyAsIs);
+}
+/* Auto: nothing up to "Athlétique"; "Forte": developed (moderate on a slim or very lean build, which the build line calls narrow); "Culturiste": the largest */
+function sdUpAuto() {
+  return e.muscle >= 4 ? "huge" : e.muscle >= 3 ? (e.fat <= 1 ? "medium" : "big") : "";
+}
+function sdMusLv(k) {
+  if (!sdUpOn()) return "";
+  var v = e[k];
+  return v && "auto" !== v ? v : sdUpAuto();
+}
+function sdPecsF() {
+  if (!sdUpOn() || "m" === e.pres) return "";
+  var v = e.pecsF;
+  return v && "auto" !== v ? v : sdCi(e.chest) <= 0 ? sdUpAuto() : "";
+}
+function sdBuildFix(t) {
+  return sdMusBig() && "string" == typeof t
+    ? t.replace(" with little muscle mass", "").replace(", like a long-distance runner", "").replace(", like a swimmer or a dancer", "").replace(": a slim, narrow silhouette with compact, dense muscles", ": a slim silhouette with compact, dense muscles")
+    : t;
+}
+/* GPT's body line with the head: its items read apart when the deltoids, the lats or a woman's pectorals are said */
+function sdSep() {
+  return sdShoulders() !== t1("shoulders", e.shoulders) || sdPecsF() ? "; " : ", ";
+}
+function sdMusBig() {
+  return ["big", "huge"].indexOf(sdMusLv("delts")) >= 0 || ["big", "huge"].indexOf(sdMusLv("lats")) >= 0;
+}
+function sdLatsText() {
+  var l = sdMusLv("lats"),
+    forte = 4 === +e.fat,
+    v = e.waist <= 2 && sdFatOn("fatFlanks") < 2 && !forte,
+    f = "flat" !== l && (sdFatOn("fatBack") >= 2 || forte) ? " under a layer of soft back fat," : "",
+    t = {
+      flat: "narrow, flat lats",
+      medium: "moderately developed lats" + f + " widening the back below the armpits",
+      big: "wide lats" + f + " flaring out below the armpits" + (v ? ", the back clearly wider there than at the waist" : ""),
+      huge: "very wide, thick lats" + f + " flaring far out below the armpits" + (v ? ", the back much wider there than at the waist" : ""),
+    }[l];
+  return t || "";
+}
+/* the shoulders of the build line in both engines: width, then the deltoids; the lats as the next item */
+function sdShoulders() {
+  var d = SD_DELTS[sdMusLv("delts")] || "",
+    l = sdLatsText();
+  return t1("shoulders", e.shoulders) + (d ? " with " + d : "") + (l ? "; " + l : "");
+}
+/* across the deltoids, a multiple of the hip width, only where the shoulders are set wider than the hips from "Larges" up */
+function sdShoulderRatio() {
+  if (!sdUpOn() || !(e.shoulders >= 3) || !(e.shoulders > e.hips)) return "";
+  var b = "m" === e.pres ? 1.48 : "f" === e.pres ? 1.27 : 1.375,
+    S = [0.9, 0.95, 1, 1.055, 1.11],
+    H = [0.88, 0.94, 1, 1.065, 1.13],
+    D = { small: 0.98, medium: 1, big: 1.04, huge: 1.08 },
+    r = (b * S[e.shoulders]) / (H[e.hips] || 1) * (D[sdMusLv("delts")] || 1);
+  return String(+(Math.round(r * 20) / 20).toFixed(2));
+}
+/* a woman's pectorals on her chest text (both engines): instead of a flat chest, or above a bust */
+function sdPecsBust(x, sd) {
+  var p = sdPecsF();
+  if (!p || !SD_PECS_FLAT[p]) return x;
+  return sdCi(e.chest) <= 0 ? (sd ? SD_PECS_FLAT_SD : SD_PECS_FLAT)[p] : sdPecsUp(x) + "; " + SD_PECS_ON[p] + ", the bust itself soft on top of them";
+}
+/* the texts of the bust shapes (both engines) that say the upper chest is flat, emptied or deflated: with a woman's pectorals set, the
+   upper chest is firm with muscle and only the bust's own upper slope stays flat */
+var SD_PECS_UPPER = [
+  ["the upper chest slightly emptied below the collarbones", "the upper chest firm with pectoral muscle below the collarbones"],
+  ["the upper chest stays long and flat for about two hands' width below the collarbones before the bust begins", "the upper chest, firm with pectoral muscle, stays long for about two hands' width below the collarbones before the bust begins"],
+  /* v146 review: the "Tombante" + "Très généreuse" text of v146 */
+  ["the upper part relaxed, sloping gently down from below the collarbones", "the upper chest firm with pectoral muscle below the collarbones, the upper part of the bust relaxed, sloping gently down from it"],
+  ["in profile the upper slope is long, flat and slightly hollow", "in profile the upper slope is long and flat over the pectoral muscle"],
+  ["the upper chest flat below the collarbones", "the upper chest flat and firm with pectoral muscle below the collarbones"],
+  ["no fullness near the collarbones; the upper part slightly deflated, as often on lean athletic women", "no breast fullness near the collarbones, only firm pectoral muscle; the upper part of the bust slightly deflated over it"],
+  /* the same pear text without ", as often on lean athletic women" (this repository, v1.1.2) */
+  ["no fullness near the collarbones; the upper part slightly deflated;", "no breast fullness near the collarbones, only firm pectoral muscle; the upper part of the bust slightly deflated over it;"],
+  ["the upper chest flat and slightly emptied below the collarbones", "the upper chest flat, firm with pectoral muscle, below the collarbones"],
+  ["the upper chest just below the collarbones stays flat for about a hand's width before the bust begins", "the upper chest just below the collarbones stays flat and firm with pectoral muscle for about a hand's width before the bust begins"],
+  ["narrower and flatter in the upper part,", "narrower and flatter in the upper part, over firm pectoral muscle,"],
+];
+function sdPecsUp(x) {
+  return sdPecsF() && "string" == typeof x
+    ? SD_PECS_UPPER.reduce(function (a, r) {
+        return a.split(r[0]).join(r[1]);
+      }, x)
+    : x;
+}
 function sdMus() {
   var soft = sdSoft(),
     z = function (k, m) {
       return soft && "subtle" === rP(k) ? "" : m[rP(k)] || "";
     },
-    leg = rN()
+    leg = sdThighSoft()
       ? {
           subtle: "softly toned calves, soft thighs",
           clear: "drawn knees, visible calves",
@@ -2194,27 +5533,39 @@ function sdMus() {
               clear: "visible quadriceps and calves",
               strong: "separated quadriceps and sharp calves",
             },
+    /* v140 (review): fat above the knees from "Visible" up: rounded knees, never drawn, sharp or lean */
+    /* v157d review: "Genoux : Lisses", never drawn or sharp knees in the leg definition */
+    leg = sdFatOn("fatKnees") >= 2 ? sdKneeLeg(leg) : sdKneesSmooth() ? sdKneeSmoothLeg(leg) : leg,
     p = [
       z("defShoulders", {
         subtle: "softly visible shoulder muscles",
         clear: "defined shoulders",
         strong: "sharply cut shoulders",
       }),
-      z("defBack", {
+      /* v128 review: a zone carrying fat from "Visible" up shows its muscles as soft shapes under that fat */
+      sdFatOn("fatBack") >= 2
+        ? z("defBack", { subtle: "a softly toned back", clear: "the back muscles as soft shapes under the back fat", strong: "the back muscles as soft shapes under the back fat" })
+        : z("defBack", {
         subtle: "a softly toned back",
         clear: "visible shoulder blades and spine groove",
         strong: "a sharply defined back with clear lats and a deep groove along the spine",
       }),
-      z("defArms", {
+      sdArmFat() >= 2
+        ? z("defArms", { subtle: "softly toned arms", clear: "biceps and triceps as soft shapes under the arm fat", strong: "biceps and triceps as soft shapes under the arm fat, every forearm muscle and tendon visible" })
+        : z("defArms", {
         subtle: "softly toned arms",
         clear: "a visible groove between biceps and triceps",
         strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 && e.muscle <= 2 ? ", not bulky" : ""),
       }),
       z("defLegs", leg),
     ];
-  "m" === e.pres &&
+  /* v131: a woman's pectorals, when set, have their sharpness too */
+  ("m" === e.pres || sdPecsF()) &&
     p.push(
-      z("defChest", {
+      /* v156: a man's chest fat from "Visible" up: the pectorals as soft shapes under it */
+      sdFatOn("fatChest") >= 2
+        ? z("defChest", { subtle: "a softly visible chest", clear: "the pectorals as soft shapes under the chest fat", strong: "the pectorals as soft shapes under the chest fat" })
+        : z("defChest", {
         subtle: "a softly visible chest",
         clear: "a defined chest",
         strong: "a sharply outlined chest",
@@ -2222,19 +5573,26 @@ function sdMus() {
     );
   "auto" === e.absStyle &&
     p.push(
-      z("defAbs", {
-        subtle: "a soft outline of the abs",
-        clear: "visible abs",
-        strong: "sharply visible abdominal segments",
-      }),
+      /* v128: belly fat from "Visible" up covers fine abs; stronger ones show as soft shapes */
+      sdFatOn("fatBelly") >= 2
+        ? z("defAbs", { clear: "the abs only as soft shapes under the belly fat", strong: "the upper abs as soft shapes under the belly fat" })
+        : z("defAbs", SD_ABS_DEF),
     );
   "auto" !== e.biceps &&
-    p.push({ slim: "slim upper arms", medium: "moderate biceps and triceps", big: "rounded biceps and triceps", huge: "very large biceps and triceps" }[e.biceps] || "");
+    p.push(
+      (sdArmFat() >= 2
+        ? { slim: "slim biceps and triceps under the arm fat", medium: "moderate biceps and triceps under the arm fat", big: "rounded biceps and triceps under the arm fat", huge: "very large biceps and triceps under the arm fat" }
+        : { slim: "slim upper arms", medium: "moderate biceps and triceps", big: "rounded biceps and triceps", huge: "very large biceps and triceps" })[e.biceps] || "",
+    );
+  /* v130: one soft-shape clause for the arms when their size is set */
+  sdArmFat() >= 2 && "auto" !== e.biceps && (p = p.filter(function (x) {
+    return x.indexOf("biceps and triceps as soft shapes under the arm fat") < 0;
+  }));
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
   soft && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
-  p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && p.push("a smooth upper chest");
+  p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && !sdPecsF() && p.push("a smooth upper chest");
   var x = [],
     nz = [];
   "none" === rP("defShoulders") && nz.push("shoulders");
@@ -2249,41 +5607,103 @@ function sdMus() {
       x.push("No visible muscle definition.");
   var ab = sdAbs();
   ab && x.push(ab);
+  /* v128: the soft fat of each zone, over the muscles */
+  /* v130: the fat line now comes before the muscles in the Seedream body (sdBody); GPT keeps it in "Muscles and details" */
   ("strong" === r_() || "strong" === rP("defShoulders")) &&
     e.muscle <= 2 &&
     ["big", "huge"].indexOf(e.biceps) < 0 &&
+    ["big", "huge"].indexOf(sdMusLv("delts")) < 0 &&
     x.push("Arm and shoulder muscles stay average-sized.");
+  /* v128 review: no veins on upper arms carrying fat from "Visible" up */
   rD() &&
     x.push(
-      {
+      (sdArmFat() >= 2 ? function (v) {
+        return v.replace("hands, forearms and inner upper arms", "hands and forearms").replace("forearms, biceps, ", "forearms, ");
+      } : function (v) {
+        return v;
+      })({
         none: "No visible veins on the arms and hands.",
         light: "Faint veins on the backs of the hands and inner forearms.",
         visible: "Visible veins on the hands, forearms and inner upper arms.",
         strong: "Prominent veins on the hands, forearms, biceps, front of the shoulders and lower legs.",
-      }[rD()] || t6(t1("veins", rD())) + ".",
+      }[rD()] || t6(t1("veins", rD())) + "."),
     );
   var d = rA().some(function (k) {
       var v = rP(k);
       return "clear" === v || "strong" === v;
     }),
     so = [];
-  "m" !== e.pres && e.chest >= 1 && (d || rw().indexOf("the bust") >= 0) && ["conical", "high", "round"].indexOf(e.bustShape) < 0 && so.push("bust");
+  "m" !== e.pres && e.chest >= 1 && (d || rw().indexOf("the bust") >= 0) && ["conical", "high", "round"].indexOf(e.bustShape) < 0 && !sdBustHighOn() && !sdBustFwdOn() && so.push("bust");
   ("belly" === e.absStyle || "soft" === e.absStyle || "dadbod" === e.absStyle) && d && so.push("belly");
   ["low", "flat"].indexOf(e.glutesShape) >= 0 && so.push("glutes");
-  (rM() || rj()) && so.push("hips", "thighs");
+  (rM() || rj()) ? so.push("hips", "thighs") : sdFatOn("fatThighs") >= 2 && so.push("thighs");
   so.length &&
     (d || rw().length) &&
     "low" !== e.bustShape &&
     "low" !== e.glutesShape &&
     x.push("The " + sdList(so) + (so.length > 1 || /s$/.test(so[0]) ? " stay" : " stays") + " soft, shaped by gravity.");
-  d && e.muscle <= 2 && "low" !== e.glutesShape && "low" !== e.bustShape && x.push("Definition from leanness, not from muscle size.");
+  /* v157 (his render): never "not from muscle size" next to muscular legs or glutes set by their sliders */
+  d && e.muscle <= 2 && "low" !== e.glutesShape && "low" !== e.bustShape && !sdFatList().length && !sdMusBig() && !sdLegLead() && x.push("Definition from leanness, not from muscle size.");
   var sk = [];
   "m" !== e.pres && e.chest >= 1 && sk.push("breasts");
   ["low", "flat"].indexOf(e.glutesShape) >= 0 && sk.push("glutes");
   (rM() || rj()) && sk.push("hips", "thighs");
-  d && sk.length && x.push("This definition never slims the " + sdList(sk).replace(/ and ([^ ]+)$/, " or $1") + ".");
+  sk = sk.concat(sdFatZones().filter(function (z) {
+    return sk.indexOf(z) < 0 && !("front of the upper thighs" === z && sk.indexOf("thighs") >= 0);
+  }));
+  d && sk.length && x.push("This definition never slims the " + sdListOr(sk) + ".");
   return x.join(" ");
 }
+/* v139 (user: "tache de naissance à ajouter aussi dans le signe avec le lieu : cou, corps, bras, etc."): "Tache de naissance" in Signes,
+   adults (person, not a child), both engines, in the marks line (rg). Type, size, place, side (the character's). Face and neck: the head
+   sheet and a body sheet with the head (the headless body sheet starts at the base of the neck); the rest: body sheets only.
+   Descriptions from: DermNet, "Café au lait macule" (M. A. Krisna, 2015, updated 2025): light brown, evenly pigmented, round or oval,
+   well demarcated ("a few shades browner than the skin around it" so it holds on every skin tone); Primary Care Dermatology Society,
+   "Port-wine stain" (T. Cunliffe, 2022): flat, red or purple, a distinct cut-off, darkening and thickening with age in some;
+   DermNet, "Congenital melanocytic naevi" (A. Oakley 2001, G. Raj and A. Oakley 2014, updated 2024): single or multi-shaded, the
+   surface slightly rough or bumpy. Sizes are prompt wording, not measures. */
+var SD_BM_TYPE = {
+  cal: ["café-au-lait birthmark", "a flat, evenly coloured patch a few shades browner than the skin around it, round to oval, with a clear edge"],
+  pws: ["port-wine stain birthmark", "a flat, wine-red to purple patch with a sharp, irregular edge"],
+  /* v139 review: one shading, the same in every view; "mark", a "patch" being flat */
+  cmn: ["congenital mole", "an even mid-brown mark with a few darker flecks, slightly raised, with a slightly bumpy surface"],
+};
+var SD_BM_SIZE = { s: "about 2 cm across", m: "about 5 cm across", l: "about 10 cm across, the size of a palm" };
+/* "h": the head sheet and a body sheet with the head; "b": the body sheets */
+var SD_BM_PLACE = {
+  forehead: ["h", "on the % side of the forehead"],
+  temple: ["h", "on the % temple"],
+  cheek: ["h", "on the % cheek"],
+  jaw: ["h", "along the % side of the jaw"],
+  neck: ["h", "on the % side of the neck"],
+  nape: ["h", "on the back of the neck, % of the centre"],
+  shoulder: ["b", "on top of the % shoulder"],
+  upperarm: ["b", "on the outer side of the % upper arm"],
+  forearm: ["b", "on the outer side of the % forearm"],
+  hand: ["b", "on the back of the % hand"],
+  chest: ["b", "on the % side of the upper chest, just below the collarbone"],
+  upperback: ["b", "on the % shoulder blade"],
+  lowerback: ["b", "on the % side of the lower back"],
+  belly: ["b", "on the belly, to the % of the navel"],
+  hip: ["b", "on the outer side of the % hip"],
+  thigh: ["b", "on the front of the % thigh"],
+  calf: ["b", "on the back of the % calf"],
+};
+function sdBmOn() {
+  return "person" === e.mode && !sdChild(e) && !!SD_BM_TYPE[e.bmType];
+}
+/* t: the head sheet (rg's argument) */
+function sdBm(t) {
+  if (!sdBmOn()) return "";
+  var p = SD_BM_PLACE[e.bmPlace] || SD_BM_PLACE.neck,
+    ty = SD_BM_TYPE[e.bmType];
+  if ("h" === p[0] ? !(t || !nw()) : t) return "";
+  /* v139 review: a large mark on the face or the neck spreads past its place (a temple is about 5 cm wide) */
+  var sz = "l" === e.bmSize && "h" === p[0] ? "about 10 cm across, spreading onto the skin around it" : SD_BM_SIZE[e.bmSize] || SD_BM_SIZE.m;
+  return "a " + ty[0] + " " + p[1].replace("%", "right" === e.bmSide ? "right" : "left") + ", " + sz + ": " + ty[1];
+}
+/* the drawn marks of "Body details" (the last item of sdDetails) */
+var SD_DRAWN_MARKS = ["a small mole on the left shoulder blade", "a small mole on the left shoulder", "a cluster of faint freckles on both shoulders", "a small birthmark above the right hip", "a small mole on the inner left forearm", "dense freckles on the shoulders and the upper back"];
 function sdDetails() {
   if (!e.faceSeed) return "";
   var t = (0x9e3779b9 ^ e.faceSeed) >>> 0,
@@ -2311,17 +5731,34 @@ function sdDetails() {
     r(
       [
         "a small mole on the left shoulder blade",
-        "a cluster of faint freckles on both shoulders",
-        "a small birthmark above the right hip",
+        "none" === sdFreckleLv() ? "a small mole on the left shoulder" : "a cluster of faint freckles on both shoulders",
+        /* v139: with a birthmark set, never a second one drawn */
+        /* v139 review: a place no birthmark can take */
+        sdBmOn() ? "a small mole on the inner right wrist" : "a small birthmark above the right hip",
         "a small mole on the inner left forearm",
-      ].concat((e.bodyScars || 0) > 0 || t5(e.marks) ? [] : ["no visible body marks"]),
+      ].concat((e.bodyScars || 0) > 0 || t5(e.marks) || sdBm(!1) || sdBodySkin().length ? [] : ["no visible body marks"]).map(function (x) {
+        /* v130 review: "Énormément" also on the body sheet, whatever the draw */
+        return "lots" === sdFreckleLv() ? "dense freckles on the shoulders and the upper back" : x;
+      }),
     ),
   );
-  a = a.filter(function (x) {
+  a = sdDetailMap(a.filter(function (x) {
     return "no visible body marks" !== x;
-  });
+  }));
+  return "Body details: " + a.join(", ") + ".";
+}
+/* the drawn body details that would contradict the build, the shoulders or the glutes, moved to their counterpart (Seedream;
+   v131: GPT too, which kept "bony, clearly drawn knees" on a heavy body; broad shoulders or a strong build: never sloping shoulders or
+   a narrow ribcage) */
+function sdDetailMap(a) {
   e.shoulders <= 1 && (a = a.map(function (x) {
     return "square shoulders" === x ? "slightly sloping shoulders" : x;
+  }));
+  e.shoulders >= 3 && (a = a.map(function (x) {
+    return "slightly sloping shoulders" === x ? "square shoulders" : x;
+  }));
+  (e.shoulders >= 3 || e.muscle >= 3) && (a = a.map(function (x) {
+    return "a narrow ribcage" === x ? "a slightly wide ribcage" : x;
   }));
   var cv = e.fat <= 1
     ? { "softly padded collarbones": "clearly visible collarbones", "low, full calves": "slim calves", "soft, rounded knees": "bony, clearly drawn knees", "sturdy ankles": 0 === e.fat ? "slim ankles" : "sturdy ankles" }
@@ -2331,10 +5768,1009 @@ function sdDetails() {
         : { "clearly visible collarbones": "softly padded collarbones", "bony, clearly drawn knees": "soft, rounded knees", "high calves with long lower tendons": "low, full calves", "slim ankles": "slim ankles" }
       : {};
   "low" === e.glutesShape && (cv["a marked curve in the lower back"] = "a fairly straight lower back");
-  a = a.map(function (x) {
-    return cv[x] || x;
+  /* v135 (user, "Très bombés": "the lower back curves in deeply" and, drawn, "a fairly straight lower back"): the drawn lower back follows a high, round glute */
+  ["high", "shelf"].indexOf(e.glutesShape) >= 0 && (cv["a fairly straight lower back"] = "a marked curve in the lower back");
+  /* v140: the settings that replace a drawn detail (navel, lower back, soft knees) or join the lower back (shoulders, waist height, inner
+     thighs); none set: the drawn details as before */
+  /* v140 review: "Bas" glutes keep the straight lower back their shape needs (pose and glute text say it) */
+  var lb = "low" === e.glutesShape && ("marked" === e.lordosis || "deep" === e.lordosis || "hyper" === e.lordosis) ? "" : sdPick(SD_LORD, "lordosis"),
+    nv = sdPick(SD_NAVEL, "navel"),
+    rb = sdPick(SD_RIB, "ribcage"),
+    cb = sdPick(SD_CLAV, "clav"),
+    /* v157 (user: "ajoute les muscles des mollets, un curseur"): "Mollets" replaces the drawn calves (both engines) */
+    cf = "person" === e.mode && !sdChild(e) && +e.calves >= 1 ? t1("calves", Math.min(4, Math.round(+e.calves))) : "",
+    sp = sdPick(SD_SHSHAPE, "shShape"),
+    xb = [sdPick(SD_POSTURE, "shPosture"), e.waist >= 4 ? "" : sdPick(SD_WAISTPOS, "waistPos"), sdHipPos(), sdPick(SD_DIMPLES, "backDimples"), sdPick(SD_THIGHGAP, "thighGap")].filter(Boolean),
+    ks = sdFatOn("fatKnees") >= 1,
+    kn = sdPick(SD_KNEES, "knees"),
+    an = sdPick(SD_ANKLES, "ankles"),
+    fg = sdPick(SD_FINGERS, "fingers");
+  var cfDone = !1,
+    out = a.map(function (x) {
+    var y = cv[x] || x;
+    cf && ("high calves with long lower tendons" === x || "low, full calves" === x) && ((y = ""), (cfDone = !0));
+    /* v157: a leg shape that names the calves: no other calves drawn */
+    /* v157b: "Droites" too (calves close in width to the knees and thighs), and its ankles */
+    !cf && sdPick(SD_LEGSHAPE, "legShape") && (sdPick(SD_LEGSHAPE, "legShape")[1] || "straight" === e.legShape) && ("high calves with long lower tendons" === x || "low, full calves" === x || "slim calves" === x) && (y = "");
+    !cf && "straight" === e.legShape && sdPick(SD_LEGSHAPE, "legShape") && ("slim ankles" === x || "sturdy ankles" === x) && (y = "");
+    sdLegAnkles() && ("slim ankles" === x || "sturdy ankles" === x) && (y = "");
+    ks && ("bony, clearly drawn knees" === y || "soft, rounded knees" === y) && (y = "rounded knees");
+    /* v157d (user's render: "bony, clearly drawn knees" forced on every slim body, "sturdy ankles" and "short, strong fingers" drawn on a
+       fine one): "Genoux", "Chevilles", "Doigts" replace the drawn item. Knees: fat above the knees (from "Légère") keeps them rounded,
+       "Marqués" never on a "Forte" body (v131); ankles: a leg shape that names them keeps its own */
+    kn && !ks && !("bony" === e.knees && 4 === +e.fat) && ("bony, clearly drawn knees" === x || "soft, rounded knees" === x) && (y = kn);
+    /* v157d review: from "Enrobée" a leg shape no longer names its slim ankles (sdLegShape): "Chevilles" said there */
+    an && !(sdLegAnkles() && +e.fat < 3) && ("slim ankles" === x || "sturdy ankles" === x) && (y = an);
+    fg && ("long, slender fingers" === x || "short, strong fingers" === x) && (y = fg);
+    nv && ("a small, round navel" === x || "a vertical, slit-like navel" === x) && (y = nv);
+    rb && ("a slightly wide ribcage" === x || "a narrow ribcage" === x) && (y = rb);
+    cb && ("clearly visible collarbones" === x || "softly padded collarbones" === x) && (y = cb);
+    sp && ("square shoulders" === x || "slightly sloping shoulders" === x) && (y = sp);
+    ("a marked curve in the lower back" === x || "a fairly straight lower back" === x) && (y = [lb || y].concat(xb).join(", "));
+    /* v157 review: "Extrême" pushes the glutes back and up, never with flat, low or drooping glutes */
+    "hyper" === e.lordosis && (["flat", "low"].indexOf(e.glutesShape) >= 0 || sdGlDefOn("sag")) && (y = y.replace(", the glutes pushed back and up", "").replace("hollowing in sharply above them", "hollowing in sharply above the glutes"));
+    return y;
   });
-  return "Body details: " + a.join(", ") + ".";
+  /* v157: the calves set are said with the legs (sdLegShape), the drawn ones go */
+  return out.filter(Boolean);
+}
+/* v140 (user: "Silhouettes types", "Vergetures", "Cambrure et posture", "Cuisses et nombril", and the settings for real bodies he had not
+   thought of: loose belly skin, fat above the knees, spider veins, waist height). Adults (person, not a child), both engines. Stretch
+   marks after S. Mikes, A. Oakley and B. Patel, "Striae Distensae", StatPearls (updated 2025): early, slightly raised, pink to violaceous
+   lines; later hypopigmented, atrophic, wrinkled; on the abdomen, buttocks, thighs, breasts, back, axillae and groin. */
+function sdPick(T, k) {
+  return "person" === e.mode && !sdChild(e) && T[e[k]] ? T[e[k]] : "";
+}
+/* v157d: "Genoux", "Chevilles", "Doigts" (Auto: the drawn detail, as before) */
+var SD_KNEES = { smooth: "smooth knees with only softly outlined kneecaps", bony: "bony, clearly drawn knees" };
+var SD_ANKLES = { slim: "slim ankles", sturdy: "sturdy ankles" };
+var SD_FINGERS = { long: "long, slender fingers", short: "short, strong fingers" };
+/* "Lisses": no redness drawn on the knees (it outlined them on the user's render) */
+function sdKneesSmooth() {
+  /* v157d review: no effect with fat above the knees (rounded knees), as the hint says */
+  return !!sdPick(SD_KNEES, "knees") && "smooth" === e.knees && sdFatOn("fatKnees") < 1;
+}
+var SD_LORD = {
+  straight: "a fairly straight lower back",
+  marked: "a marked curve in the lower back",
+  /* v140 review: no "the belly and the glutes push out", which contradicted a flat belly or flat glutes */
+  deep: "a deep curve in the lower back, the pelvis tipped forward",
+  /* v157 (user, his render at "Très cambrée": "je dois pouvoir faire plus cambré, ça cambre pas beaucoup"): a stronger level, said with what
+     the side views show */
+  hyper: "a very deep, strongly arched lower back: the pelvis tipped well forward, the glutes pushed back and up, in the side views the lower back hollowing in sharply above them",
+};
+/* v141 (user: "il existe aussi d'autres types d'épaules non ?"): held back, and one shoulder higher (the character's side) */
+var SD_POSTURE = {
+  rounded: "the shoulders rolled slightly forward and the upper back gently rounded",
+  back: "the shoulders held back and the chest open",
+  /* v141 review: the side said as the character's (the back view swaps the image sides), as GPT's bust asymmetry does */
+  rhigh: "the character's right shoulder sitting slightly higher than the left",
+  lhigh: "the character's left shoulder sitting slightly higher than the right",
+};
+/* v150 (user, his reference photo, body type only: "la partie entre le nombril et le pubis est méga large et je n'arrive pas à le
+   simuler", "un truc supplémentaire sans garantir que ça va fonctionner"; measured in that pose, turned and on one leg: the waist
+   narrowest above the navel, the outline swinging out fastest just below it, widest at the top of the thighs, about 1.65 times the
+   waist; the tool's text gives 1.42 to 1.53 on 11 renders of his sheet): "Bassin très évasé (essai)", a toggle with "Très larges" hips,
+   a woman or an androgynous adult. The body (both engines) says the curve from just below the navel; card 2b says the same curve,
+   without the long curve to the knees (the width goes to the pelvis). Not checked on renders. */
+/* v150 review: shown with a waist from "Très fin" to "Moyenne" (a wide waist has no waistline to swing out from); no effect with a dip,
+   square glutes, saddlebags (which break that outline, as in sdHipPos and card 2b) or a low waist (its narrowest point at the top of the
+   hips, so a curve from just below the navel would pinch it); card 2b keeps its step (the amount was reached, 1.63 to 1.75: the shape is
+   what changes); a landmark ("a hand's width below the navel") instead of "the band between the navel and the crotch" */
+function sdHipFlareShow() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && 4 === +e.hips && +e.waist <= 2;
+}
+function sdHipFlare() {
+  return sdHipFlareShow() && !!e.hipFlare && !sdGlDefOn("dips") && !sdGlDefOn("square") && !rM() && "low" !== e.waistPos;
+}
+var SD_HIP_FLARE = ", the outline swinging out in a full, rounded curve that starts just below the navel, the hips already far wider than the waist a hand's width below the navel";
+/* v140 (user's reference photos, body type only): where the hips are widest, and the lower back dimples (dimples of Venus) */
+var SD_HIPPOS = {
+  high: "the hips widest high, at the hip bones, curving out just below the waist",
+  low: "the hips widest low, at the top of the thighs",
+};
+/* v140 review: not for a man (no feminine curves said); "Haut" not with "Très larges" hips, whose text puts the widest point at the hips
+   and upper thighs; "Bas" sweeps "in one curve" only without a dip, saddlebags or square glutes, which break that outline (user: "il y a
+   un creux dans les hanches") */
+function sdHipPos() {
+  var hp = "m" !== e.pres ? sdPick(SD_HIPPOS, "hipPos") : "";
+  if (!hp || ("high" === e.hipPos && e.hips >= 4)) return "";
+  if ("high" === e.hipPos) return hp;
+  /* v151 (self-review): with "Bassin très évasé (essai)" the curve is the one that starts just below the navel (SD_HIP_FLARE), never a
+     second one "from the waist" */
+  /* v157 (user, his render with "Culotte de cheval : Aucune" and "Bas": "il y en a une"): with no saddlebags the outer thighs below that
+     widest point taper smoothly to the knees (said in positive terms) */
+  var tp = "low" === e.hipPos && !rM() && "straight" !== e.legShape ? ", below it the outer thighs tapering smoothly and evenly to the knees" : "";
+  return sdGlDefOn("dips") ? hp + ", just below the " + (0 === sdGlSide() ? "clear hollow" : "shallow dip") + " on each side" + tp : rM() || sdGlDefOn("square") || sdHipFlare() ? hp + tp : hp + ", the outline sweeping in one curve from the waist down to the upper thighs" + tp;
+}
+/* v141 (user's render: "les fossettes sont un peu trop marquées, c'est bizarre"): faint and shallow */
+var SD_DIMPLES = { visible: "two faint, shallow dimples in the lower back, just above the glutes, one on each side of the spine" };
+var SD_WAISTPOS = {
+  high: "the waist set high, its narrowest point just below the ribs",
+  low: "the waist set low, its narrowest point close to the top of the hips",
+};
+var SD_THIGHGAP = {
+  gap: "a clear gap between the inner thighs",
+  touch: "the inner thighs touching at the top",
+  touchlong: "the inner thighs touching from the top down to just above the knees",
+};
+var SD_NAVEL = {
+  round: "a small, round navel",
+  slit: "a vertical, slit-like navel",
+  deep: "a deep, round navel",
+  outie: "a small outie navel that protrudes slightly",
+  /* v140 (user's reference photos): a small fold of skin over the navel */
+  hooded: "a vertical navel with a small fold of skin above it",
+};
+/* v140 (user: "épaule, il faut pouvoir choisir aussi"): the shoulder shape, drawn at random until now */
+var SD_SHSHAPE = {
+  /* v141 review: "rounded shoulders" is also a posture in English (rolled forward): the contour said without it */
+  rounded: "shoulders with a smooth, full, rounded contour and no bony angles",
+  square: "square shoulders",
+  sloping: "slightly sloping shoulders",
+};
+/* v144 (user: "ajouter de la graisse dans les épaules, au-dessus, sur les clavicules, c'est pas possible": "Mince" always said "visible
+   collarbones"): the collarbones set by hand, both engines (the drawn detail and the slim-frame sentence of the Seedream photo prompt) */
+var SD_CLAV = {
+  visible: "clearly visible collarbones",
+  soft: "faintly visible collarbones with a little flesh over them",
+  /* v156 (user: "quand je marque clavicule recouverte on les voit quand même"): said in positive terms, the collarbones padded and the skin
+     smooth over them, no longer "barely visible" (a visibility word next to them); the crop lines still name the collarbones (the head and
+     body sheets are cut and joined there) */
+  covered: "collarbones padded by a thin layer of fat, the skin smooth and even from the base of the neck to the shoulders",
+};
+/* "Douces" or "Couvertes": flesh over the collarbones (never "no extra padding", never a neckline showing them under thin skin) */
+function sdClavFlesh() {
+  return !!sdPick(SD_CLAV, "clav") && "visible" !== e.clav;
+}
+/* the slim-frame sentence of the Seedream photo prompt ("Mince", "Très mince"): the collarbones as set, the hip bones after them */
+function sdClavSlim(hb) {
+  var c = sdPick(SD_CLAV, "clav");
+  return !c || "visible" === e.clav ? "visible collarbones" + (hb ? " and hip bones" : "") : c + (hb ? "; visible hip bones" : "");
+}
+/* v140 (user's reference photos): the ribcage width, drawn at random until now */
+var SD_RIB = { narrow: "a narrow ribcage", wide: "a slightly wide ribcage" };
+/* v143 (user's render with "Blanches, nacrées": "on dirait plus des cicatrices que des vergetures"; a few single lines, sunken and
+   wrinkled, drawn like cuts): a group of many fine, faint streaks side by side, flush with the skin, fading at their ends; no
+   "sunken" or "wrinkled", which the model draws at their strongest (as "crinkled", v141). Calibration to check on renders. */
+var SD_STRETCH = {
+  white: "small groups of fine, faint streaks set close together, roughly parallel and slightly wavy, a little paler and silkier than the skin around them, flush with the skin and fading out at their ends, faint but visible in a full-body view",
+  pink: "thin pink to violet lines, slightly raised",
+};
+var SD_STRETCH_Z = { hips: "the outer hips", thighs: "the thighs", bust: "the sides of the bust", belly: "the lower belly", glutes: "the glutes", arms: "the inner upper arms" };
+/* v141 (user's render with "Un peu relâchée": "les marques sont vraiment trop fortes", the lower belly drawn deeply crinkled): no
+   "crinkled", the light level faint */
+var SD_LOOSE = {
+  light: "the skin just below the navel very slightly loose, with a few faint, fine lines",
+  marked: "loose skin on the lower belly below the navel, finely creased, settling in a shallow fold",
+};
+var SD_MOLES = {
+  few: "a few small brown moles scattered on the shoulders, the back and the arms",
+  many: "many small brown moles scattered over the shoulders, the back, the arms, the belly and the legs",
+};
+/* a woman's or an androgynous person's body hair (the men have the three zones): "Auto" keeps "faint body hair" */
+/* v140 review: no negation ("a negated word stays a word"); the color named as for the men (a headless sheet shows no hair to take it from) */
+var SD_FHAIR = {
+  /* v141 (prompt check): never "smooth" skin next to the cellulite, stretch marks and texture of the same sheet */
+  smooth: "hairless arms, legs and belly",
+  duvet: "fine, pale peach fuzz on the forearms, the lower back and the belly",
+  light: "sparse, fine hair on the forearms and the lower legs",
+  natural: "natural, unshaven hair on the forearms and the lower legs, a little on the thighs",
+};
+var SD_SPIDER = {
+  few: "a few faint spider veins, fine red and blue thread veins, on the outer thighs and the backs of the knees",
+  many: "visible spider veins, fine red and blue thread veins, on the thighs, the backs of the knees and the calves",
+};
+/* the skin marks of the body sheets (rg, after the birthmark) */
+function sdBodySkin() {
+  var o = [],
+    st = sdPick(SD_STRETCH, "stretch"),
+    z = (Array.isArray(e.stretchZones) ? e.stretchZones : []).filter(function (k, i, a) {
+      return SD_STRETCH_Z[k] && a.indexOf(k) === i;
+    });
+  /* v140 review: never "bust" for a man */
+  st && z.length && o.push("stretch marks on " + sdList(z.map(function (k) {
+    return "bust" === k && "m" === e.pres ? "the sides of the chest" : SD_STRETCH_Z[k];
+  })) + ": " + st);
+  sdPick(SD_LOOSE, "looseBelly") && o.push(sdPick(SD_LOOSE, "looseBelly"));
+  sdPick(SD_SPIDER, "spider") && o.push(sdPick(SD_SPIDER, "spider"));
+  sdPick(SD_MOLES, "bodyMoles") && o.push(sdPick(SD_MOLES, "bodyMoles"));
+  return o;
+}
+/* "Silhouette type": buttons that set the sliders at once (only the sliders reach the prompt); the build, the bust and the glutes are
+   left alone. Common body-shape names, not a medical classification. */
+var SD_SHAPES = [
+  ["hourglass", "Sablier", "Hourglass", { shoulders: 2, waist: 1, hips: 3, thighs: 2, fatBelly: 0, fatFlanks: 0, fatLower: 0, saddle: "none" }, 1],
+  /* v143 (user: "quand je clique Sablier et ensuite Étroite, le bouton Sablier disparaît"; his character is an hourglass with narrow
+     shoulders): close to the body type of his reference (v140, ui_v140.py R): narrow shoulders, a very narrow waist, very wide hips,
+     light fat on the belly, the hips and thighs, light saddlebags; no love handles (R had "Légère"; none show on his photos, v142
+     reading); "Sablier" unchanged for the saved characters */
+  ["hourglassMarked", "Sablier marqué", "Marked hourglass", { shoulders: 1, waist: 0, hips: 4, thighs: 2, fatBelly: 1, fatFlanks: 0, fatLower: 2, saddle: "light" }, 1],
+  ["pear", "Poire", "Pear", { shoulders: 1, waist: 1, hips: 3, thighs: 3, fatBelly: 0, fatFlanks: 0, fatLower: 2, saddle: "light" }, 1],
+  ["apple", "Pomme", "Apple", { shoulders: 2, waist: 3, hips: 2, thighs: 1, fatBelly: 3, fatFlanks: 2, fatLower: 0, saddle: "none" }, 1],
+  /* v156 (user: "silhouette type c'est ridicule, je vais pas mettre sablier, il manque en V pour les hommes"): a man's own buttons (x[4] 2),
+     the five male body types of menswear (inverted triangle or V, trapezoid, rectangle, triangle, oval), on the same sliders; Poire,
+     Pomme and Triangle inversé are now a woman's or an androgynous person's (x[4] 1), Rectangle is shared */
+  ["vshape", "En V", "V-shape", { shoulders: 4, waist: 1, hips: 1, thighs: 2, fatBelly: 0, fatFlanks: 0 }, 2],
+  ["trapeze", "Trapèze", "Trapezoid", { shoulders: 3, waist: 2, hips: 2, thighs: 2, fatBelly: 0, fatFlanks: 0 }, 2],
+  ["rect", "Rectangle", "Rectangle", { shoulders: 2, waist: 3, hips: 2, thighs: 2, fatBelly: 0, fatFlanks: 0, fatLower: 0, saddle: "none" }, 0],
+  ["triangleM", "Triangle", "Triangle", { shoulders: 1, waist: 3, hips: 3, thighs: 3, fatBelly: 1, fatFlanks: 1 }, 2],
+  ["oval", "Ovale", "Oval", { shoulders: 2, waist: 4, hips: 2, thighs: 2, fatBelly: 3, fatFlanks: 2 }, 2],
+  ["invtri", "Triangle inversé", "Inverted triangle", { shoulders: 3, waist: 2, hips: 1, thighs: 1, fatBelly: 0, fatFlanks: 0, fatLower: 0, saddle: "none" }, 1],
+];
+/* v144 (user: "le document doit devenir plus compréhensible sur les boutons : une ribambelle de boutons les uns après les autres, ça
+   devient moins clair ; il faut garder ça mais améliorer l'UX"; the Corps tab held 64 controls in one 8 900 px column of equal rows):
+   the Corps tab in named sections, head to toe, each opened by its name, one line on what it holds and the number of its settings
+   that differ from the defaults; a bar of the sections at the top of the tab stays in view and jumps to each. Sections only group:
+   every control stays in its tab, none changes, no prompt changes ("Longueur des jambes" moves up into "Cuisses et jambes"). A
+   section with nothing to show in the current context (a child, a photo kept as is) is left out, and the bar with it under two. */
+var SD_SECS = {
+  gen: ["Général", "General", "Âge, hauteur, corpulence, musculature et silhouette d'ensemble.", "Age, height, build, muscle and overall body shape."],
+  epaules: ["Épaules et dos", "Shoulders and back", "Largeur, posture et forme des épaules, muscles et graisse du dos.", "Shoulder width, posture and shape, back muscles and fat."],
+  bras: ["Bras", "Arms", "Volume, muscles apparents, graisse et veines des bras, doigts.", "Arm volume, visible muscles, fat and veins, fingers."],
+  poitrine: ["Poitrine", "Bust", "Volume, bonnet, forme, chute, écartement et peau de la poitrine.", "Bust volume, cup, shape, drop, spacing and skin."],
+  taille: ["Taille et ventre", "Waist and belly", "Tour et hauteur de la taille, cage thoracique, abdominaux, ventre, nombril et poignées d'amour.", "Waist width and height, ribcage, abs, belly, navel and love handles."],
+  hanches: ["Hanches et fessiers", "Hips and glutes", "Largeur des hanches, graisse, culotte de cheval, fessiers, cambrure et bas du dos.", "Hip width, fat, saddlebags, glutes, lower back curve and dimples."],
+  jambes: ["Cuisses et jambes", "Thighs and legs", "Longueur des jambes, cuisses, genoux, chevilles et muscles des jambes.", "Leg length, thighs, knees, ankles and leg muscles."],
+  peau: ["Peau et pilosité", "Skin and body hair", "Cellulite, vergetures, veinules, grains de beauté et poils.", "Cellulite, stretch marks, spider veins, moles and body hair."],
+  planche: ["Planche", "Sheet", "Cadrage de la planche corps.", "Framing of the body sheet."],
+};
+var SD_SECS_M = {
+  poitrine: ["Torse", "Chest", "Volume, netteté et graisse des pectoraux.", "Chest volume, definition and fat."],
+  hanches: ["Hanches et fessiers", "Hips and glutes", "Largeur des hanches, fessiers, cambrure et bas du dos.", "Hip width, glutes, lower back curve and dimples."],
+  peau: ["Peau et pilosité", "Skin and body hair", "Vergetures, veinules, grains de beauté et poils.", "Stretch marks, spider veins, moles and body hair."],
+};
+function sdSecLab(id) {
+  return ("m" === e.pres && SD_SECS_M[id]) || SD_SECS[id] || [id, id, "", ""];
+}
+/* the settings of a section that differ from the defaults (tJ), counted on the controls shown under it */
+function sdSecCount(t, keys) {
+  return keys.filter(function (k) {
+    var v = t[k],
+      d = tJ[k];
+    Array.isArray(v) && Array.isArray(d) && ((v = v.slice().sort()), (d = d.slice().sort()));
+    return Object.prototype.hasOwnProperty.call(tJ, k) && JSON.stringify(v) !== JSON.stringify(d);
+  }).length;
+}
+/* on the tab's filtered items: a header with no control under it (before the next header or the end) is left out */
+function sdSecKeep(it, i, a) {
+  return "sdsec" !== it.t || (i + 1 < a.length && "sdsec" !== a[i + 1].t);
+}
+/* each kept header gets its keys and its count; the bar gets the kept sections */
+function sdSecAnn(it, i, a, t) {
+  var keys = function (j) {
+    for (var o = []; j < a.length && "sdsec" !== a[j].t; j++) "string" == typeof a[j].k && (o.push(a[j].k), "sdbust" === a[j].t && o.push("bustHigh", "bustWide", "bustAsym"));
+    o = o.filter(function (k, i) {
+      return o.indexOf(k) === i;
+    });
+    return o;
+  };
+  if ("sdsec" === it.t) return Object.assign({}, it, { n: sdSecCount(t, keys(i + 1)) });
+  if ("sdsecnav" === it.t)
+    return Object.assign({}, it, {
+      secs: a
+        .map(function (x, j) {
+          return "sdsec" === x.t ? { id: x.id, n: sdSecCount(t, keys(j + 1)) } : null;
+        })
+        .filter(Boolean),
+    });
+  return it;
+}
+function sdSecN(n) {
+  return n ? sdT(n + (n > 1 ? " réglages modifiés" : " réglage modifié"), n + (n > 1 ? " settings changed" : " setting changed")) : sdT("par défaut", "default");
+}
+function sdSecHead(t, r) {
+  var L = sdSecLab(r.id);
+  return (0, l.jsxs)(
+    "div",
+    {
+      id: "sd-sec-" + r.id,
+      "data-sec": r.id,
+      tabIndex: -1,
+      className: "pb-3 border-b focus-visible:outline-none",
+      style: { paddingTop: 40 },
+      children: [
+        (0, l.jsxs)("div", {
+          className: "flex items-baseline justify-between gap-3",
+          children: [
+            (0, l.jsx)("h3", { className: "font-bold tracking-tight", style: { fontSize: 21, lineHeight: "28px" }, children: sdT(L[0], L[1]) }),
+            (0, l.jsx)("span", { className: "text-sm text-muted-foreground", "data-sec-count": r.n, children: sdSecN(r.n) }),
+          ],
+        }),
+        (0, l.jsx)("p", { className: "mt-1 text-sm text-muted-foreground", children: sdT(L[2], L[3]) }),
+      ],
+    },
+    "sec-" + r.id,
+  );
+}
+/* the bar wraps on a wide screen and scrolls sideways in its own row on a phone (the compiled CSS has no responsive flex-wrap class) */
+(function () {
+  try {
+    var st = document.createElement("style");
+    st.textContent = "#sd-secnav{flex-wrap:wrap}@media (max-width:640px){#sd-secnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-left:4px!important;padding-right:4px!important}#sd-secnav::-webkit-scrollbar{display:none}}";
+    document.head.appendChild(st);
+  } catch (x) {}
+})();
+function sdSecNav(t, r) {
+  var secs = r.secs || [];
+  if (secs.length < 2) return null;
+  var go = function (id) {
+    var el = document.getElementById("sd-sec-" + id),
+      bar = document.getElementById("sd-secnav");
+    if (!el) return;
+    var y = el.getBoundingClientRect().top + window.scrollY - (bar ? bar.getBoundingClientRect().height : 0) + 24;
+    window.scrollTo({ top: Math.max(0, y), behavior: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    try {
+      el.focus({ preventScroll: !0 });
+    } catch (x) {}
+  };
+  return (0, l.jsx)(
+    "nav",
+    {
+      id: "sd-secnav",
+      "aria-label": sdT("Sections du corps", "Body sections"),
+      className: "bg-card",
+      style: { position: "sticky", top: 0, zIndex: 20, display: "flex", gap: 8, padding: "12px 0" },
+      children: secs.map(function (s) {
+        var L = sdSecLab(s.id);
+        return (0, l.jsxs)(
+          "button",
+          {
+            type: "button",
+            "data-sec-go": s.id,
+            title: sdSecN(s.n),
+            "aria-label": sdT(L[0], L[1]) + ", " + sdSecN(s.n),
+            className: "rounded-full border bg-card px-3 py-1.5 text-sm font-medium hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            style: { flex: "none", whiteSpace: "nowrap" },
+            onClick: function () {
+              go(s.id);
+            },
+            children: [sdT(L[0], L[1]), s.n ? (0, l.jsx)("span", { className: "ml-1 text-muted-foreground", children: String(s.n) }) : null],
+          },
+          s.id,
+        );
+      }),
+    },
+    "secnav",
+  );
+}
+/* v143 (user: after "Sablier" then "Étroites" the button lost its colour, "on a l'impression que Sablier n'a pas fonctionné, il faut
+   comprendre que c'est gardé en mémoire"): the last button clicked is kept in the state (sdShapePick, UI only, never read by a prompt);
+   while its sliders keep its values it is filled as before; once one of them changes (and no other button matches the sliders exactly)
+   it stays marked, outlined and dashed, with "ajusté", and a line below lists each changed slider with its value and the button's. */
+function sdShapeLab(k, v) {
+  var o = (tZ[k] || []).filter(function (x) {
+    return String(x[0]) === String(v);
+  })[0];
+  return o ? sdTr(o[1]) : String(v);
+}
+function sdShapeName(k) {
+  var n = "";
+  [t2, t3, t4].forEach(function (tabs) {
+    (tabs || []).forEach(function (tb) {
+      (tb.items || []).forEach(function (it) {
+        n || !it || it.k !== k || "string" != typeof it.l || (n = it.l);
+      });
+    });
+  });
+  return sdTr(n || k);
+}
+/* v158 (user: "il faudrait l'adapter en fonction de chaque fille, une section de la planche spéciale pour ça" and "cache à un endroit un
+   bouton spécial"; his Blender agent prompt "poitrine nue, personnage 3D" gave every character the same descent, spread and downward
+   orientation, banned the conical and high shapes, took a ptosis grade set by hand, and applied bra ratios measured on padded cups to
+   bodies drawn under soft, unpadded triangles): "Agent 3D", a closed, discreet panel at the end of "Poitrine", for an adult woman or
+   androgynous person of 21 or more with a bust (sdRevealOk, as the tanga), never a child, a man or a photo kept as is. It writes his
+   prompt filled from the character: TAILLE_POITRINE from "Poitrine", TYPE_DE_HAUT from the outfit of the body sheet, GRADE_PTOSE from
+   "Forme de la poitrine" (Regnault classification: Martinez and Chung, "Breast Ptosis", StatPearls, updated 12 November 2023), the
+   spacing and direction from its spacing group, the profile limits from the shape. Method A (Zhong, Zhang, Hu, Zhang, Gu and Sun,
+   "Comparative Morphological Evaluation of Young Women's Breast-Bra Reshaping by Different Bra Cups", IJERPH 2023, 20(5):3856: 124
+   Chinese students of 20.5 years on average, B and C cups, 3/4 bras with 13 and 23 mm cups, no underwire) kept for padded cups only,
+   its ratios his own, marked "to validate" outside that population. Free thresholds are design choices, marked "À VALIDER", as in his
+   prompt. The text stays in French (his agent's language) and in a read-only field, never a <pre> (not a Seedream or GPT prompt). */
+var SD_A3D_TOPS = [
+  ["auto", "Auto (planche)", "Auto (sheet)"],
+  ["COQUES_EPAISSES", "Coques épaisses", "Thick cups"],
+  ["COQUES_FINES", "Coques fines", "Thin cups"],
+  ["TRIANGLE_SOUPLE", "Triangle souple", "Soft triangle"],
+  ["MAILLOT_SOUPLE", "Haut de maillot souple", "Soft bikini top"],
+  ["HAUT_AMPLE", "Haut ample", "Loose top"],
+  ["HAUT_AJUSTE", "Haut ajusté", "Fitted top"],
+  ["UNE_PIECE_AJUSTEE", "Une-pièce ajusté", "Fitted one-piece"],
+  ["UNE_PIECE_GAINANTE", "Une-pièce gainant", "Shaping one-piece"],
+  ["INCONNU", "Inconnu", "Unknown"],
+];
+var SD_A3D_TOPTXT = {
+  COQUES_EPAISSES: "un soutien-gorge ou un haut à coques épaisses",
+  COQUES_FINES: "un soutien-gorge ou un haut à coques fines",
+  TRIANGLE_SOUPLE: "un haut de maillot à triangles souples, doublés, sans coque ni armature",
+  MAILLOT_SOUPLE: "un haut de maillot couvrant à bonnets souples, sans rembourrage ni armature",
+  HAUT_AMPLE: "un haut court ample, sans coque ni armature, qui ne soutient pas la poitrine",
+  HAUT_AJUSTE: "un haut court ajusté en jersey, sans coque ni armature, qui suit la poitrine sans la remonter ni l'aplatir",
+  UNE_PIECE_AJUSTEE: "un maillot une pièce au devant non structuré, qui suit la poitrine sans la remonter ni l'aplatir",
+  UNE_PIECE_GAINANTE: "un maillot une pièce de compétition qui gaine la poitrine",
+  INCONNU: "un haut de type inconnu",
+};
+var SD_A3D_GRADES = [
+  ["auto", "Auto (forme)", "Auto (shape)"],
+  ["AUCUNE", "Aucune", "None"],
+  ["I", "I", "I"],
+  ["II", "II", "II"],
+  ["III", "III", "III"],
+  ["PSEUDO", "Pseudo", "Pseudo"],
+];
+function sdA3dOn(t) {
+  return "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && !t.photo && sdRevealOk(t);
+}
+/* v158 review: the top read from the outfit line the body sheet really writes (Seedream sdOutfit, else nR: head or no head, style, size,
+   drop, GPT), never guessed from the cover; the dressed sheet given as an image, a free outfit: unknown */
+function sdA3dTopAuto() {
+  /* v158 second review: the dressed sheet given as an image is Seedream's own (GPT always writes its outfit); the outfit line read on the
+     state the prompts use (sdG: the Auto bust resolved, which changes the one-piece front) */
+  if (!nv() || (sdNat(e) && sdUseBodyImg())) return "INCONNU";
+  var o = String(rq(sdG(Object.assign({}, e)), function () {
+    return sdNat(e) ? sdOutfit() : nR();
+  })).toLowerCase().slice(0, 400);
+  return /halter bikini top|triangles/.test(o)
+    ? "TRIANGLE_SOUPLE"
+    : /full-coverage bikini top/.test(o)
+      ? "MAILLOT_SOUPLE"
+      : /loose(, boxy)? (cobalt-blue )?sleeveless cropped top/.test(o)
+        ? "HAUT_AMPLE"
+        : /fitted (cobalt-blue )?sleeveless cropped top/.test(o)
+          ? "HAUT_AJUSTE"
+          : /one-piece/.test(o)
+            ? /unstructured front|follows the natural/.test(o) ? "UNE_PIECE_AJUSTEE" : "UNE_PIECE_GAINANTE"
+            : "INCONNU";
+}
+function sdA3dManual(k, T) {
+  return T.some(function (x) { return x[0] === e[k] && "auto" !== x[0]; });
+}
+function sdA3dTop() {
+  return sdA3dManual("a3dTop", SD_A3D_TOPS) ? e.a3dTop : sdA3dTopAuto();
+}
+/* the shape the sheet says (Auto by age resolved as the prompts resolve it) */
+function sdA3dShape() {
+  return "auto" === e.bustShape ? sdAutoBust(e) : e;
+}
+/* v158 review: from what the sheet writes. "Très tombante" (the lowest point at the nipple) III; "Tombante" II from "Assez généreuse",
+   I below (the text says "slightly low"); Auto by age: young AUCUNE, natural (a teardrop with a slight natural drop) I, moderate and
+   marked (the drooping text of "Tombante") II; Poire PSEUDO (hollow above, full below); Fine et allongée I. A design choice, said so in
+   the prompt (no default grade is sourced for a given volume) */
+function sdA3dGradeAuto() {
+  var s = sdA3dShape(),
+    f = s.bustShape,
+    tier = "auto" === e.bustShape ? s.sdAutoTier : "";
+  /* v158 second review: the sheet writes a marked drop from "Généreuse" up only (below, "soft and slightly low"): II from there, I below */
+  if (sdDropX()) return "III";
+  if (tier) return "young" === tier ? "AUCUNE" : "natural" === tier ? "I" : e.chest >= 3 ? "II" : "I";
+  return "low" === f ? (e.chest >= 3 ? "II" : "I") : "pear" === f ? "PSEUDO" : "slender" === f ? "I" : "AUCUNE";
+}
+function sdA3dGrade() {
+  return sdA3dManual("a3dGrade", SD_A3D_GRADES) ? e.a3dGrade : sdA3dGradeAuto();
+}
+function sdA3dSpread() {
+  var w = (sdBustSel(e).filter(function (x) { return ["wide", "close", "out", "fwd"].indexOf(x) >= 0; })[0] || "");
+  return "wide" === w ? "ECARTEE" : "close" === w ? "RAPPROCHEE" : "out" === w ? "VERS_EXTERIEUR" : "fwd" === w && sdBustFwdOn() ? "VERS_AVANT" : "NORMAL";
+}
+function sdA3dLab(T, k) {
+  return ((T || []).filter(function (x) { return String(x[0]) === String(e[k]); })[0] || [])[1] || "";
+}
+function sdA3dText() {
+  var age = Math.round(+e.age || 30),
+    size = e.chest >= 2.5 ? "PLUS_GRANDE" : e.chest >= 2 ? "B_C" : "PETITE",
+    top = sdA3dTop(),
+    grade = sdA3dGrade(),
+    spread = sdA3dSpread(),
+    sh = sdA3dShape(),
+    tier = "auto" === e.bustShape ? sh.sdAutoTier : "",
+    cone = "conical" === sh.bustShape,
+    high = !!sdBustPos() && /^set (?:very )?high/.test(sdBustPos()),
+    pw = cone ? "" : spread === "VERS_AVANT" || high ? "0,6" : "0,5",
+    coques = "COQUES_EPAISSES" === top || "COQUES_FINES" === top,
+    methA = "B_C" === size && coques,
+    none = "AUCUNE" === grade,
+    soft = ["TRIANGLE_SOUPLE", "MAILLOT_SOUPLE", "HAUT_AMPLE"].indexOf(top) >= 0,
+    light = "HAUT_AJUSTE" === top || "UNE_PIECE_AJUSTEE" === top,
+    asym = sdAsymOn() || "asym" === e.bustShape,
+    manT = "auto" !== (e.a3dTop || "auto") && sdA3dManual("a3dTop", SD_A3D_TOPS),
+    manG = "auto" !== (e.a3dGrade || "auto") && sdA3dManual("a3dGrade", SD_A3D_GRADES),
+    forms = sdBustSel(e)
+      .filter(function (x) {
+        return "asym" !== x;
+      })
+      .map(function (x) {
+        return ((SD_BUST_UI.filter(function (y) { return y[0] === x; })[0] || [])[1]) || x;
+      }),
+    shapeTxt = (forms.length ? forms.join(", ") : "Auto (âge)") + (tier ? " (la planche écrit : " + { young: sdBustSkin() ? "ronde" : "ronde, ferme", natural: "goutte, légère chute naturelle", moderate: e.chest >= 3 ? "tombante" : "un peu basse", marked: e.chest >= 3 ? "tombante" : "un peu basse" }[tier] + ")" : ""),
+    lat = spread === "VERS_EXTERIEUR" ? ", et vers l'extérieur" : spread === "VERS_AVANT" ? ", au plus 15° vers l'extérieur" : "",
+    orient = none ? (spread === "VERS_AVANT" || spread === "VERS_EXTERIEUR" ? "mamelon orienté vers l'avant" + lat : "orientation de la forme de base gardée") : ("I" === grade ? "mamelon orienté vers l'avant, légèrement vers le bas" : "mamelon orienté vers l'avant et le bas") + lat,
+    supp = methA
+      ? "Le haut soutenait la poitrine (coques) et la poitrine est en bonnet B à C : méthode A, ratios mesurés ci-dessous."
+      : coques
+        ? "Le haut soutenait la poitrine (coques), mais la méthode A ne vaut que pour les bonnets B à C : méthode B ; la poitrine descend et s'écarte jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée hors bonnets B à C : À VALIDER)."
+        : soft
+          ? "Le haut ne soutenait presque pas la poitrine : la forme du mesh sous le haut est déjà presque la forme au repos. Déformation minimale : la poitrine ne descend et ne s'écarte que si la forme de base ne remplit pas encore le grade et l'écartement demandés, jamais au-delà (aucune mesure publiée du passage d'un haut souple ou ample à sans haut : À VALIDER)."
+          : light
+            ? "Le haut suivait la poitrine sans la remonter ni l'aplatir" + (!manT && e.chest >= 2 ? " (c'est ce que dit la planche)" : "") + " : maintien léger, la forme du mesh est déjà presque la forme au repos. Déformation minimale, jusqu'au grade et à l'écartement demandés, jamais au-delà (aucune mesure publiée : À VALIDER)."
+            : "UNE_PIECE_GAINANTE" === top
+              ? "Le maillot gainait la poitrine : elle reprend sa forme au repos, en descendant et en s'écartant jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée : À VALIDER)."
+              : "Type de haut inconnu : avant toute déformation, arrête-toi et demande le type de haut.",
+    gradeTxt = {
+      AUCUNE: "AUCUNE : mamelon au-dessus du sillon sous-mammaire, aucune partie du sein sous le sillon",
+      I: "I : mamelon au niveau du sillon",
+      II: "II : mamelon sous le sillon, sans être le point le plus bas du sein",
+      III: "III : mamelon sous le sillon, au point le plus bas du sein",
+      PSEUDO: "PSEUDO : mamelon au niveau du sillon ou au-dessus, le bas du sein sous le sillon",
+    }[grade],
+    spreadTxt = {
+      NORMAL: "écartement d'au moins 0, ampleur libre mais minimale, À VALIDER",
+      ECARTEE: "écartement d'au moins 0, ampleur libre, À VALIDER",
+      RAPPROCHEE: "aucun écartement : |WBB_après - WBB_avant| ≤ tol",
+      VERS_EXTERIEUR: "écartement d'au moins 0, chaque sein orienté vers l'extérieur",
+      VERS_AVANT: "aucun écartement : |WBB_après - WBB_avant| ≤ tol ; chaque sein orienté vers l'avant, au plus 15° vers l'extérieur (À VALIDER)",
+    }[spread],
+    noSpread = "RAPPROCHEE" === spread || "VERS_AVANT" === spread,
+    profTarget = cone
+      ? "P_après ≤ P_avant + tol (forme « En obus » réglée : profil conique permis, pas de cible P/W ni A)"
+      : "P_après / W ≤ " + pw + " ; P_après ≤ P_avant + tol ; A_après ≥ 120°" + ("0,6" === pw ? " (" + (spread === "VERS_AVANT" ? "« Vers l'avant »" : "hauteur réglée") + " : seuil P/W relevé de 0,5 à 0,6, À VALIDER)" : ""),
+    fiche = [
+      "corpulence " + (sdA3dLab(tZ.fat, "fat") || "?"),
+      "poitrine " + (sdA3dLab(tZ.bust, "chest") || "?"),
+      "forme : " + shapeTxt,
+    ]
+      .concat(sdDropX() ? ["chute : très tombante"] : [], asym ? ["asymétrique"] : [], sdBustSkin() ? ["peau de la poitrine " + sdA3dLab(tZ.bustSkin, "bustSkin").toLowerCase()] : [])
+      .join(" ; "),
+    L = [];
+  L.push("# Prompt agent : poitrine sans haut, personnage 3D", "");
+  L.push("## CONTEXTE", "");
+  L.push("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte actuellement " + SD_A3D_TOPTXT[top] + ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne.", "");
+  L.push("Fiche du personnage (planche de référence) : " + fiche + ".", "");
+  L.push("Règle centrale : volume inchangé. Retirer le haut ne change la poitrine que dans la mesure où il la soutenait. " + supp + (methA ? "" : " La forme sans haut suit le grade, l'écartement et la forme réglés ci-dessous, jamais une forme moyenne. Une poitrine plus volumineuse se place plus bas au repos (Brown et al. 2012 ; Coltman, Steele, McGhee 2018, rapportés par Suh et Park 2022) : la planche le dit déjà par la taille et la forme réglées."), "");
+  L.push("Méthode A : ratios mesurés avec et sans soutien-gorge (Zhong et al., IJERPH 2023, 20(5):3856 : 124 Chinoises de 18 à 25 ans, 20,5 ans en moyenne, IMC moyen 20,3, bonnets B et C, soutiens-gorge 3/4 à coques de 13 et 23 mm sans armature), fixés ; hors de cette population (âge, taille, type de haut), ratios À VALIDER" + (methA && (age < 18 || age > 25) ? " : ce personnage a " + age + " ans, hors de la plage de l'étude, à signaler dans le rapport" : "") + ". Méthode B : forme sans haut définie par un grade de ptose (classification de Regnault modifiée, définitions d'une source secondaire).", "");
+  L.push("## ENTRÉES", "");
+  L.push("- FICHIER_SOURCE =");
+  L.push("- TAILLE_POITRINE = " + size + " (PETITE, B_C ou PLUS_GRANDE ; planche : " + (sdA3dLab(tZ.bust, "chest") || "?") + ")");
+  L.push("- TYPE_DE_HAUT = " + top + " (" + SD_A3D_TOPS.slice(1).map(function (x) { return x[0]; }).join(", ") + " ; " + (manT ? "choisi à la main" : "lu dans la tenue de la planche") + ")");
+  L.push("- GRADE_PTOSE = " + (methA ? "sans objet en méthode A" : grade + " (AUCUNE, I, II, III ou PSEUDO ; " + (manG ? "choisi à la main" : "tiré de la forme de la planche") + ")"));
+  L.push("- ECARTEMENT = " + (methA ? "sans objet en méthode A (r_h)" : spread + " (NORMAL, ECARTEE, RAPPROCHEE, VERS_EXTERIEUR ou VERS_AVANT)"));
+  L.push("- FORME = " + (cone ? "EN_OBUS" : high ? "HAUTE" : "AUTRE") + " (EN_OBUS, HAUTE ou AUTRE)");
+  L.push("- ASYMETRIE = " + (asym ? "OUI" : "NON") + " (OUI ou NON)");
+  L.push("- SILLON_SOUS_MAMMAIRE = AUTO (ou nom du vertex group du sillon, requis en méthode B si le sillon n'est pas lisible sur le mesh)", "");
+  L.push("Champ requis vide ou hors liste : arrête-toi et demande, ne suppose rien. Méthode A si TAILLE_POITRINE = B_C et TYPE_DE_HAUT = COQUES_EPAISSES ou COQUES_FINES ; sinon méthode B. Méthode retenue ici : " + (methA ? "A" : "B") + ".", "");
+  L.push("## CIBLES", "");
+  L.push("Méthode A :", "");
+  L.push("| TYPE_DE_HAUT | r_v (baisse de HU) | r_h (hausse de WBB) | Volume |", "|---|---|---|---|", "| COQUES_EPAISSES | 0,17 | 0,13 | 0 % |", "| COQUES_FINES | 0,26 | 0,10 | 0 % |", "");
+  L.push("HU_cible = HU_avant × (1 - r_v) ; WBB_cible = WBB_avant × (1 + r_h) ; V_cible = V_avant.", "");
+  L.push("Données de Zhong et al. 2023 (debout, statique ; pourcentages = (nue - avec soutien) / avec soutien) :", "");
+  L.push("| Mesure | Nue | Coques fines 13 mm | Coques épaisses 23 mm |", "|---|---|---|---|", "| Hauteur du point saillant depuis le sol | 113,91 cm | 116,07 cm | 115,09 cm |", "| HU, point saillant au-dessus du bas du sein | 5,47 cm | 7,42 cm (-26 % nue) | 6,59 cm (-17 % nue) |", "| WBB, écart entre les points saillants | 18,41 cm | 16,69 cm (+10 % nue) | 16,26 cm (+13 % nue) |", "");
+  L.push("Limites de la méthode A : soutien-gorge et non maillot (coques de maillot assimilées) ; avec soutien, le point saillant est mesuré sur la coque ; moyennes de population, pas valeurs individuelles ; le bas du sein descend aussi d'environ 0,2 cm, fixé ici par simplification.", "");
+  L.push("Méthode B, repères par côté :");
+  L.push("- z_SMS : hauteur du sillon sous-mammaire sur la paroi du thorax, dans la forme de base, au plus près du plan vertical passant par BP. Repère fixe. En AUTO : ligne de courbure concave maximale où le dessous du sein rejoint le thorax ; si elle est ambiguë, arrête-toi et demande le vertex group.");
+  L.push("- z_BP : hauteur du mamelon (point saillant) après déformation ; z_bas : hauteur du point le plus bas du sein après déformation.");
+  L.push("- tol = 0,003 × H, H étant la hauteur du personnage en unités de scène.", "");
+  L.push("| Grade | Condition à atteindre |", "|---|---|", "| AUCUNE | z_BP > z_SMS + tol et z_bas ≥ z_SMS - tol |", "| I | abs(z_BP - z_SMS) ≤ tol et z_bas < z_BP |", "| II | z_bas + tol < z_BP < z_SMS - tol |", "| III | z_BP < z_SMS - tol et z_BP ≤ z_bas + tol (mamelon au point le plus bas ; interprétation à valider visuellement) |", "| PSEUDO | z_BP ≥ z_SMS - tol et z_bas < z_SMS - tol |", "");
+  methA ||
+    (L.push(
+      "Grade demandé (méthode B) : " + gradeTxt + ". " +
+        (manG ? "Il a été choisi à la main pour ce personnage." : "Il vient des réglages de CE personnage (forme de la poitrine sur la planche) ; la correspondance forme / grade est un choix de conception, À VALIDER : aucun grade par défaut n'est sourcé pour un volume donné.") +
+        " Si la forme de base remplit déjà cette condition, aucune descente. Si elle est déjà plus basse que le grade demandé (mesh affaissé sous le haut), ne la remonte pas : arrête-toi et demande.",
+      "",
+    ),
+    L.push(
+      "Forme en méthode B : volume de chaque sein à ±2 % ; écartement " + spread + " : " + spreadTxt + " ; déformation minimale qui atteint le grade ; " +
+        (none ? "le haut du sein garde son plein : au-dessus de BP, le profil ne recule pas de plus de tol ; aucune partie du sein sous le sillon" : "le haut du sein se vide et le bas se remplit ; contact sein / thorax sous le sillon permis") +
+        " ; " + orient + " ; interpénétration interdite.",
+      "",
+    ));
+  L.push("Profil (deux méthodes), par côté :");
+  L.push("- Plan de paroi : plan ajusté par moindres carrés sur les vertices de poids 0 du bord de la zone, dans la forme de base. Fixe.");
+  L.push("- P : distance maximale entre ce plan et la surface du sein, le long de sa normale.");
+  L.push("- W : distance horizontale entre les points médial et latéral du bord de la zone, à la hauteur de BP dans la forme de base. Fixe.");
+  L.push("- A : sur la coupe sagittale passant par BP, angle entre les segments reliant BP aux points du profil situés 0,15 × W plus haut et plus bas. Si le point bas n'appartient plus au sein (grade III), prends le point le plus bas du sein sur cette coupe.", "");
+  L.push("Cibles : " + profTarget + "." + (cone ? "" : " Forme de base déjà hors cibles (cône) : en méthode B, continue, l'étape 7f corrige ; en méthode A, arrête-toi et demande s'il faut passer en B."), "");
+  L.push("Repère du seuil P/W : ordre de grandeur de population, pas une règle individuelle (projection de 4,0 ± 1,3 cm pour environ 540 cc chez 100 jeunes Malaisiennes, Shahlini 2014 ; base d'environ 13 cm dans une étude 3D Vectra ; aucune des deux cohortes n'a de poitrine très volumineuse). " + (cone ? "Ici, la forme « En obus » réglée sur la planche passe avant ce repère." : "0,6" === pw ? "Ici, la forme réglée sur la planche, plus projetée, le relève." : "Une forme plus projetée réglée sur la planche le relèverait."), "");
+  L.push("Seuils ±0,01, ±2 %, tol" + (cone ? "" : ", " + pw + ", 120°") + (spread === "VERS_AVANT" && !methA ? ", 15°" : "") + " : choix de conception.", "");
+  L.push("## DEFINITION OF DONE", "");
+  L.push("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK ; FICHIER_SOURCE intact ; rapport livré.", "");
+  L.push("## CONTRAINTES", "");
+  L.push("1. Blender avec Python (bpy, bmesh, mathutils). Blender absent ou import raté : arrête-toi et signale.");
+  L.push("2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\" ; forme de base intacte.");
+  L.push("3. Topologie (vertices, arêtes, faces), UV, vertex groups, poids de skinning et shape keys existants inchangés.");
+  L.push("4. Rien au-delà des cibles : ni volume, ni taille de bonnet, ni esthétique.");
+  L.push("5. Aucune hypothèse silencieuse : vérifie axe avant, axe vertical, unité, objet corps, côtés, sillon. Ambiguïté : demande.");
+  L.push("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.");
+  L.push("7. État de mesure identique avant et après : armature en Rest Position, Subdivision et lissages désactivés, shape keys existantes à leur valeur. Demi-mesh avec Mirror : édite la moitié réelle, mesure sur le mesh évalué.");
+  L.push("8. Paramètres libres (zone, décroissance, écartement en B, itérations) : listés dans le rapport, marqués À VALIDER.", "");
+  L.push("## ÉTAPES", "");
+  L.push("1. Inventaire : objets, corps, maillot, modificateurs, shape keys, armature. Masque le maillot (hide_viewport, hide_render), ne le supprime pas.");
+  L.push("2. Complétude : sous le haut, mesh du corps continu et fermé, sans trou ni faces supprimées ; longueur moyenne d'arête dans la zone ≤ 2 × celle du reste du torse. Géométrie manquante : ARRÊT, captures, aucune reconstruction.");
+  L.push("3. Forme héritée : shape key, Shrinkwrap ou modificateur qui plaque le corps sur le maillot ? Signale-le ; s'il écraserait \"nu_relache\" : ARRÊT et demande. Mesure l'écart corps / face interne du maillot (BVHTree.find_nearest) : min, médiane, max, traversées. Ne corrige rien.");
+  L.push("4. Repère : axes vertical, avant et latéral en rest pose (armature, sinon normale moyenne du torse) ; H ; unité.");
+  L.push("5. Zone : groupes de poids poitrine du rig s'ils existent, sinon \"sein_G\" et \"sein_D\" jusqu'au sillon, au bord du sternum et à la ligne axillaire antérieure ; poids 1 au centre, décroissance douce jusqu'à 0 au bord (fixe). En B, inclure à poids 0 la peau du thorax sous le sillon. Capture de la carte de poids.");
+  L.push("6. Mesures AVANT, par côté :");
+  L.push("   - BP : vertex le plus en avant parmi ceux de poids > 0,5.");
+  L.push("   - UBP (A) : vertex le plus bas du contour inférieur, au sillon, dans le plan vertical le plus proche de BP ; HU = distance verticale BP - UBP.");
+  L.push("   - WBB : distance latérale entre BP gauche et droit.");
+  L.push("   - z_SMS (B) ; grade de la forme de base, reporté.");
+  L.push("   - V : duplique les faces de poids > 0 dans un bmesh, bmesh.ops.holes_fill, bm.calc_volume().");
+  L.push("   - Plan de paroi, P, W, A" + (cone ? "." : " ; règle de la forme de base hors cibles."));
+  L.push("7. Déformation, uniquement dans \"nu_relache\" :");
+  L.push("   - A : a. descente pondérée jusqu'à HU_cible (UBP reste au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.");
+  methA || L.push("   - B : a. descente de la masse, croissante vers le bas, jusqu'à la condition du grade " + grade + " et pas au-delà ; aucune si la forme de base la remplit déjà" + (none ? "" : " ; le bas peut passer sous le sillon et toucher le thorax sans le traverser") + " ; b. écartement selon ECARTEMENT = " + spread + " ; c. " + orient + ".");
+  L.push("   - Puis : d. volume ramené à ±2 % par gonflement le long des normales ; e. lissage limité à la zone, re-mesure, itération" + (cone ? "." : " ; f. si P_après / W > " + pw + " ou A_après < 120°, recule le sommet vers le plan de paroi, redistribue ce volume " + (methA ? "vers le bas et l'extérieur, reprends d et e." : (none ? "vers la base, sans faire descendre le mamelon ni vider le haut" : "vers le bas" + (noSpread ? "" : " et l'extérieur")) + ", reprends d et e ; en B, le grade reste vrai.")));
+  L.push("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6.");
+  L.push("9. Vérifications, \"nu_relache\" à 1,0 :");
+  L.push("   - V1 : " + (methA ? "HU_après / HU_avant = 1 - r_v à ±0,01." : "condition du grade " + grade + " vraie par sein (reporte z_SMS, z_BP, z_bas, tol)."));
+  L.push("   - V2 : " + (methA ? "WBB_après / WBB_avant = 1 + r_h à ±0,01." : noSpread ? "|WBB_après - WBB_avant| ≤ tol." : "WBB_après ≥ WBB_avant."));
+  L.push("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par sein.");
+  L.push("   - V4 : nombres de vertices, arêtes, faces et UV identiques à la source.");
+  L.push("   - V5 : déplacement des vertices de poids 0 ≤ 1e-6 unité de scène.");
+  L.push("   - V6 : aucune auto-intersection dans la zone, y compris sein / thorax (BVHTree.overlap, hors faces partageant un vertex) ; aucune normale inversée ; aucune face d'aire multipliée par plus de 3.");
+  L.push("   - V7 : symétrie. " + (methA ? "Écart des ratios gauche / droite ≤ 0,01. " : "Même grade des deux côtés. ") + (asym ? "ASYMETRIE = OUI : garde l'asymétrie d'origine, ne la corrige pas, mesure-la, signale-la." : "Asymétrie d'origine : garde-la, mesure-la, signale-la."));
+  L.push("   - V8 : si armature : captures en rest pose, bras levés, buste penché, sans artefact ; sinon INVÉRIFIABLE avec la raison.");
+  L.push("   - V9 : rendus avant/après de face, profil, trois-quarts, même caméra et même éclairage ; sur le profil, point le plus bas et sillon lisibles.");
+  L.push("   - V10 : profil par sein : " + profTarget + ".");
+  L.push("   Échec : corrige et recommence ; après 3 échecs sur un critère, arrête-toi et rapporte les valeurs.", "");
+  L.push("## SORTIE", "");
+  L.push("1. Fichier .blend suffixé \"_nu\".");
+  L.push("2. Script deform_nu.py, headless : `blender -b FICHIER_SOURCE -P deform_nu.py`");
+  L.push("3. rapport_nu.md : méthode et raison ; " + (methA ? "" : "grade de la forme de base et grade demandé ; ") + "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à V10 OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE.");
+  L.push("4. Captures PNG avant/après et carte de poids.", "");
+  L.push("## INTERDITS", "");
+  L.push((methA
+    ? "S'écarter des ratios r_v et r_h ; "
+    : none
+      ? "Faire descendre le mamelon sous le sillon, faire passer le sein sous le sillon, vider le haut du sein ou l'écarter au-delà d'ECARTEMENT ; "
+      : "Garder une forme soutenue (haut rond et plein, mamelon haut) en grade " + grade + " ; écarter au-delà d'ECARTEMENT ; ") +
+    (cone ? "" : "livrer un profil en cône ou en obus ; ") +
+    "ramener la poitrine à une forme moyenne ; inventer un grade ou des ratios ; annoncer « terminé » sans rapport.");
+  return L.join("\n");
+}
+function sdA3dCopy(ev) {
+  /* v158 second review: the message in its own span (never rendered with children by React), the button label left to React (language) */
+  var b = ev.currentTarget,
+    ta = b.parentNode && b.parentNode.querySelector("textarea"),
+    msg = b.parentNode && b.parentNode.querySelector("[data-a3d-msg]"),
+    txt = ta ? ta.value : "",
+    show = function (m) {
+      if (!msg) return;
+      msg.textContent = m;
+      clearTimeout(msg._a3dT);
+      msg._a3dT = setTimeout(function () {
+        msg.textContent = "";
+      }, 1500);
+    },
+    fallback = function () {
+      var okc = !1;
+      try {
+        ta && (ta.select(), (okc = document.execCommand("copy")));
+      } catch (er) {
+        okc = !1;
+      }
+      show(okc ? sdT("Copié", "Copied") : sdT("Sélectionné : copie avec Ctrl+C", "Selected: copy with Ctrl+C"));
+    };
+  try {
+    navigator.clipboard.writeText(txt).then(function () {
+      show(sdT("Copié", "Copied"));
+    }, fallback);
+  } catch (er) {
+    fallback();
+  }
+}
+function sdA3dChips(t, set, k, T) {
+  var v = T.some(function (x) { return x[0] === t[k]; }) ? t[k] : "auto";
+  return (0, l.jsx)("div", {
+    className: "mt-2 flex flex-wrap gap-1.5",
+    role: "group",
+    children: T.map(function (x) {
+      var on = v === x[0];
+      return (0, l.jsx)(
+        "button",
+        {
+          type: "button",
+          "aria-pressed": on,
+          "data-a3d": k + ":" + x[0],
+          className: "rounded-full border px-2.5 py-1 text-xs " + (on ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
+          onClick: function () {
+            set(function (s) {
+              var o = Object.assign({}, s);
+              o[k] = x[0];
+              return o;
+            });
+          },
+          children: sdT(x[1], x[2]),
+        },
+        x[0],
+      );
+    }),
+  });
+}
+function sdAgent3d(t, set) {
+  if (!sdA3dOn(t)) return null;
+  var txt = rq(t, sdA3dText);
+  return (0, l.jsxs)("details", {
+    className: "py-2 text-xs text-muted-foreground",
+    id: "sd-a3d",
+    children: [
+      (0, l.jsx)("summary", { className: "cursor-pointer select-none opacity-60 hover:opacity-100", children: sdT("Agent 3D", "3D agent") }),
+      (0, l.jsx)("p", {
+        className: "mt-2",
+        children: sdT(
+          "Prompt de l'agent Blender qui retire le haut du personnage 3D, rempli depuis la planche : taille, type de haut, grade de ptose tiré de « Forme de la poitrine », écartement, profil permis. Les choix Auto suivent la planche.",
+          "Prompt for the Blender agent that removes the top of the 3D character, filled from the sheet: size, type of top, ptosis grade from “Bust shape”, spacing, allowed profile. Auto follows the sheet.",
+        ),
+      }),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Type de haut", "Type of top") }),
+      sdA3dChips(t, set, "a3dTop", SD_A3D_TOPS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Grade de ptose", "Ptosis grade") }),
+      sdA3dChips(t, set, "a3dGrade", SD_A3D_GRADES),
+      (0, l.jsx)("textarea", { readOnly: !0, value: txt, rows: 8, className: "mt-2 w-full rounded-md border bg-card p-2 font-mono text-xs", "aria-label": sdT("Prompt de l'agent 3D", "3D agent prompt") }),
+      (0, l.jsx)("button", {
+        type: "button",
+        className: "mt-2 rounded-full border px-3 py-1.5 text-xs font-semibold hover:border-foreground/40",
+        onClick: sdA3dCopy,
+        children: sdT("Copier le prompt de l'agent", "Copy the agent prompt"),
+      }),
+      (0, l.jsx)("span", { className: "ml-2 font-semibold", "data-a3d-msg": "1", "aria-live": "polite" }),
+    ],
+  });
+}
+/* the default of every slider a silhouette sets */
+function sdShapeDef() {
+  var o = {};
+  SD_SHAPES.forEach(function (x) {
+    Object.keys(x[3]).forEach(function (k) {
+      o[k] = tJ[k];
+    });
+  });
+  return o;
+}
+/* every slider a silhouette sets, back to its default, the last button cleared */
+function sdShapeNone(s) {
+  return Object.assign({}, s, sdShapeDef(), { sdShapePick: "" });
+}
+function sdShapeBtns(t, set) {
+  if ("person" !== t.mode || sdChild(t)) return null;
+  var cls = "relative inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ";
+  var man = "m" === t.pres,
+    shapes = SD_SHAPES.filter(function (x) {
+      return man ? 1 !== x[4] : 2 !== x[4];
+    }),
+    shown = function (k) {
+      return "fatBelly" === k || "fatFlanks" === k ? 4 !== +t.fat : "fatLower" === k || "saddle" === k ? "m" !== t.pres : !0;
+    },
+    same = function (x) {
+      return Object.keys(x[3]).every(function (k) {
+        return !shown(k) || String(t[k]) === String(x[3][k]);
+      });
+    },
+    /* v157c: "Aucune" lit only when these sliders are at their defaults (read as the buttons are), never with sliders set by hand */
+    atNone = same(["none", "", "", sdShapeDef()]),
+    adjX = shapes.some(same) || atNone
+      ? null
+      : shapes.filter(function (x) {
+          return x[0] === t.sdShapePick;
+        })[0] || null;
+  return (0, l.jsxs)("div", {
+    className: "py-4 border-b last:border-0",
+    id: "sd-shape",
+    role: "group",
+    "aria-label": sdT("Silhouette type", "Body shape"),
+    children: [
+      (0, l.jsx)("p", { className: "font-semibold", children: sdT("Silhouette type", "Body shape") }),
+      (0, l.jsx)("p", {
+        className: "mt-1 text-sm text-muted-foreground",
+        /* v144: the first sentence shown, the rest behind "Plus" (SdMore, as the hints of the other controls) */
+        children: (0, l.jsx)(SdMore, { text: man ? sdT(
+          "Règle d'un coup Épaules, Tour de taille, Hanches, Cuisses et la graisse du ventre et des flancs. Le bouton lui-même ne part pas dans le prompt, seulement ces curseurs : ajuste-les ensuite un par un. Le dernier bouton cliqué reste marqué ; si tu changes un de ses curseurs, il indique « ajusté » et la liste de tes changements s'affiche dessous. Ne touche ni à la corpulence, ni aux pectoraux, ni aux fessiers. « Aucune » remet ces curseurs à leurs valeurs par défaut (épaules, taille, hanches et cuisses moyennes, sans graisse) et s'allume quand ils ont ces valeurs.",
+          "Sets Shoulders, Waist, Hips, Thighs and the fat of the belly and the flanks at once. The button itself does not go into the prompt, only these sliders: adjust them one by one afterwards. The last button clicked stays marked; if you change one of its sliders, it shows “adjusted” and the list of your changes appears below. It changes neither the build, nor the chest, nor the glutes. “None” puts these sliders back to their defaults (medium shoulders, waist, hips and thighs, no fat) and lights up when they have these values.",
+        ) : sdT(
+          "Règle d'un coup Épaules, Tour de taille, Hanches, Cuisses et la graisse du ventre, des flancs, des hanches et cuisses et la culotte de cheval. Le bouton lui-même ne part pas dans le prompt, seulement ces curseurs : ajuste-les ensuite un par un. Le dernier bouton cliqué reste marqué ; si tu changes un de ses curseurs, il indique « ajusté » et la liste de tes changements s'affiche dessous. Ne touche ni à la corpulence, ni à la poitrine, ni aux fessiers. « Aucune » remet ces curseurs à leurs valeurs par défaut (épaules, taille, hanches et cuisses moyennes, sans graisse ni culotte de cheval) et s'allume quand ils ont ces valeurs.",
+          "Sets Shoulders, Waist, Hips, Thighs and the fat of the belly, the flanks, the hips and thighs and the saddlebags at once. The button itself does not go into the prompt, only these sliders: adjust them one by one afterwards. The last button clicked stays marked; if you change one of its sliders, it shows “adjusted” and the list of your changes appears below. It changes neither the build, nor the bust, nor the glutes. “None” puts these sliders back to their defaults (medium shoulders, waist, hips and thighs, no fat or saddlebags) and lights up when they have these values.",
+        ) }),
+      }),
+      (0, l.jsx)("div", {
+        className: "mt-3 flex flex-wrap gap-2",
+        /* v157c (user: "on peut pas mettre aucune une fois qu'on a cliqué sur une silhouette, ça bloque"): "Aucune" puts the sliders the
+           buttons set back to their defaults (no button matches them) and clears the last button; lit only at these defaults */
+        children: [
+          (0, l.jsx)(
+            "button",
+            {
+              type: "button",
+              "aria-pressed": atNone,
+              "data-shape": "none",
+              className: cls + (atNone ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:border-foreground/40"),
+              onClick: function () {
+                set(sdShapeNone);
+              },
+              children: sdT("Aucune", "None"),
+            },
+            "none",
+          ),
+        ].concat(shapes.map(function (x) {
+          var v = x[3],
+            on = same(x),
+            adj = !on && adjX === x;
+          return (0, l.jsx)(
+            "button",
+            {
+              type: "button",
+              "aria-pressed": on || adj,
+              "data-shape": x[0],
+              "data-adjusted": adj ? "true" : "false",
+              className: cls + (on ? "bg-primary text-primary-foreground border-primary" : adj ? "bg-card" : "bg-card hover:border-foreground/40"),
+              style: adj ? { borderStyle: "dashed", borderColor: "hsl(var(--primary))", background: "hsl(var(--primary) / 0.08)" } : void 0,
+              title: adj ? sdT("Dernier bouton cliqué, curseurs ajustés ensuite. Clique pour revenir à ses valeurs.", "Last button clicked, sliders adjusted since. Click to go back to its values.") : void 0,
+              onClick: function () {
+                set(function (s) {
+                  return Object.assign({}, s, v, { sdShapePick: x[0] });
+                });
+              },
+              children: sdT(x[1], x[2]) + (adj ? sdT(" · ajusté", " · adjusted") : ""),
+            },
+            x[0],
+          );
+        })),
+      }),
+      adjX &&
+        (0, l.jsx)("p", {
+          className: "mt-2 text-sm text-muted-foreground",
+          "data-shape-changes": adjX[0],
+          children:
+            sdT("Base : « " + adjX[1] + " », ajustée ensuite : ", "Base: “" + adjX[2] + "”, adjusted since: ") +
+            Object.keys(adjX[3])
+              .filter(function (k) {
+                return shown(k) && String(t[k]) !== String(adjX[3][k]);
+              })
+              .map(function (k) {
+                return sdShapeName(k) + " (" + sdShapeLab(k, adjX[3][k]) + " → " + sdShapeLab(k, t[k]) + ")";
+              })
+              .join(", ") +
+            ".",
+        }),
+    ],
+  });
+}
+/* v129 (user: body hair on the legs, the arms or the chest for men; more facial hair, beards from two days to three months, moustache;
+   for men, a hair loss from slight to strong): adult men only (never a child, never a woman), both engines. Body hair per zone, 0 to 4,
+   in the body prompts where the skin shows, in the color of the hair; "faint body hair" goes when a zone is set. Hair loss 0 to 4
+   following the stages of male pattern baldness (temples first, then the crown, then a band of hair at the sides and back: Norwood,
+   Southern Medical Journal, 1975), in every hair description (ne), the back view showing the crown from "Marquée" up; hidden with
+   "Chauve", and "Dégarni" gives way to it. */
+var SD_BODY_HAIR = [
+  ["bodyHairChest", ["", "a few fine hairs on the chest", "light chest hair around the sternum", "moderate chest hair across the chest and down the middle of the abdomen to the navel", "thick chest hair across the chest and the abdomen, rising toward the collarbones"]],
+  ["bodyHairArms", ["", "fine, light hair on the forearms", "visible hair on the forearms, lighter on the upper arms", "dense hair on the forearms, the upper arms and the backs of the hands", "thick, dense hair along the whole arms, on the backs of the hands and the fingers"]],
+  ["bodyHairLegs", ["", "fine, light hair on the lower legs", "visible hair on the lower legs, lighter on the thighs", "dense hair on the legs, from the ankles to the thighs", "thick, dense hair over the whole legs"]],
+];
+function sdHairOn(k) {
+  return "person" === e.mode && "m" === e.pres && !sdChild(e) ? Math.max(0, Math.min(4, Math.round(+e[k] || 0))) : 0;
+}
+function sdBodyHair() {
+  /* v140: a woman's or an androgynous person's body hair ("Pilosité du corps") */
+  var fh = "m" !== e.pres ? sdPick(SD_FHAIR, "fHair") : "",
+    f = SD_BODY_HAIR.filter(function (z) {
+      return sdHairOn(z[0]);
+    }).map(function (z) {
+      return z[1][sdHairOn(z[0])];
+    }),
+    /* v129 review: the color named, since a headless Seedream body sheet shows no hair to take it from; natural when the hair is bald,
+       dyed (written by hand) or platinum */
+    /* v156: "Couleur des poils" set by hand comes first; with "Auto (âge)" on the hair, the body hair follows the age the same way */
+    c = sdBodyHairPick() || (t5(e.hairColorCustom) ? "" : "auto" === e.hairColor ? sdHairAuto() : "bald" === e.hairStyleSel || "platinum" === e.hairColor ? "" : t1("hairColor", e.hairColor));
+  if (fh) return "smooth" === e.fHair ? fh : "duvet" === e.fHair ? "body hair, kept exactly in every view where the skin shows: " + (sdBodyHairPick() ? fh.replace("fine, pale peach fuzz", "fine, " + sdBodyHairPick() + " peach fuzz") : fh) : "body hair, " + (c ? c : "of a natural color") + ", kept exactly in every view where the skin shows: " + fh;
+  if (f.length) return "body hair, " + (c ? c : "of a natural color") + ", kept exactly in every view where the skin shows: " + f.join("; ");
+  /* v156: a color set by hand with no amount set: the faint body hair every sheet already asks for, in that color */
+  return sdBodyHairPick() ? "body hair, " + c + ", kept exactly in every view where the skin shows: faint and fine" : "";
+}
+/* v156 (user: "la couleur des poils aussi on devrait pouvoir la choisir, ainsi que la couleur de la barbe, pour les hommes et même pour
+   les femmes"): "Couleur de la barbe" and "Couleur des poils", "Comme les cheveux" by default (nothing changes then); the same colors as
+   the hair, without platinum. Adults only, never with a photo for the beard (the face is the photo's). */
+function sdBodyHairPick() {
+  var b = e.bodyHairColor;
+  /* v157 (user: "le duvet, les poils, même pour les femmes, on doit pouvoir choisir la couleur"): the peach fuzz takes the color too; only
+     "Peau lisse" (no hair at all) leaves it out */
+  return "person" === e.mode && !sdChild(e) && b && "auto" !== b && !("m" !== e.pres && "smooth" === e.fHair) ? t1("beardColor", b) : "";
+}
+function sdBodyHairColOn() {
+  return "person" === e.mode && !sdChild(e) && !("m" !== e.pres && "smooth" === e.fHair);
+}
+function sdBeardOn() {
+  return "person" === e.mode && !sdChild(e) && !e.photo && "f" !== e.pres && !!t1("facialHair", e.facialHair);
+}
+function sdBeardCol(x) {
+  var b = e.beardColor;
+  return x && sdBeardOn() && b && "auto" !== b && t1("beardColor", b) ? x + ", the facial hair " + t1("beardColor", b) : x;
+}
+/* v156 (user: "un bouton auto sur les cheveux qui s'adapte surtout avec l'âge, pour la couleur"): "Auto (âge)" in the hair colors, a natural
+   color greying with the age. Rough steps, not data for one person: greying varies between people, it starts later on average in people
+   of Asian and African origin and men grey more than women, and only 6 to 23% of people have half their hair grey at 50 (Panhard et al.,
+   British Journal of Dermatology, 2012, via cosmeticsdesign-europe, 2 October 2012). A child keeps a natural color. */
+function sdHairAuto() {
+  var a = +e.age || 30;
+  return sdChild(e) || a < 35
+    ? "natural-colored"
+    : a < 45
+      ? "natural-colored, lightly grey-flecked"
+      : a < 55
+        ? "greying"
+        : a < 65
+          ? "salt-and-pepper"
+          : a < 75
+            ? "mostly grey"
+            : "grey and white";
+}
+/* v156 (user: "il faudrait aussi pouvoir ajouter de la graisse sur le visage ; j'ai l'impression que le gras n'existe pas si on ne le force
+   pas"; then "la graisse sur le visage est complètement absente"): "Graisse : visage", 0 to 4, adults only, never with a photo (the face is
+   the photo's). Its own line after the face structure, both engines; the random traits that contradict it go from the "Face structure"
+   and "Individual details" lines (never a trait the user set). */
+function sdFaceFatLv() {
+  return "person" === e.mode && !sdChild(e) && !e.photo ? Math.max(0, Math.min(4, Math.round(+e.faceFat || 0))) : 0;
+}
+function sdFaceFatLine() {
+  var v = sdFaceFatLv();
+  return v ? "Face fat, kept exactly in every panel: " + t1("faceFat", v) + "." : "";
+}
+var SD_FACEFAT_OFF = [
+  ["lean cheeks with slight hollows", 1],
+  ["lean cheeks", 1],
+  ["slender cheeks", 1],
+  ["slightly narrow cheeks", 1],
+  ["soft cheeks of medium fullness", 2],
+  ["soft, slightly flatter cheeks", 2],
+  ["an angular jaw with visible corners", 2],
+  ["a clearly defined jaw with visible corners", 2],
+  ["a clearly defined, slender jaw", 2],
+  ["a clearly defined jaw", 2],
+  ["strong, defined jawline", 2],
+  ["high, prominent cheekbones", 3],
+  ["wide, prominent cheekbones", 3],
+  ["high, wide-set cheekbones", 3],
+  ["defined cheekbones", 3],
+  ["a narrow, tapering jaw", 3],
+  ["a narrow face", 3],
+];
+function sdFaceFatTrim(txt) {
+  var v = sdFaceFatLv();
+  if (!v || "string" != typeof txt) return txt;
+  return txt.replace(/(^|\n)((?:Face structure|Individual details)[^\n]*)/g, function (m0, a, line) {
+    SD_FACEFAT_OFF.forEach(function (o) {
+      if (v < o[1]) return;
+      line = line.split(", " + o[0] + ",").join(",").split(", " + o[0] + ".").join(".").split(": " + o[0] + ", ").join(": ");
+    });
+    return a + line;
+  }).replace(/(^|\n)([^\n]*)/g, function (m0, a, line) {
+    /* v156 review: the jaw words of the "Canon" line and of the profile, written for a lean face */
+    if (/^(Face structure|Individual details)/.test(line)) return m0;
+    v >= 2 && (line = line.replace(", a clearly defined jaw", "").replace("a clean, clearly defined line from the jaw to the neck", "a clean, smooth line from the jaw to the neck").replace(", a clean jaw-to-neck line.", ", a smooth jaw-to-neck line."));
+    v >= 3 &&
+      (line = line
+        .replace(", a smooth jaw-to-neck line.", ".")
+        .replace(/In the profile view, the face is as beautiful as in the front and three-quarter views: a clean, smooth line from the jaw to the neck\. ?/, "")
+        .replace(", a clean, smooth line from the jaw to the neck", ""));
+    return a + line;
+  });
+}
+function sdFaceFatMap(m) {
+  if (!sdFaceFatLv()) return m;
+  var o = {},
+    k;
+  for (k in m) o[k] = /^(head|editHead)$/.test(k) ? sdFaceFatTrim(m[k]) : m[k];
+  return o;
+}
+var SD_HAIR_LOSS = ["", "a slightly receding hairline at the temples", "a clearly receding hairline with deep recessions at the temples", "a receding hairline with deep temple recessions and thinning hair on the crown, the scalp showing through on top", "bald on top of the head, only a horseshoe band of hair left at the sides and the back"];
+/* v129 review: hair loss only with the styles where a receding or bald top can show (not "Chauve", "Crête", "Undercut", "Frange" or the
+   braided and locked styles) and never with a photo, whose hair is the photo's */
+var SD_LOSS_OFF = ["bald", "mohawk", "undercut", "fringe", "cornrows", "boxbraids", "locs", "twists"];
+function sdHairLossLv() {
+  return SD_LOSS_OFF.indexOf(e.hairStyleSel) >= 0 || e.photo ? 0 : sdHairOn("hairLoss");
+}
+/* the random "a low forehead" never next to a hair loss */
+function sdLossForehead(txt) {
+  return sdHairLossLv() && "string" == typeof txt ? txt.replace(/(Face structure[^\n]*?)(, a low forehead\b|\ba low forehead, )/, "$1") : txt;
+}
+function sdHairLoss() {
+  return SD_HAIR_LOSS[sdHairLossLv()] || "";
 }
 function sdSkinBody() {
   var s =
@@ -2342,15 +6778,15 @@ function sdSkinBody() {
       (nw() ? " everywhere" : " everywhere, as on the face") +
       (e.skin <= 1 && !t5(e.skinCustom) ? ", never tanned" : "") +
       ". ",
-    x = ["Matte texture: fine pores", "faint body hair"];
+    x = ["Matte texture: fine pores", sdBodyHair() ? "" : "faint body hair"];
   e.imperf >= 1 &&
     x.push(
-      !nw() && nv() ? "" : "redness on knees and elbows",
+      !nw() && nv() ? "" : sdKneesSmooth() ? "redness on the elbows" : "redness on knees and elbows",
     );
   var q = ["", "", "slightly uneven tone", "visible marks, redness and uneven tone", "rough patches, scars and blotchy tone"][e.imperf];
   q && x.push(q);
-  "none" !== e.cellulite && "m" !== e.pres && (nw() || !nv()) && x.push(nv() ? t1("cellulite", e.cellulite).replace(/ where the skin is uncovered$/, "") : t1("cellulite", e.cellulite));
-  s += x.filter(Boolean).join(", ") + ". Not oiled or airbrushed.";
+  "none" !== e.cellulite && "m" !== e.pres && (nw() || !nv()) && x.push(nv() ? t1("cellulite", e.cellulite).replace(/,? where the skin is uncovered$/, "") : t1("cellulite", e.cellulite)); /* v150: the comma of SD_CELL_FRONT too */
+  s += x.filter(Boolean).join(", ") + "." + (sdBodyHair() ? " " + t6(sdBodyHair()) + "." : "") + " Not oiled or airbrushed.";
   e.age < 40 &&
     (n0() || rD()) &&
     (s +=
@@ -2380,12 +6816,20 @@ function sdOutfit() {
       (e.chest >= 1 ? "the breasts" : "the chest") +
       ", the whole abdomen bare below it",
     sdTri =
-      "a cobalt-blue halter bikini top: two large, soft, fully lined triangles that " +
+      "a cobalt-blue halter bikini top: " +
+      /* v130 (user, a Seedream body sheet with "Très menue": a bust drawn under "two large triangles that fully cover each breast") */
+      (e.chest <= 0
+        ? sdPecsF()
+          ? /* v134: in positive terms only (SD_PECS_FLAT_SD) */ "two small, fully lined triangles lying flat and slightly loose on the flat, muscular chest"
+          : "two small, fully lined triangles lying flat and slightly loose on the completely flat chest"
+        : e.chest <= 1
+          ? "two small, soft, fully lined triangles lying almost flat over the very small bust"
+          : "two large, soft, fully lined triangles" +
       ("low" === e.bustShape
-        ? "cover each breast down to the ribs and hang with it"
-        : "conical" === e.bustShape
-          ? "cover each breast and follow its long, forward-projecting shape"
-          : "fully cover each breast and follow its natural shape") +
+        ? /* v136 (self-review, the v135 lesson): no "hang" for fabric tied at the neck */ " that cover each breast down to the ribs, following its drop"
+        : /* v135 (user: "même en obus, la poitrine a tendance à sortir au-delà du soutien-gorge, parfois ça marche, parfois pas"): the size of
+             the triangles said against the breast they hold (not with "Tombante", whose triangles follow the drop); v136: said once with the cover */
+          ", each big enough to cover the whole breast, sides and underside included, following its " + ("conical" === e.bustShape ? "long, forward-projecting" : "natural") + " shape")) +
       ", no padding, no underwire, a thin tie behind the neck and one across the back; the abdomen bare below the triangles",
     o;
   o =
@@ -2405,7 +6849,9 @@ function sdOutfit() {
             ? "a fitted cobalt-blue sleeveless cropped top in " + sdTopCloth() + ", with " + sdTopNeck() + " and armholes that hug the shoulder joints; it covers the whole chest" +
               (e.chest >= 2 ? sdTopFollow() : "") +
               sdLining() + ", its plain hem ends just above the navel; seen from behind, the same top covers the upper back; fitted cobalt-blue bike shorts in thin stretch fabric, ending at mid-thigh, the stretch fabric following the shape of the hips and glutes without flattening them; barefoot"
-        : "tanga" === c && e.chest >= 4
+        : "tanga" === c && e.chest >= 4 && "bikini" === e.tangaTop && !sdDropX()
+            ? sdBigTop() + "; a cobalt-blue Brazilian-cut tanga bottom, high-cut legs, thin sides, covering about half of the glutes; barefoot"
+        : "tanga" === c && (e.chest >= 4 || sdDropX())
             ? sdLooseTop() + "; a cobalt-blue Brazilian-cut tanga bottom, high-cut legs, thin sides, covering about half of the glutes; barefoot"
         : "tanga" === c
             ? sdTri +
@@ -2418,18 +6864,51 @@ function sdOutfit() {
   );
 }
 function sdKg() {
-  var bmi = ([17.5, 19, 23, 27, 36][e.fat] || 23) + ([0, 0, 0.5, 1.5, 3][e.muscle] || 0),
+  var bmi = ([17.5, 19, 23, 27, 36][e.fat] || 23) + ([0, 0, 0.5, 1.5, 3][e.muscle] || 0) + sdCurvyKg() + sdFatKg(),
     h = (e.height || 170) / 100;
   return Math.round(bmi * h * h);
 }
 /* the operation is explicit data: editing the text never changes it (a precision keeps the two images);
    leaving a preset is the "Retouche libre" chip; a two-image preset whose text no longer names image 2 gets a warning */
+/* v130: a zone carries fat from "Visible" up (its soft folds get the hard light's shadows) */
+function sdFatFolds() {
+  return SD_FAT_Z.some(function (z) {
+    return sdFatOn(z[0]) >= 2;
+  });
+}
 function sdIterOpEff(t) {
   return String(t.sdIter || "").trim() ? t.sdIterOp || "" : "";
 }
 function sdIterMismatch(t) {
   var op = sdIterOpEff(t);
   return ("join" === op || "heads" === op) && !/image 2/i.test(String(t.sdIter || ""));
+}
+/* v124 (user, with two sourced notes on close-fitting clothes: a fabric close to the body keeps the convex volumes and bridges over the
+   hollows; a flat, smoothed garment, or a body flattened or reshaped under it, is the error to avoid): how the clothes fit, in every
+   redress of card 3 ("Habiller", "Habiller avec ma tenue", a free retouche that changes the clothes; never "Ajouter les têtes").
+   Sourced: the air gap of a fitted T-shirt, about 6 to 9 mm and over 30 mm only in the hollows of the lower back (Frackiewicz-Kaczmarek,
+   Psikuta and Rossi, 3D Body Scanning conference, 2010); a bra raises the fullest point of the bust by 1.2 to 2.2 cm and brings the
+   breasts closer (Zhong et al., IJERPH 2023). Deduced, not measured (the notes say so): bridging over the hollows, contact kept by a
+   second-skin garment, few folds at rest, elastic edges pressing in. Left out on purpose: the crotch and the pubic mound (they add
+   nothing to a fitting reference and push toward a sexualized image), body hair, compression depths (simulated only), the shape of the
+   bust under a compression top (unknown in the notes). */
+/* accent-folded text (sdIterText), in English or French */
+var SD_OUTFIT_RX = /\b(outfit|bikini|top|tanga|fabric|triangles?|swim\w*|shorts|clothing|clothes|dress\w*|t-?shirts?|shirts?|leggings?|pants|trousers|jeans|skirts?|jackets?|shoes|sneakers|boots|wear\w*|socks?|tenues?|maillots?|tissus?|vetements?|habill\w*|robes?|chemises?|pantalons?|jupes?|vestes?|chaussures?|baskets?|bottes?|chaussettes?|brassieres?)\b/;
+function sdFitText() {
+  var m = "m" === e.pres;
+  return (
+    /* the garment classes of the notes, by their ease (smaller than the body, or about its size), never "second skin": the dress
+       retouche must keep the garments as described (lessons, v91) */
+    "Fit of every close-fitting garment, each one as described above (stretch garments smaller than the body, such as leggings, tights or a bodysuit; fitted garments about the body's size, such as a fitted T-shirt, a tank top or a close dress): " +
+    "the fabric follows every rounded volume underneath without smoothing or flattening it, so the shoulders, shoulder blades, " +
+    (m ? "chest" : "bust") +
+    ", belly, hips, glutes, thighs, knees, calves and arms keep their exact shape and size; over the hollows it bridges instead of sinking in (" +
+    (m ? "" : "between and under the breasts, ") +
+    "the navel, the spine groove, the small of the back, the groin folds, the cleft between the glutes, the backs of the knees), so it reads as fabric, never as painted-on skin. " +
+    "A stretch garment is pulled taut and touches the body everywhere else; a fitted one touches the high points and stands slightly off the body between them, a gap of under a centimetre that opens wider only over the small of the back. " +
+    "Few folds at rest: small tension folds only at bent joints, a little bunching where the fabric is longer than the limb (ankles, wrists); elastic edges such as a waistband, a bra band or cuffs press in only slightly." +
+    (m ? "" : " With no bra in the outfit, the bust keeps its own shape and hang under the fabric; a bra with cups lifts it slightly, its fullest point about 1 to 2 cm higher, and brings the breasts a little closer together.")
+  );
 }
 function sdIterText() {
   if ("join" === sdIterOpEff(e)) return String(e.sdIter || "").trim();
@@ -2445,7 +6924,7 @@ function sdIterText() {
       [/\b(hips?|thighs?|legs?|saddlebags?|knees?|calf|calves|hanches?|bassin|cuisses?|jambes?|culotte de cheval|genoux?|mollets?)\b/, "the hips and legs"],
       [/\b(arms?|shoulders?|back|abs|abdom\w*|bell(?:y|ies)|stomachs?|tumm(?:y|ies)|midriffs?|veins?|biceps|triceps|forearms?|bras|epaules?|dos|muscu?l\w*|abdos?|ventre|veines?|pectoraux)\b/, "the muscles"],
       [/\b(skin|tan|cellulite|pores?|freckles?|marks?|scars?|peau|bronz\w*|taches?|rousseur|grains? de beaute|cicatrices?|vergetures?|(les|des|ses|ces|une|la|sa) marques?|marques? (de|des|du|d))\b/, "the skin"],
-      [/\b(outfit|bikini|top|tanga|fabric|triangles?|swim\w*|shorts|clothing|clothes|dress\w*|t-?shirts?|shirts?|leggings?|pants|trousers|jeans|skirts?|jackets?|shoes|sneakers|boots|wear\w*|socks?|tenues?|maillots?|tissus?|vetements?|habill\w*|robes?|chemises?|pantalons?|jupes?|vestes?|chaussures?|baskets?|bottes?|chaussettes?|brassieres?)\b/, "the outfit"],
+      [SD_OUTFIT_RX, "the outfit"],
       [/\b(light\w*|shadows?|lumieres?|eclairages?|eclairee?s?|eclairer|ombres?)\b/, "the light"],
       [/\b(backdrop|background|grey|gray|fond|arriere[- ]plan|grise?)\b/, "the backdrop"],
       [nw() ? /^$/ : /\b(face|faces|hair|head|heads|eyes|nose|mouth|expression|visages?|cheveux|coiffure|tetes?|yeux|nez|bouche)\b/, nw() ? "" : sdPos() + " face and hair"],
@@ -2459,13 +6938,18 @@ function sdIterText() {
   /* "Habiller avec ma tenue" (live text): the outfit words ("lightly worn", "every view") must not drop the views, the light or the face from what is kept */
   "dressMine" === e.sdIterOp &&
     !String(e.sdIter || "").trim() &&
-    (keep = ["the four views, the framing and scale", "the muscles", "the skin", "the light", "the backdrop"].concat(nw() ? [] : [sdPos() + " face and hair"]));
+    (keep = ["the four views, the framing and scale", "the muscles", "the skin", "the light", "the backdrop"].concat(
+      nw() ? [] : [sdPos() + " face and hair" + (rq(Object.assign({}, e, { bodyRef: !1 }), sdFreeMk) ? " (only the makeup this outfit names is added)" : "")],
+    ));
   return (
     "Edit image 1, the approved body reference sheet of this " +
     w +
     ".\nPurpose: a neutral anatomy and costume-fitting reference for a film's VFX team.\nChange only this: " +
     c +
-    ".\nKeep everything this change does not touch exactly as in image 1" +
+    "." +
+    /* v124: a redress gets the fit of close-fitting clothes */
+    ("heads" !== e.sdIterOp && SD_OUTFIT_RX.test(lc) ? "\n" + sdFitText() : "") +
+    "\nKeep everything this change does not touch exactly as in image 1" +
     (keep.length ? ": " + sdList(keep) : "") +
     "; nothing else grows, shrinks, lifts or slims. " +
     ("dressMine" === e.sdIterOp && !String(e.sdIter || "").trim()
@@ -2498,7 +6982,8 @@ function sdForehead() {
 /* random hairline / forehead details that would contradict the chosen forehead */
 /* v110: with a receding hairline, the drawn hairline trait is left out (the draw is kept, so the other drawn traits do not move) */
 function sdPushHairline(a, x) {
-  return "receding" === e.hairStyleSel && "a high forehead" !== x ? 0 : a.push(x);
+  /* v129: the same with a hair loss */
+  return ("receding" === e.hairStyleSel || sdHairLossLv()) && "a high forehead" !== x ? 0 : a.push(x);
 }
 function sdHairlineFix(x) {
   if (!e.forehead || "auto" === e.forehead) return x;
@@ -2564,7 +7049,8 @@ function sdAnimalHead() {
    sans tête"; "Habiller avec ma tenue" and "Retouche libre" always. A saved choice that is not offered any more counts as a free retouche of its text,
    in the card, the bar, the copy message and the prompt alike (sdIterNorm, also applied in sdG). */
 function sdHlRaw(t) {
-  return "person" === t.mode && !t.child && !!t.headless && (!!(t.photo && t.photoOnly) || !(t.photo && t.bodyAsIs));
+  /* v116: also with a photo and "Garder le corps tel quel" (user: the headless sheet was out of reach there) */
+  return "person" === t.mode && !t.child && !!t.headless;
 }
 function sdOpOk(t, op) {
   return "join" === op || "dress" === op || "heads" === op ? sdHlRaw(t) : !0;
@@ -2572,6 +7058,9 @@ function sdOpOk(t, op) {
 function sdIterNorm(t) {
   var op = t.sdIterOp;
   if (!op || "free" === op) return t;
+  /* v155 (user: "le truc de finition a disparu … c'est pas clair tout ça"): "Finition photo" left card 3 for its own step 4; a "finish"
+     saved by v154 leaves card 3 on its default retouche, or, with a text typed under it, that text as a free retouche */
+  if ("finish" === op) return Object.assign({}, t, { sdIterOp: String(t.sdIter || "").trim() ? "free" : "" });
   /* a value no version wrote (corrupted or edited by hand): its text as a free retouche */
   if (!SD_OPS.some(function (o) {
     return o[0] === op;
@@ -2584,7 +7073,8 @@ function sdIterNorm(t) {
 }
 var SD_OPS = [
   ["join", "Assembler tête et corps", "Assembler"],
-  ["dress", "Habiller", "Habiller"],
+  /* v153 (user: "la section Habiller, c'est quoi le deal ?"): named for what it is for, apart from "Habiller avec ma tenue" */
+  ["dress", "Habiller pour l'assemblage", "Habiller"],
   ["dressMine", "Habiller avec ma tenue", "Ma tenue"],
   ["heads", "Ajouter les têtes", "Têtes"],
   ["free", "Retouche libre", "Retouche"],
@@ -2615,7 +7105,9 @@ function sdIterTitle(t) {
 }
 function sdIterBlock(t, g, B, L) {
   sdCur = { t: t, g: g, L: L };
-  return B("iter", "3", sdIterTitle(t), sdIterOff(t), "Choisis ou écris une retouche ci-dessous.");
+  /* v155 (user: "le truc de finition a disparu … c'est pas clair tout ça", then "étape 4 à part"): step 4, "Finition photo", under card 3,
+     always shown where card 3 is */
+  return [B("iter", "3", sdIterTitle(t), sdIterOff(t), "Choisis ou écris une retouche ci-dessous."), sdFinOn(t) ? B("fin", "4", "Finition photo", !1) : null];
 }
 function sdBarItems(t) {
   t = sdIterNorm(t);
@@ -2630,7 +7122,7 @@ function sdBarItems(t) {
       return o[0] === (op || (sdFreeIter(t) ? "free" : ""));
     })[0] || [0, 0, "Retouche"])[2],
     it = ["iter", lab, sdIterOff(t)];
-  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdHlRaw(t) || !sdIterOff(t) ? [it] : []);
+  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
 }
 /* options shown inside a card, folded: what you rarely need stays out of the way */
 function sdFold(label, children, open, onToggle) {
@@ -2648,24 +7140,106 @@ function sdCardExtra(k) {
     g = sdCur.g,
     L = sdCur.L,
     useImg = nv() && !nw() && !1 !== t.sdBodyImg;
+  if ("fin-pre" === k) return sdFinPre(t, g);
   if ("body-pre" === k)
     return nv() && !nw()
       ? (0, l.jsxs)("div", {
           className: "mt-3",
           children: [
             (0, l.jsx)("p", { className: "mb-2 text-sm font-semibold", children: "Le corps vient de" }),
+            /* v153: short options, the retouche named below (the long option ran past its card at every width, and past a phone's screen) */
             (0, l.jsx)(ab, {
               label: "Source du corps",
               value: useImg ? "img" : "text",
               onChange: (v) => g("sdBodyImg", "img" === v),
+              wrap: !0,
               options: [
-                ["img", "Ma planche habillée (retouche « Habiller »)"],
+                ["img", "Ma planche habillée"],
                 ["text", "Mes réglages"],
               ],
+            }),
+            (0, l.jsx)("p", {
+              className: "mt-2 text-sm text-muted-foreground",
+              children: sdT(
+                "Ma planche habillée : ta planche corps sans tête habillée par la retouche « Habiller pour l'assemblage » (carte 3), jointe en image 2.",
+                "My dressed sheet: your headless body sheet dressed by the “Dress for assembly” retouch (card 3), added as image 2.",
+              ),
             }),
           ],
         })
       : null;
+  /* v122: card 2b says how to run it, in view (user: "explain how to do it") */
+  if ("grow-pre" === k)
+    return (0, l.jsxs)("div", {
+      className: "mt-3 text-sm",
+      children: [
+        (0, l.jsx)("p", { className: "text-muted-foreground", children: sdHourglass() ? "Seedream dessine mal une taille fine entre des hanches larges à partir d'une description, mais les retouche tout de suite sur sa propre planche." : "Seedream dessine mal des hanches et des fessiers extrêmes à partir d'une description, mais les agrandit tout de suite en retouche." }),
+        (0, l.jsx)("ol", {
+          className: "mt-2",
+          /* the compiled CSS has no list classes: inline style */
+          style: { listStyle: "decimal", paddingLeft: "1.25rem", margin: 0 },
+          children: [
+            "Génère la planche corps (carte 2).",
+            "Dans Seedream, ajoute-la en image 1, colle ce prompt et génère.",
+            "Pas assez ? Recommence sur la nouvelle image avec le même prompt. Trop, ou caricatural ? Garde l'image d'avant.",
+            nw() ? "Garde la planche agrandie comme planche corps validée, pour la carte 3." : "Garde la planche agrandie comme planche corps validée.",
+          ].map(function (x, i) {
+            return (0, l.jsx)("li", { children: x }, i);
+          }),
+        }),
+      ],
+    });
+  /* v132: the upper body retouch, the same way */
+  if ("growUp-pre" === k)
+    return (0, l.jsxs)("div", {
+      className: "mt-3 text-sm",
+      children: [
+        (0, l.jsx)("p", {
+          className: "text-muted-foreground",
+          children:
+            "Décrits en texte, des épaules très larges, des deltoïdes ou des dorsaux très développés et une poitrine plate sont ramenés vers la moyenne. Pour les hanches et les fessiers, Seedream suit bien mieux une retouche de la planche qu'il a générée : cette carte applique la même méthode au haut du corps (pas encore vérifiée sur des rendus).",
+        }),
+        (0, l.jsx)("ol", {
+          className: "mt-2",
+          style: { listStyle: "decimal", paddingLeft: "1.25rem", margin: 0 },
+          children: [
+            sdGrowOn(t) ? "Génère la planche corps (carte 2), puis la retouche 2b si tu t'en sers." : "Génère la planche corps (carte 2).",
+            "Dans Seedream, ajoute-la en image 1, colle ce prompt et génère.",
+            "Pas assez ? Recommence sur la nouvelle image avec le même prompt. Trop, ou caricatural ? Garde l'image d'avant.",
+            nw() ? "Garde la planche retouchée comme planche corps validée, pour la carte 3." : "Garde la planche retouchée comme planche corps validée.",
+          ].map(function (x, i) {
+            return (0, l.jsx)("li", { children: x }, i);
+          }),
+        }),
+      ],
+    });
+  /* v147: the bust retouch, its small effect said as measured */
+  if ("growBust-pre" === k)
+    return (0, l.jsxs)("div", {
+      className: "mt-3 text-sm",
+      children: [
+        (0, l.jsx)("p", {
+          className: "text-muted-foreground",
+          children:
+            "De profil, Seedream dessine une très grosse poitrine pleine et bombée en haut, quel que soit le texte. Cette retouche la rapproche du buste en gardant son point le plus bas. Effet faible : sur les rendus mesurés, environ 10 % d'avancée en moins et un haut moins bombé, un rendu sur deux.",
+        }),
+        (0, l.jsx)("ol", {
+          className: "mt-2",
+          style: { listStyle: "decimal", paddingLeft: "1.25rem", margin: 0 },
+          /* v147 review: the order with 2b and with the upper body retouch (whose keep list leaves the bust out), each its own step */
+          children: [
+            "Génère la planche corps (carte 2) deux ou trois fois et garde le profil le moins bombé.",
+            sdGrowOn(t) ? "La retouche 2b peut venir avant ou après celle-ci." : "",
+            sdGrowUpOn(t) ? "Fais la retouche du haut du corps avant celle-ci : elle peut défaire la poitrine." : "",
+            "Dans Seedream, ajoute ta planche en image 1, colle ce prompt et génère deux fois.",
+            "Garde la meilleure des deux. Si aucune ne va mieux, garde l'image d'avant. Ne la relance pas sur une image qu'elle a déjà retouchée : la poitrine y perd du volume.",
+            nw() ? "Garde la planche retouchée comme planche corps validée, pour la carte 3." : "Garde la planche retouchée comme planche corps validée.",
+          ].filter(Boolean).map(function (x, i) {
+            return (0, l.jsx)("li", { children: x }, i);
+          }),
+        }),
+      ],
+    });
   if ("body" === k && sdChild(t)) return [sdHeadWarn(t, "body")];
   if ("body" === k)
     return [
@@ -2702,6 +7276,11 @@ function sdCardExtra(k) {
         "guide",
       ),
     ];
+  /* v126: "Assembler" and "Ajouter les têtes" start from image 1 extended by 25% upward, prepared here */
+  if ("iter-pre" === k) {
+    var op0 = sdOp(t);
+    return "join" === op0 || "heads" === op0 ? (0, l.jsx)(SdPrep, { heads: "heads" === op0, t: t, g: g }) : null;
+  }
   if ("iter" === k) {
     var op = sdOp(t),
       fr = sdFreeIter(t),
@@ -2753,24 +7332,43 @@ function sdCardExtra(k) {
                         "Your text no longer mentions image 2: if you are no longer doing this operation, choose “Free retouch”.",
                       )
                     : /* what the text below is for: written by the user, ready from a preset, or not needed yet
-                         (a headless body's default "join" builds its prompt from the preset while the text is empty) */
+                         (a headless body's default "join" builds its prompt from the preset while the text is empty).
+                         v153: "Habiller" says what it puts on and what it is for (the onglet Tenue is not read); "Habiller avec ma tenue" says
+                         which outfit of the Tenue tab it uses, read as its prompt reads it (the reference outfit off) */
                       [
                         "dress" === op
-                          ? "m" === t.pres ? "Même corps, avec un haut de sport sans manches et un collant de course." : "Même corps, avec un haut court et un legging."
-                          : "dressMine" === op
-                            ? (t.bodyRef
-                              ? sdT("Même corps, habillé avec la tenue de l'onglet Tenue (rien de coché : une tenue simple de tous les jours).", "Same body, dressed in the outfit of the Outfit tab (nothing ticked: a simple everyday outfit).")
-                              : sdT("Pour changer la tenue d'un corps déjà validé : change l'onglet Tenue.", "To change the outfit of a body you already approved: change the Outfit tab.")) +
-                              sdT(" Joins ta planche corps validée, sans tête ou déjà assemblée avec la tête. Le texte suit l'onglet Tenue : tu le vois dans « Détails et prompt ».", " Add your approved body sheet, headless or already combined with the head. The text follows the Outfit tab: you can see it in “Details and prompt”.") +
-                              (nw() ? sdT(" Tant que « Planche corps sans tête » est coché, les accessoires de tête (chapeau, lunettes) ne sont pas ajoutés.", " While “Headless body sheet” is ticked, head accessories (hat, glasses) are not added.") : "")
-                          : "heads" === op
-                            ? "Agrandis d'abord ta planche habillée de 25 % vers le haut, fond gris."
-                            : "join" === op
-                              ? "Le corps est gardé, la tête est ajoutée."
-                              : sdT(
-                                  "Écris ce qu'il faut changer sur ta planche (image 1), en français ou en anglais. Le prompt reprend ce texte et garde tout le reste identique : rien d'autre à ajouter, puis clique sur « Copier pour Seedream 5.0 ».",
-                                  "Write what to change on your sheet (image 1), in English or French. The prompt uses this text and keeps everything else the same: nothing else to add, then click “Copy for Seedream 5.0”.",
-                                ),
+                          ? "m" === t.pres
+                            ? sdT(
+                                "Même corps, avec un haut de sport sans manches et un collant de course bleu cobalt, pour assembler ensuite la tête et le corps. L'onglet Tenue n'est pas utilisé.",
+                                "Same body, in a cobalt-blue sleeveless training top and running tights, to combine the head and the body next. The Outfit tab is not used.",
+                              )
+                            : sdT(
+                                "Même corps, avec un haut court ajusté sans manches et un legging bleu cobalt, pour assembler ensuite la tête et le corps. L'onglet Tenue n'est pas utilisé.",
+                                "Same body, in a fitted cobalt-blue sleeveless cropped top and leggings, to combine the head and the body next. The Outfit tab is not used.",
+                              )
+                          : "dressMine" === op && String(tn.sdIter || "").trim()
+                            ? /* a text typed below replaces the outfit of the Tenue tab in the prompt (sdIterText), sent as written */
+                              sdT("Tenue utilisée : ton texte ci-dessous (l'onglet Tenue n'est plus lu).", "Outfit used: your text below (the Outfit tab is no longer read).") +
+                              sdT(" Joins ta planche corps validée, sans tête ou déjà assemblée avec la tête.", " Add your approved body sheet, headless or already combined with the head.")
+                            : "dressMine" === op
+                              ? (t.bodyRef
+                                  ? sdT("Même corps, habillé avec ta tenue de l'onglet Tenue.", "Same body, dressed in your outfit from the Outfit tab.")
+                                  : sdT("Pour changer la tenue d'un corps déjà validé : change l'onglet Tenue.", "To change the outfit of a body you already approved: change the Outfit tab.")) +
+                                /* the outfit of the prompt: the Tenue tab read on sdG(t) with the reference off */
+                                sdT(" Tenue utilisée : ", " Outfit used: ") + sdWearWord(Object.assign({}, sdG(t), { bodyRef: !1 }), 1) + "." +
+                                sdT(" Joins ta planche corps validée, sans tête ou déjà assemblée avec la tête. Le texte suit l'onglet Tenue : tu le vois dans « Détails et prompt ».", " Add your approved body sheet, headless or already combined with the head. The text follows the Outfit tab: you can see it in “Details and prompt”.") +
+                                (nw() ? sdT(" Tant que « Planche corps sans tête » est coché, les accessoires de tête (chapeau, lunettes) ne sont pas ajoutés.", " While “Headless body sheet” is ticked, head accessories (hat, glasses) are not added.") : "")
+                              : "heads" === op
+                                ? "Prépare d'abord l'image 1 ci-dessus, en trois étapes."
+                                : "join" === op
+                                  ? sdT(
+                                      "Le corps est gardé, la tête est ajoutée. Changer de modèle (Seedream, Nano Banana ou GPT Image) remet le texte de ce modèle.",
+                                      "The body is kept and the head is added. Switching the model (Seedream, Nano Banana or GPT Image) puts that model's text back.",
+                                    )
+                                  : sdT(
+                                      "Écris ce qu'il faut changer sur ta planche (image 1), en français ou en anglais. Le prompt reprend ce texte et garde tout le reste identique : rien d'autre à ajouter, puis clique sur « Copier pour Seedream 5.0 ».",
+                                      "Write what to change on your sheet (image 1), in English or French. The prompt uses this text and keeps everything else the same: nothing else to add, then click “Copy for Seedream 5.0”.",
+                                    ),
                         op && " ",
                         op &&
                           (String(t.sdIter || "").trim()
@@ -2815,6 +7413,10 @@ function sdCardExtra(k) {
 }
 /* Seedream card: the image(s) to add, the copy button, then everything else folded */
 function sdCard({ k: e, n: t, title: n, rows: r, text: a, disabled: o, disabledHint: i, dest: D, onCopy: u, copied: c, open: d, setOpen: h }) {
+  /* v127: card 3 "Assembler" written for Nano Banana */
+  var nb = "iter" === e && sdNanoJoin();
+  nb && (D = "Nano Banana");
+  "iter" === e && sdGptJoin() && (D = "GPT Image 2.5");
   var f = (0, s.useRef)(null),
     join = r && r[0] ? r[0][1] : null,
     rest = (r || []).slice(1);
@@ -2846,7 +7448,7 @@ function sdCard({ k: e, n: t, title: n, rows: r, text: a, disabled: o, disabledH
         (0, l.jsxs)("div", {
           className: "mt-3 rounded-xl border px-3 py-2",
           children: [
-            (0, l.jsx)("p", { className: "text-sm text-muted-foreground", children: "À joindre dans Seedream" }),
+            (0, l.jsx)("p", { className: "text-sm text-muted-foreground", children: nb ? "À joindre dans Nano Banana" : "iter" === e && sdGptJoin() ? "À joindre dans ChatGPT, dans le même message" : "À joindre dans Seedream" }),
             "string" == typeof join && /^1 ?: .+\. 2 ?: /.test(sdTr(join))
               ? (0, l.jsx)("ol", {
                   className: "text-base font-semibold",
@@ -2892,6 +7494,8 @@ function sdCard({ k: e, n: t, title: n, rows: r, text: a, disabled: o, disabledH
               );
             }),
           }),
+          /* v155: step 4's prompt box only once "Détails et prompt" is open (sdFinOn's note) */
+          ("fin" !== e || d) &&
           (0, l.jsx)("pre", {
             ref: f,
             "data-out": e,
@@ -2923,7 +7527,7 @@ function sdBody() {
       (sdUseBodyImg()
         ? "Image 2 is " + sdPos() + " approved body reference sheet, already in this outfit: copy the body and outfit exactly from it, its proportions, " + ("m" === e.pres ? "chest" : "bust size and hang") + ", waist, hips, glutes and legs; where this text and image 2 differ, follow image 2.\n"
         : "") +
-      "Hair exactly as in image 1: " + ne() + ("loose" === (e.hairStyleSel || "loose") && "shaved" !== e.hairLen ? ", worn down, never tied up" : "") + ", the same in every panel.\n";
+      "Hair exactly as in image 1: " + sdCurls(ne()) + ("loose" === (e.hairStyleSel || "loose") && "shaved" !== e.hairLen ? ", worn down, never tied up" : "") + ", the same in every panel.\n";
   var sf = [],
     hd = [];
   "m" !== e.pres && e.chest >= 3 && "low" === e.bustShape && sf.push("bust");
@@ -2931,8 +7535,11 @@ function sdBody() {
   (rM() || rj()) && sf.push("hips", "thighs");
   [["defArms", "arms"], ["defShoulders", "shoulders"], ["defBack", "back"]].forEach(function (z) {
     var v = rP(z[0]);
-    ("clear" === v || "strong" === v) && hd.push(z[1]);
+    /* v130 (user: the fat did not show; the lead said "sharply defined arms" next to soft upper arms) */
+    ("clear" === v || "strong" === v) && !("arms" === z[1] && sdArmFat() >= 2) && !("back" === z[1] && sdFatOn("fatBack") >= 2) && hd.push(z[1]);
   });
+  sdFatOn("fatBelly") >= 2 && sf.push("belly");
+  sdArmFat() >= 2 && sf.push("upper arms");
   e.sdShapeRef &&
     (hl || !sdUseBodyImg()) &&
     (s +=
@@ -2945,47 +7552,67 @@ function sdBody() {
     (s += "Purpose: a neutral " + (nv() ? "anatomy and costume-fitting" : "costume and character") + " reference for a film's VFX team.\n");
   var ni =
     rw().length || ("m" !== e.pres && "low" === e.bustShape) || "low" === e.glutesShape
-      ? " A real, " + (e.fat <= 1 ? "slim " : "ordinary ") +
-        ("m" === e.pres ? "man's" : "woman's") +
-        " body, deliberately imperfect" +
+      ? (sdHourglass()
+          ? " A real woman's body with a marked hourglass shape (a " + (0 === +e.waist ? "very narrow" : "narrow") + " waist between " + (5 === sdCi(e.chest) ? "a very large bust" : "a large bust") + " and " + (4 === +e.hips ? "extremely wide hips" : "wide hips") + "), the most striking feature of her silhouette"
+          : e.fat <= 1 && sdCurvyMax()
+          ? e.hips >= 3
+            ? " A real woman's body with a dramatic pear shape: " + (sdFatWaist() || sdMusBig() ? "narrower" : "slim") + " above the hips, with " + (4 === e.hips ? "extremely wide hips" : "wide hips") + (e.glutes >= 3 ? " and " + (4 === e.glutes ? "extremely large glutes" : "large glutes") : "") + ", the most striking feature of her silhouette"
+            : " A real woman's body, " + (sdFatWaist() || sdMusBig() ? "narrower" : "slim") + " above the hips, with extremely large glutes, the most striking feature of her silhouette"
+          : e.fat <= 1 && sdCurvy()
+            ? " A real woman's body, " + (sdFatWaist() || sdMusBig() ? "narrower" : "slim") + " above the hips, with full " + sdCurvyWhat()
+            : " A real, " + (e.fat <= 1 ? "slim " : e.muscle >= 3 ? "strong " : "ordinary ") + ("m" === e.pres ? "man's" : "woman's") + " body") +
+        ", deliberately imperfect" +
         (e.muscle <= 2 ? ", not a fitness model" : "") +
         (sf.length && hd.length
           ? ": soft, heavy " + sdList(sf) + ", with " + (1 === hd.length && "back" === hd[0] ? "a " : "") + "sharply defined " + sdList(hd) + "."
           : ", not a 3D character.")
       : "";
-  s += "\n" + t6(rS()) + ", " + e.height + " cm, about " + sdKg() + " kg" + rb() + "." + ni + " " + sdLegs(hl) + "\n\u0001";
+  s += "\n" + t6(rS()) + ", " + e.height + " cm, about " + sdKg() + " kg" + rb() + sdLegLead() + "." + ni + " " + sdLegs(hl) + "\n\u0001";
   var sil = [
-    t1("shoulders", e.shoulders),
+    sdShoulders(),
     "m" === e.pres
       ? rx()
-      : ["a very narrow waist", "a narrow waist", "a natural, average waist", "a wide waist, little waistline", "a very wide waist, no waistline"][e.waist] || rx(),
+      : sdHourglass()
+        ? 0 === +e.waist
+          ? "a very narrow waist (much narrower than the bust and the hips)"
+          : "a narrow waist (clearly narrower than the bust and the hips)"
+        : ["a very narrow waist", "a narrow waist", "a natural, average waist", "a wide waist, little waistline", "a very wide waist, no waistline"][e.waist] || rx(),
     rk(),
     e.shoulders < e.hips
       ? "the hips clearly wider than the shoulders"
       : e.shoulders > e.hips
-        ? "the shoulders wider than the hips"
+        ? sdShoulderRatio()
+          ? "the shoulders about " + sdShoulderRatio() + " times the hip width across the deltoids"
+          : "the shoulders wider than the hips"
         : "shoulders and hips about the same width",
   ];
   "m" !== e.pres &&
     2 === e.shoulders &&
     2 === e.waist &&
     2 === e.hips &&
+    /* v131: not when the deltoids or the lats are said */
+    sdShoulders() === t1("shoulders", e.shoulders) &&
     (sil = ["average shoulders, waist and hips, the shoulders as wide as the hips"]);
   "m" === e.pres && sil.push("male bone structure and fat distribution, with no feminine curves");
   var gl =
       t1("glutes", e.glutes) +
-      ((!hl
+      /* v122: a drooping glute is never high */
+      sdGlShape((!hl
         ? { flat: ", flat in profile", round: ", round in profile", high: ", high and round", shelf: ", very high and round", low: ", low and soft, never round or lifted" }
         : {
         flat: ", flat in profile",
         round: ", round in profile",
         high: ", high and round in profile",
-        shelf: ", very high and very round, projecting strongly in profile",
+        /* v135 (user: "Très bombés" with "Moyen" came out only rounded, 4.9% of the body height behind the lower back; "Gros", 5.8%, about
+           a hand's width on a 177 cm woman, was the shape wanted): the projection said as a length (calibration on the user's renders) */
+        shelf: ", very high and very round, projecting strongly in profile: the lower back curves in deeply above them and they stand " + (2 === +e.glutes ? "out about a hand's width behind it" : +e.glutes <= 1 ? "out behind it" : "far out behind it"),
         low: ", low, saggy, heavy and deliberately unflattering: in profile the upper half is flat and slopes down from the lower back, most volume in the lower third, fullest just above the crease, never halfway; from behind they look long, wider at the bottom, the soft lower part folding in a heavy roll over a long, deep crease across the whole back of each thigh; never round, lifted, high or bubble-shaped",
       })[e.glutesShape] || ""),
-    lo = [gl, t1("thighs", e.thighs)];
+    lo = [sdGlNat(gl), sdGlDef(), sdThighs(), sdLegShape()];
   rj() && lo.push(t1("fatLower", e.fatLower));
   rM() &&
+    /* v120: at the top of the hip scale the light fullness is already the curve of the hips (the line below), said once */
+    !(4 === e.hips && sdCurvy() && "light" === e.saddle) &&
     lo.push(
       {
         light: "a slight fullness on the outer upper thighs",
@@ -2993,24 +7620,34 @@ function sdBody() {
         marked: "marked saddlebags: a soft bulge on each outer upper thigh, a hand's width below the hip bone, as wide as the hips, with a dip above it",
       }[e.saddle] || "",
     );
-  e.thighs <= 2 &&
-    !rj() &&
-    (e.hips >= 3 || e.glutes >= 3 || "high" === e.glutesShape || "shelf" === e.glutesShape || rM()) &&
-    lo.push("the extra width stays in the hips and glutes, the thighs taper to the knees");
+  /* v120: at the top of the hip scale the upper outer thighs carry the curve of the hips (a pear shape), whatever the thigh slider says below */
+  4 === e.hips && sdCurvy()
+    ? sdThighCurve() || sdGlDefOn("square") || sdGlDefOn("dips") || lo.push("the upper outer thighs continue the curve of the hips, tapering to the knees")
+    : e.thighs <= 2 &&
+      !rj() &&
+      (e.hips >= 3 || e.glutes >= 3 || "high" === e.glutesShape || "shelf" === e.glutesShape || rM()) &&
+      /* v136 (self-review): "a slight fullness on the outer upper thighs; the extra width stays in the outer upper thighs": said once */
+      lo.push("outer upper thighs" === sdExtraWho() && ["light", "visible", "marked"].indexOf(e.saddle) >= 0 ? "the thighs taper to the knees" : "the extra width stays in the " + sdExtraWho() + ", the thighs taper to the knees");
   var bd = n_();
+  /* v157 (his render): a light musculature with muscular legs or glutes set: the light tone is the upper body's */
+  sdLegLead() && e.muscle <= 1 && (bd = bd.replace(/^(.*?) and lightly toned$/i, "$1, with a lightly toned upper body"));
   ni && (bd = bd.replace(/, fit and athletic build/, " build, moderately toned").replace(/athletic/g, "toned"));
   e.fat <= 1 && (bd = bd.replace(/like a swimmer or a dancer/, "like a dancer"));
   s +=
     t6(bd) +
     ": " +
-    sil.join(", ") +
+    /* v131: with the deltoids or the lats said, the items read apart */
+    sil.join(sdShoulders() !== t1("shoulders", e.shoulders) ? "; " : ", ") +
     ". " +
-    (e.fat <= 1 ? ("m" !== e.pres && (e.chest > 2 || (!hl && e.chest >= 2)) ? "Apart from the bust, a slim frame" : "A slim frame") + ": " + (function (a, l) {
+    (e.fat <= 1 ? ("m" !== e.pres && e.chest >= 2 ? "Apart from the bust, a " + (sdMusBig() ? "lean " : "slim ") : sdMusBig() ? "A lean " : "A slim ") + (sdCurvy() ? (sdFatWaist() ? "upper body" : "upper body and waist") : "frame") + ": " + (function (a, l) {
       return a && l ? "slender arms and legs, " : a ? "slender arms, " : l ? "slender legs, " : "";
     })(
-      ["big", "huge"].indexOf(e.biceps) < 0 && ("auto" !== e.biceps || e.muscle <= 2),
-      e.thighs <= 2 && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && e.muscle <= 2,
-    ) + "visible collarbones" + (nw() || !nv() ? " and hip bones" : "") + (0 === e.fat ? sdRibs() : "") + (e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) ? ", no extra padding" : "") + ". " : 2 === e.fat && e.muscle <= 2 ? "A normal, healthy layer of soft body fat: no visible ribs or hip bones, a slight softness at the sides of the waist and on the upper arms. " : 4 === e.fat ? sdForteFat() + ". " : "") +
+      ["big", "huge"].indexOf(e.biceps) < 0 && ("auto" !== e.biceps || e.muscle <= 2) && sdArmFat() < 2,
+      /* v139 review: never "slender legs" next to fat on the front of the thighs from "Visible" up */
+      !sdCurvy() && e.thighs <= 2 && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && e.muscle <= 2 && sdFatOn("fatThighs") < 2 && sdFatOn("fatKnees") < 2 &&
+        /* v157 review: never "slender legs" next to sprinter's legs, muscular front thighs or muscular calves */
+        "sprinter" !== e.legShape && !(+e.thighFront >= 3) && !(+e.calves >= 3),
+    ) + sdClavSlim(!sdCurvy() && !sdFatOn("fatFlanks") && !sdFatOn("fatBelly") && (nw() || !nv())) + (0 === e.fat ? sdRibs() : "") + (!sdCurvy() && !sdFatZones().length && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && !/(?<!not )\bhigh and round|very round, projecting/.test(gl) && !sdClavFlesh() ? ", no extra padding" : "") + (sdCurvy() && !sdCurvyMax() ? "; the " + sdCurvyWhat() + " carry real volume" : "") + ". " : 2 === e.fat && e.muscle <= 2 ? "A normal, healthy layer of soft body fat: no visible ribs or hip bones" + (sdFatOn("fatFlanks") || sdArmFat() ? ". " : sdFlanksLow() ? ", a slight softness at the top of the hips and on the upper arms. " : ", a slight softness at the sides of the waist and on the upper arms. ") : 4 === e.fat ? sdForteFat() + ". " : "") +
     t6(
       hl
         ? sdBust()
@@ -3021,9 +7658,9 @@ function sdBody() {
               .replace("the left one a little lower", "the left side a little lower")
         : "m" === e.pres
           ? t1("pecs", e.chest)
-          : (["a flat chest", "a small bust", "a medium bust", "a fairly full bust", "a large bust", "a very large bust, out of proportion with her frame"][sdCi(e.chest)] || "a medium bust") +
+          : (sdUseBodyImg() ? function (x) { return x; } : function (x) { return sdPecsBust(x, 1); })(["a flat chest", "a small bust", "a medium bust", "a fairly full bust", "a large bust", "a very large bust, out of proportion with her frame"][sdCi(e.chest)] || "a medium bust") +
             ("low" === e.bustShape && e.chest >= 2
-              ? ", heavy and low under the thin shirt: the fabric falls straight from a flat upper chest and rests on the bust, its lowest point at the lower ribs; never lifted, round or high"
+              ? ", heavy and low under the thin shirt: the fabric falls straight from " + (sdPecsF() ? "the muscular upper chest" : "a flat upper chest") + " and rests on the bust, its lowest point at the lower ribs; never lifted, round or high"
               : ""),
     ) +
     ". " +
@@ -3035,19 +7672,43 @@ function sdBody() {
       })(lo.filter(Boolean).join("; ")),
     ) +
     ".\n";
+  /* v130 (user: the fat did not show): the fat line before the muscle line */
+  sdFatText() && (s += sdFatText() + "\n");
   s += sdMus() + "\n";
   var dt = sdDetails();
+  /* v136 (self-review, word budget): a drawn detail the build line already says is not said twice: the collarbones of a slim frame, the
+     curve of the lower back above "Très bombés" */
+  dt && s.indexOf("visible collarbones") >= 0 && (dt = dt.replace("clearly visible collarbones, ", ""));
+  /* v144: "Clavicules" set to "Douces" or "Couvertes", said by the slim-frame sentence: not again in the details */
+  dt && sdPick(SD_CLAV, "clav") && s.indexOf(sdPick(SD_CLAV, "clav")) >= 0 && (dt = dt.replace(sdPick(SD_CLAV, "clav") + ", ", ""));
+  dt && s.indexOf("the lower back curves in deeply above them") >= 0 && (dt = dt.replace(", a marked curve in the lower back", ""));
+  /* v140: "Cambrure" on "Dos droit" with "Très bombés": the lower back is not curved by the glute text */
+  sdPick(SD_LORD, "lordosis") && "straight" === e.lordosis && (s = s.replace(/the lower back curves in deeply above them and they stand (.*?) behind it/, "they stand $1 behind the lower back"));
+  /* v136: the drawn mark that is one of the marks written by the user (the "Distinctive marks" line below) is said there only */
+  var mk0 = rg(!1).split(/[;,]/).map(function (x) {
+    return x.trim().replace(/\.$/, "").toLowerCase();
+  });
+  dt && (dt = dt.replace(/, ([^,]+)\.$/, function (m, x) {
+    return SD_DRAWN_MARKS.indexOf(x) >= 0 && mk0.indexOf(x.toLowerCase()) >= 0 ? "." : m;
+  }));
   dt && (s += dt + "\n");
   s += "\n" + sdSkinBody() + "\n";
   var mk = rg(!1);
   mk && (s += "Distinctive marks, each on the stated side, only where the skin is uncovered: " + mk + ".\n");
   rl() && (s += "Current state, on the stated side, in every view where it faces the camera: " + rl() + ".\n");
   s += "\n" + sdOutfit() + "\n\n";
+  /* v145 (user, after the test of this pose on his sheet: "on devrait toujours mettre les bras écartés dorénavant, comme pour les personnages
+     de jeu vidéo, pour se rendre compte de tous les endroits du corps"): the arms out, a gap of backdrop between them and the body, so the
+     waist, hips and thighs show in the front and back views (arms against the body hid the widest point of the hips). The text tested on
+     his sheet: "about 20 degrees" was drawn at about 12 degrees, the front and back panels widened by Seedream to fit; a video game
+     A-pose (45 degrees) does not fit four views in 16:9 at this scale */
   s +=
-    "Neutral standing pose, feet hip-width apart, arms relaxed slightly away from the body, hands visible" +
+    "Neutral standing pose, feet hip-width apart" +
     ("low" === e.glutesShape ? ", pelvis slightly tucked, lower back flat" : "") +
+    ", " + SD_ARMS_OUT +
     ("m" !== e.pres && "conical" === e.bustShape && e.chest >= 2 ? "; in the side views the arms hang straight down behind the bust, fully separate from it" : "") +
-    (hl ? "." : ", neutral expression.") +
+    /* v145 review: "neutral expression" its own sentence, no longer hanging on the gap of the arms */
+    (hl ? "." : ". Neutral expression.") +
     "\n\n";
   var d = rA().some(function (k) {
     return "none" !== rP(k);
@@ -3061,22 +7722,29 @@ function sdBody() {
         !rA().some(function (k) {
           return "strong" === rP(k);
         }) /* a lean body: the hard light is for the veins alone */
-          ? "crisp shadows that bring out the veins; the muscles stay smooth"
-          : "crisp shadows on the muscles" + (["visible", "strong"].indexOf(rD()) >= 0 ? " and veins" : ""))
+          ? "crisp shadows that bring out the veins" + (sdFatFolds() ? " and the soft folds of fat" : "") + "; the muscles stay smooth"
+          : "crisp shadows on the muscles" + (["visible", "strong"].indexOf(rD()) >= 0 ? " and veins" : "") +
+            /* v130: the soft folds of a zone carrying fat get their shadows too */
+            (sdFatFolds() ? " and on the soft folds of fat" : ""))
       : d || nv()
-        ? "Soft key light from slightly above and in front, gentle fill: soft shadows on the muscles"
+        ? "Soft key light from slightly above and in front, gentle fill: " +
+          /* v121: with no muscle detail asked, the top of the hip and glute scale is lit for its curves, not for muscles */
+          (sdCurvyMax() && !d ? "soft shadows that model her curves" : "soft shadows on the muscles")
         : "Soft, even studio light") +
     ". Long lens at hip height. Natural colors, fine film grain, not a 3D render. Five fingers per hand. " + sdFreeNoText(sdLetters() ? SD_LETTERS : "No text or watermark.");
   var kp = [
     t1("shoulders", e.shoulders),
     "m" === e.pres ? "" : ["a very narrow waist", "a narrow waist", "an average waist", "a wide waist", "a very wide waist"][e.waist] || "",
-    "m" === e.pres ? "" : 4 === e.fat ? t1("hips", e.hips).replace(/, (clearly|much) wider than the waist/, "") : t1("hips", e.hips),
+    /* v120: the top of the hip scale is a long text in the body; a summary line names it in three words, as the glutes below */
+    "m" === e.pres ? "" : 4 === e.hips ? "extremely wide hips" : 4 === e.fat ? t1("hips", e.hips).replace(/, (clearly|much) wider than the waist/, "") : t1("hips", e.hips),
     "m" === e.pres ? "" : ["a flat chest", "a small bust", "a medium bust", "a fairly full bust", "a large bust", "a very large bust out of proportion with her frame"][sdCi(e.chest)] || "",
-    t1("glutes", e.glutes),
-    ["very slim thighs", "slim thighs", "average thighs", "full thighs", "very thick thighs"][e.thighs] || "",
+    ["very small glutes", "small glutes", "average-sized glutes", "very large, round glutes, much bigger than average", "extremely large glutes, out of proportion with " + (sdFatWaist() ? "the waist" : "a slim waist")][e.glutes] || "",
+    sdThighCurve() ? "full upper thighs" : ["very slim thighs", "slim thighs", "average thighs", "full thighs", "very thick thighs"][e.thighs] || "",
   ].filter(Boolean),
     ks = "Key proportions: " + kp.join(", ") + ".\n";
-  s = s.replace("\u0001", sdWords(s) + sdWords(ks) <= 600 ? ks : "");
+  /* v136 review: counted on the text as sent (sdWrap adds the adult words and the "Très tombante" landmarks after this) */
+  /* v157: counted after the final replacements too (sdPoseTxt: the marked arms, the stance, the leg texts) */
+  s = s.replace("\u0001", sdWords(sdPoseTxt(sdDropFix(sdAdult(s)))) + sdWords(ks) <= 600 ? ks : "");
   hl || (s = s.replace(/\bbreasts\b/g, "bust"));
   return s;
 }
@@ -3183,7 +7851,7 @@ function sdScaleCtl(t, g, k) {
    under angles it does not show; fiche 05: a face, a reverse angle or a place shown nowhere is invented). View 3 is optional.
    Places stay 16:9 (a set plate is used for framing, fiche 04); "Jour et nuit" adds a night card made from the chosen day view. */
 function sdObjPlace() {
-  return "house" === e.objCat || "interior" === e.objCat;
+  return !!sdPlaceCat(e.objCat);
 }
 function sdObjViewsSpec(defaults) {
   var choice = defaults ? [] : sdViewChoice(e);
@@ -3199,7 +7867,9 @@ function sdObjViewsSpec(defaults) {
     });
   }
   var c = e.objCat,
-    noWin = "interior" === c && 0 > nh("objLightSel", "objLightOpts", "objLight").indexOf("daylight through the windows");
+    /* v115: an interior's views as camera positions and directions; "Garder le lieu de la photo tel quel" names the windows, as its
+       layout did (or the main light source if the photos show none, sdPlaceOne) */
+    pt = "interior" === c || "exterior" === c ? (e.photo && e.photoOnly ? rq(Object.assign({}, e, { objLightSel: ["windows"], objLight: "" }), sdPlaceViewTxt) : sdPlaceViewTxt()) : [];
   return "house" === c
     ? [
         ["facade", ["Vue 1 : façade", "View 1: front"], "the front view", "front view of the house, straight on"],
@@ -3208,9 +7878,16 @@ function sdObjViewsSpec(defaults) {
       ]
     : "interior" === c
       ? [
-          ["entree", ["Vue 1 : depuis l'entrée", "View 1: from the entrance"], "the view from the entrance door", "wide view from the entrance door"],
-          ["contrechamp", ["Vue 2 : contrechamp", "View 2: reverse angle"], "", "wide view from the opposite corner, looking back toward the entrance"],
-          ["lumiere", ["Vue 3 : vers la lumière (facultatif)", "View 3: toward the light (optional)"], "", noWin ? "view toward the main light source" : "view toward the main windows"],
+          ["entree", ["Vue 1 : depuis l'entrée", "View 1: from the entrance"], "the view from the entrance doorway", pt[0]],
+          ["contrechamp", ["Vue 2 : contrechamp", "View 2: reverse angle"], "", pt[1]],
+          ["lumiere", ["Vue 3 : vers la lumière (facultatif)", "View 3: toward the light (optional)"], "", pt[2]],
+        ]
+      : /* v137: an outdoor location, in the order of the house: the main view, a diagonal, the reverse */
+        "exterior" === c
+      ? [
+          ["plan-large", ["Vue 1 : plan large", "View 1: wide view"], "the wide main view", pt[0]],
+          ["diagonale", ["Vue 2 : diagonale", "View 2: diagonal"], "", pt[1]],
+          ["contrechamp", ["Vue 3 : contrechamp (facultatif)", "View 3: reverse (optional)"], "", pt[2]],
         ]
       : "clothing" === c
         ? [
@@ -3329,7 +8006,7 @@ function sdPlaceOne(s, i, night) {
       " to be used as a location reference for AI video: one view of one single $1, as for a film location scout.",
     )
     .replace(
-      / to be used as a location reference for AI video: a six-view reference sheet of the (house|interior) in the attached photo\(s\), in one image\./,
+      / to be used as a location reference for AI video: a six-view reference sheet of the (house|interior|outdoor location) in the attached photo\(s\), in one image\./,
       " to be used as a location reference for AI video: one view of the $1 in the attached photo(s).",
     )
     .replace(/It is the same single place in all six views: identical (.+?), materials, colors and wear(; only the light changes between day and night)?\. /, function (m0, what) {
@@ -3348,6 +8025,11 @@ function sdPlaceOne(s, i, night) {
     })
     .replace(/Eye-level views[^\n]+(?=\n\n)/, function (camera) {
       if (night && sdViewChoice(e).length) return "Exactly the same camera position, lens, framing and perspective as the attached day view.";
+      /* v137: an outdoor location has its own lens and heights (the generated prompt otherwise carries the room's) */
+      if (sdExt())
+        return !night && /aerial/.test(v[3])
+          ? "Aerial view from high enough to show the whole location and its surroundings. Vertical lines kept straight."
+          : "Eye-level view from about 1.6 m high with a 24mm lens, from far enough to show the whole location. Vertical lines kept straight.";
       if (!night && /aerial/.test(v[3])) return "Aerial view from about 15 m high, showing the whole house and roof. Vertical lines kept straight.";
       if (!night && /high-angle/.test(v[3])) return "High-angle view from a top corner of the room, with a 24mm lens, vertical lines kept straight, the whole room readable.";
       return camera;
@@ -3355,6 +8037,8 @@ function sdPlaceOne(s, i, night) {
     .replace("; the aerial view from about 15 m high", "")
     .replace("; the high-angle view from a top corner of the room", "")
     .replace("No captions, labels, panel numbers or watermarks", "No captions, labels, numbers or watermarks")
+    /* v156: the production design of one view; a later view keeps view 1's, as the same-place sentence says */
+    .replace(" The same dressing in every panel.\n\n", "\n\n")
     .replace(" Panels whose widths differ by more than about 10% are a missed requirement.", "");
   if (i > 0 || night) s = sdPhotoAlso(s, "place", night ? "the day view" : "view 1");
   return s;
@@ -3410,7 +8094,7 @@ function sdObjTriRow(t, R) {
 }
 /* "Mise en planche seulement" on an object or a place: there is no sheet any more, and nothing of a person to keep */
 function sdOnlyLabel(t) {
-  return "house" === t.objCat || "interior" === t.objCat
+  return sdPlaceCat(t.objCat)
     ? sdT("Garder le lieu de la photo tel quel", "Keep the place in the photo as is")
     : sdT("Garder l'objet de la photo tel quel", "Keep the object in the photo as is");
 }
@@ -3418,11 +8102,16 @@ function sdOnlyHelp(t) {
   return [
     (0, l.jsx)("b", { children: sdOnlyLabel(t) + "." }, "b"),
     " " +
-      ("house" === t.objCat || "interior" === t.objCat
-        ? sdT(
-            "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie et les vues choisies restent au choix.",
-            "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the category and the selected views can still be chosen.",
-          )
+      (sdPlaceCat(t.objCat)
+        ? "exterior" === t.objCat
+          ? sdT(
+              "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, végétation, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls le type de lieu et les vues choisies restent au choix.",
+              "The prompts take the place in your photo and change nothing in it (architecture, layout, vegetation, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the type of place and the selected views can still be chosen.",
+            )
+          : sdT(
+              "Les prompts reprennent le lieu de ta photo sans rien y changer (architecture, agencement, mobilier, matières, couleurs, usure, lumière et moment de la journée) ; seul le point de vue change. Les autres réglages sont ignorés tant que cette option est cochée ; seuls le type de lieu et les vues choisies restent au choix.",
+              "The prompts take the place in your photo and change nothing in it (architecture, layout, furniture, materials, colors, wear, light and time of day); only the viewpoint changes. Other settings are ignored while this option is on; only the type of place and the selected views can still be chosen.",
+            )
         : "clothing" === t.objCat
           ? sdT(
               "Les prompts reprennent le vêtement de ta photo sans rien y changer (forme, proportions, matières, couleurs, marquages, usure) ; seuls changent le point de vue, le fond gris uni, la lumière de studio égale et, si tu coches « Sur mannequin invisible », la présentation. Les autres réglages sont ignorés tant que cette option est cochée ; seuls la catégorie, les vues choisies et « Sur mannequin invisible » restent au choix.",
@@ -3681,7 +8370,99 @@ var SD_CANON_M = [
   ["small ears lying close to the head", "ears lying close to the head"],
   ["large ears", "ears lying close to the head"],
 ];
+/* v129 (user, a "Canon" + "Méchant" sheet of a woman far from canon beauty: its random traits were "a softly square face, a broad face,
+   close-set eyes, medium-sized eyes, wide cheekbones with full cheeks, lean cheeks with slight hollows, a fuller upper lip"): "Canon" for a
+   woman or an androgynous person moves some traits drawn at random (features left on Auto, never the ones the user set) toward the
+   features measured as attractive in female faces: larger eyes, eyes no closer than average, prominent cheekbones, narrow cheeks, eyebrows
+   set high (Cunningham, Journal of Personality and Social Psychology, 1986); a thinner jaw and a less square face (feminized shapes,
+   Perrett et al., Nature, 1998); no upper lip larger than the lower one (Atiyeh et al., Plastic and Reconstructive Surgery Global Open,
+   2025); no hanging upper lid, frown line or forehead crease, read as fatigue (Sundelin et al., SLEEP, 2013). v129 review: the slimming
+   moves (face width, cheeks) only for a slim or average build from 23 (the age line gives younger faces soft full cheeks), with the face
+   shape, the finesse and the angularity left as set by default and no round face chosen; the feminizing moves (face shape, jaw, brows)
+   for a woman only, the jaw left as drawn with a square face chosen; several traits keep their variety (soft cheeks, rounded
+   cheekbones, round, long or downturned eyes), so the Canon faces do not all look alike. Only the "Face structure" and "Individual
+   details" lines. [from, to, scope]: a all, s slimming, f feminine. */
+var SD_CANON_F = [
+  ["a softly square face", "an oval face", "f"],
+  ["a broad face", "a face of medium width", "s"],
+  ["close-set eyes", "eyes set at an average distance", "a"],
+  ["softly hooded eyes", "almond-shaped eyes", "a"],
+  ["medium-sized eyes", "large eyes", "a"],
+  ["low, heavy eyebrows close to the eyes", "eyebrows set high above the eyes", "f"],
+  ["wide cheekbones with full cheeks", "high, prominent cheekbones", "s"],
+  ["full, rounded cheeks", "slender cheeks", "s"],
+  ["lean cheeks with slight hollows", "slender cheeks", "a"],
+  ["a fuller upper lip", "a slightly fuller lower lip", "a"],
+  ["a wide jaw", "a narrow, tapering jaw", "j"],
+  ["an angular jaw with visible corners", "a clearly defined, slender jaw", "j"],
+  ["a faint vertical line between the eyebrows", "a small dimple at the left corner of the mouth", "a"],
+  ["a faint crease across the forehead", "a small mole on the left cheekbone", "a"],
+];
+/* a slim or average build, an adult face past the soft full cheeks of the age line, and no full or coarse face set by the user */
+function sdCanonSlim() {
+  return e.fat <= 2 && (+e.age || 30) >= 23 && 0 !== +e.featFine && !(+e.faceAngle <= 1) && "round" !== e.face && !sdFaceFatLv();
+}
+/* v130 (user, a Seedream head sheet of a 37-year-old man, "Ordinaire" + "Angélique": he looks like a kid; GPT renders the same prompt
+   as an adult): the traits drawn at random came from sex-neutral pools (heart-shaped face, fine light eyebrows, full round cheeks, very
+   full lips, a soft round jaw, a small round chin), and large, round eyes, high eyebrows and a small chin are what make a face read as a
+   babyface (Berry and McArthur, Journal of Personality and Social Psychology, 1985). For a man in Seedream, from "Beau" down ("Canon"
+   has its own moves, SD_CANON_M), those traits move to an adult man's; the eyes keep their size and shape (the character may set them). */
+var SD_MAN_ADULT = [
+  ["a heart-shaped face", "an oval face"],
+  ["full, rounded cheeks", "soft cheeks of medium fullness"],
+  ["very full lips", "full lips"],
+  ["a small, rounded chin", "a rounded chin of medium size"],
+  ["a soft, rounded jaw", "a softly defined jaw"],
+  ["fine, light eyebrows", "eyebrows of medium thickness"],
+  ["thin, high-arched eyebrows", "softly arched eyebrows of medium thickness"],
+  ["a softly scooped nose bridge", "a straight nose bridge"],
+  ["a low, softly scooped nose bridge", "a straight nose bridge"],
+  /* v130 review: the cheekbones said "full cheeks" next to cheeks now of medium fullness; a receding chin and a tapering jaw are a
+     babyface's too */
+  ["wide cheekbones with full cheeks", "wide, prominent cheekbones"],
+  ["a slightly receding chin", "a chin of medium projection"],
+  ["a narrow, tapering jaw", "a jaw of medium width"],
+];
+/* with "Angélique" or "Gentil", whose swaps give large or round eyes: an adult man's eyes (the gentleness is in the gaze) */
+var SD_MAN_ADULT_EYES = [
+  ["round eyes", "almond-shaped eyes"],
+  ["large eyes", "medium-sized eyes"],
+];
+function sdManAdult(txt, t) {
+  if (!(t.looks >= 1) || "m" !== t.pres || "person" !== t.mode || t.photo || "string" != typeof txt) return txt;
+  var L = "ange" === sdCharOn() || "gentil" === sdCharOn() ? SD_MAN_ADULT.concat(SD_MAN_ADULT_EYES) : SD_MAN_ADULT;
+  return txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
+    L.forEach(function (p) {
+      line = line.split(p[0]).join("\u0000" + p[1] + "\u0000");
+    });
+    line = line.replace(/\u0000/g, "");
+    L.forEach(function (p) {
+      var i = line.indexOf(p[1]), j = line.lastIndexOf(", " + p[1]);
+      i >= 0 && j > i && (line = line.slice(0, j) + line.slice(j + 2 + p[1].length));
+    });
+    return a + line;
+  });
+}
 function sdCanonFace(txt, t) {
+  if (0 === t.looks && "m" !== t.pres && "person" === t.mode && !t.photo && "string" == typeof txt) {
+    var sl = sdCanonSlim(),
+      f = "f" === t.pres,
+      on = SD_CANON_F.filter(function (p) {
+        return "a" === p[2] || ("s" === p[2] && sl) || ("f" === p[2] && f) || ("j" === p[2] && f && "square" !== e.face);
+      });
+    return txt.replace(/(^|\n)((?:Face structure|Individual details)[^\n]*)/g, function (m0, a, line) {
+      on.forEach(function (p) {
+        line = line.split(p[0]).join("\u0000" + p[1] + "\u0000");
+      });
+      line = line.replace(/\u0000/g, "");
+      /* a trait moved onto one already drawn appears once */
+      on.forEach(function (p) {
+        var i = line.indexOf(p[1]), j = line.lastIndexOf(", " + p[1]);
+        i >= 0 && j > i && (line = line.slice(0, j) + line.slice(j + 2 + p[1].length));
+      });
+      return a + line;
+    });
+  }
   if (0 !== t.looks || "m" !== t.pres || "person" !== t.mode || t.photo || "string" != typeof txt) return txt;
   /* v114 (review): with "Angélique" or "Gentil", the defined jaw of Canon keeps soft corners */
   var soft = "ange" === sdCharOn() || "gentil" === sdCharOn();
@@ -3739,27 +8520,229 @@ var SD_CHAR_SWAP = {
     ["an aquiline nose bridge", "a straight nose bridge"], ["a broad nose", "a nose of medium width"],
   ],
 };
+/* v128 (user, a Seedream head sheet with "Gueule" and "Canon": far from a beauty that leaves people speechless; check the other characters
+   too): with "Canon" or "Beau", "Beauté" did not keep the last word. "Gueule" said "weathered" and "deeper facial lines than usual for
+   the age" (against "Canon" and against the age line), "a heavy brow", "narrowed eyes", "a hard jaw", and its swaps gave a woman low,
+   heavy eyebrows close to the eyes, deep-set or hooded eyes, a long rectangular face and a downturned nose tip; "Méchant" gave small eyes
+   and thin lips. A sentence saying "the looks take precedence" does not undo that in an image model. Now, with "Canon" or "Beau", these
+   two characters are written in an attractive register (character in the bone structure and the gaze, no ageing, no harsh features),
+   and their swaps keep only the traits that go with beauty (by sex for "Gueule": a man keeps a square face, a strong chin and thick,
+   straight eyebrows). "Gentil" and "Angélique" already go with beauty: their traits are unchanged, their text only shorter. */
+var SD_CHAR_BEAU = {
+  gueule: "a face full of character: strong, sculpted bone structure, an intense, steady gaze",
+  /* #### handsome, beautiful or striking (v128 review: an androgynous person had "the cold, striking face of a striking film villain").
+     v129 (user: a villain can be very beautiful, menacing like a panther; the v128 sheet read cold, tired and harsh): the menace is in the
+     gaze only, said as such, never in the features */
+  mechant: "a #### film villain's face, dangerous like a panther: a calm, predatory gaze, the menace in the eyes only",
+  /* the same characters, shorter under the beauty (the head stays nearer 600 words) */
+  gentil: "a kind, warm face: gentle, friendly eyes, the corners of the mouth slightly upturned",
+  ange: "an angelic face: clear, wide-open eyes with a gentle gaze, smooth, delicate contours",
+};
+var SD_CHAR_SWAP_BEAU = {
+  gueule: [
+    ["full, rounded cheeks", "lean cheeks with slight hollows"], ["soft cheeks of medium fullness", "lean cheeks with slight hollows"],
+    ["wide cheekbones with full cheeks", "high, prominent cheekbones"], ["softly rounded cheekbones", "high, prominent cheekbones"], ["flat cheekbones and a smooth mid-face", "high, prominent cheekbones"],
+    ["a soft, rounded jaw", "a clearly defined jaw"], ["a narrow, tapering jaw", "a clearly defined jaw"], ["a slightly receding chin", "a well-defined chin"],
+    ["fine, light eyebrows", "full, straight eyebrows"], ["thin, high-arched eyebrows", "full, straight eyebrows"],
+  ],
+  gueuleM: [
+    ["a round face", "a square face"], ["a heart-shaped face", "a square face"], ["an oval face", "a square face"],
+    ["full, rounded cheeks", "lean cheeks with slight hollows"], ["soft cheeks of medium fullness", "lean cheeks with slight hollows"],
+    ["wide cheekbones with full cheeks", "high, prominent cheekbones"], ["softly rounded cheekbones", "high, prominent cheekbones"], ["flat cheekbones and a smooth mid-face", "high, prominent cheekbones"],
+    ["a soft, rounded jaw", "an angular jaw with visible corners"], ["a narrow, tapering jaw", "an angular jaw with visible corners"],
+    ["a small, rounded chin", "a strong, square chin"], ["a gently projected, rounded chin", "a strong, well-projected chin"], ["a slightly receding chin", "a strong, square chin"], ["a pointed chin", "a square chin"],
+    ["fine, light eyebrows", "thick, straight eyebrows"], ["thin, high-arched eyebrows", "thick, straight eyebrows"], ["full, softly arched eyebrows", "thick, straight eyebrows"],
+  ],
+  mechant: [
+    ["full, softly arched eyebrows", "angled eyebrows with a sharp peak"], ["thin, high-arched eyebrows", "angled eyebrows with a sharp peak"],
+    ["full, rounded cheeks", "lean cheeks with slight hollows"], ["soft cheeks of medium fullness", "lean cheeks with slight hollows"],
+    /* v129: the v128 sheet had "wide cheekbones with full cheeks, lean cheeks with slight hollows" */
+    ["wide cheekbones with full cheeks", "high, prominent cheekbones"],
+    ["a soft, rounded jaw", "an angular jaw with visible corners"],
+  ],
+};
 function sdCharOn() {
   return "person" === e.mode && !sdChild(e) && !e.photo && "string" === typeof SD_CHAR[e.faceChar] ? e.faceChar : "";
 }
-function sdChar() {
+/* "Canon" (0) or "Beau" (1) with a character that has an attractive version */
+function sdCharBeau() {
   var c = sdCharOn();
+  return c && SD_CHAR_BEAU[c] && +e.looks <= 1 ? c : "";
+}
+function sdChar(above, man) {
+  var c = sdCharOn(),
+    b = sdCharBeau(),
+    t = c ? (+e.looks <= 1 ? SD_CHAR_BEAU[b || c].replace("####", "m" === e.pres ? "handsome" : "f" === e.pres ? "beautiful" : "striking") : SD_CHAR[c]) : "";
+  /* v130: for a man, "Angélique" and "Gentil" keep a grown man's face (the soft, delicate features read as a boy's in Seedream); Seedream head only */
+  man &&
+    "m" === e.pres &&
+    (t = t
+      .replace(SD_CHAR.ange, "an angelic, serene look on a grown man's face: clear, open eyes with a pure, gentle gaze, a calm expression, the bone structure of a man of his age")
+      .replace(SD_CHAR_BEAU.ange, "an angelic look on a grown man's face: clear, open eyes with a gentle gaze, the bone structure of a man of his age")
+      .replace(SD_CHAR.gentil, SD_CHAR.gentil.replace("soft, open features", "open features") + ", the bone structure of a man of his age"));
+  t = sdCharFix(c, t);
   return c
-    ? "Character of the face, readable at rest: " +
-        SD_CHAR[c] +
-        ". The features above and the looks below take precedence; the character shows in the gaze and overall look."
+    ? /* with "Canon" or "Beau", every character is said under the beauty, in a few words (the head stays near 600 words, so the looks
+       line is not the part a model skips); v128 review: "second to the beauty", said before the character, 6 words shorter */
+      (+e.looks <= 1
+        ? "Character of the face, second to the beauty " + (above ? "above" : "below") + ": " + t + "."
+        : "Character of the face, readable at rest: " + t + ". The features above and the looks below take precedence; the character shows in the gaze and overall look.")
     : "";
 }
-function sdCharFace(txt) {
-  var c = sdCharOn();
-  if (!c || "string" != typeof txt) return txt;
+/* v131 (user, a "Gueule" + "Ordinaire" head sheet of a 26-year-old woman, GPT and Seedream: forehead lines and deep frown lines, the soft
+   jaw she chose drawn hard): the character line said "weathered" and "deeper facial lines than usual for the age" next to "no wrinkles or
+   expression lines", and "angular bone structure", "a hard jaw" next to the soft contours set by the user. A sentence of precedence does
+   not undo them: the words that contradict the age (under 30, where the age line rules out lines) or a feature the user set go. */
+function sdCharFix(c, t) {
+  var a = +e.faceAngle,
+    ff = +e.featFine,
+    jaw = e.jaw && "auto" !== e.jaw ? e.jaw : "";
+  if (!c || !t) return t;
+  if ("gueule" === c) {
+    (+e.age || 30) < 30 && (t = t.replace("a rugged, weathered face", "a rugged face").replace(", deeper facial lines than usual for the age", ""));
+    (a <= 1 || "soft" === jaw) && (t = t.replace("angular bone structure, ", "").replace("strong, sculpted bone structure, ", ""));
+    /* v156 review: never a hard jaw from "Graisse : visage" Visible up, nor prominent cheekbones and angular bones from Marquée up */
+    (a <= 1 || "soft" === jaw || "medium" === jaw || sdFaceFatLv() >= 2) && (t = t.replace(", a hard jaw", ""));
+    (0 === a || sdFaceFatLv() >= 3) && (t = t.replace(", prominent cheekbones", ""));
+    sdFaceFatLv() >= 3 && (t = t.replace("angular bone structure, ", ""));
+    e.eyeShape && "auto" !== e.eyeShape && (t = t.replace("deep-set, narrowed eyes", "narrowed eyes"));
+  }
+  if ("mechant" === c) {
+    (a <= 1 || "soft" === jaw) && (t = t.replace(", sharp, hard features", ""));
+    ("medium" === e.lips || "full" === e.lips) && (t = t.replace("a thin, tight-lipped mouth", "a tight-lipped mouth"));
+  }
+  "gentil" === c && (a >= 3 || "strong" === jaw) && (t = t.replace("soft, open features", "open features"));
+  if ("ange" === c) {
+    (a >= 3 || ff <= 1) && (t = t.replace("soft, delicate features, ", ""));
+    (a >= 3 || "strong" === jaw) && (t = t.replace(", smooth contours", "").replace(", smooth, delicate contours", ""));
+  }
+  return t;
+}
+/* v130 (user: freckles on the face with a slider, from none to many): "Taches de rousseur", adults (never a child), both engines. Auto keeps
+   the freckles drawn at random; any other choice replaces them in the "Individual details" line; "Aucune" also takes the drawn
+   freckles off the shoulders of the body sheet. */
+var SD_FRECKLES = {
+  few: "a few faint freckles across the nose",
+  some: "a light scattering of freckles across the nose and cheeks",
+  many: "many freckles across the nose, the cheeks and the forehead",
+  lots: "dense freckles all over the face, the neck and the shoulders",
+};
+function sdFreckleLv() {
+  return "person" === e.mode && !sdChild(e) && !e.photo && (SD_FRECKLES[e.freckles] || "none" === e.freckles) ? e.freckles : "";
+}
+function sdFreckles(txt) {
+  var lv = sdFreckleLv();
+  if (!lv || "string" != typeof txt) return txt;
+  return txt.replace(/(^|\n)(Individual details[^\n]*)/, function (m0, a, line) {
+    line = line.replace(/, (a few faint freckles across the nose|a scattering of freckles across the cheeks and nose)(?=[,.])/g, "").replace(/: (a few faint freckles across the nose|a scattering of freckles across the cheeks and nose), /, ": ");
+    /* v130 review: before the closing sentence of the older face form ("They set this face apart ...") */
+    SD_FRECKLES[lv] && (line = / They set this face apart/.test(line) ? line.replace(/\. They set this face apart/, ", " + SD_FRECKLES[lv] + ". They set this face apart") : line.replace(/\.$/, ", " + SD_FRECKLES[lv] + "."));
+    return a + line;
+  });
+}
+/* v131 (user, the same sheets): drawn traits that contradict each other, the age line or the contours the user set, in both engines.
+   Under 30 the age line says "no wrinkles or expression lines": a drawn frown line or forehead crease becomes another detail of the same
+   draw (with "Canon" in Seedream the Canon moves already do it); a drawn "a high, broad forehead" with a drawn "a low hairline": a rounded
+   hairline; soft contours set by the user ("Doux", "Très doux"): a drawn or moved square face is softly square. */
+var SD_SOFT_TRAIT = { "a square face": "a softly square face" };
+function sdFaceFix(txt) {
+  if ("string" != typeof txt || "person" !== e.mode || sdChild(e) || e.photo) return txt;
+  var young = (+e.age || 30) < 30 && !("seedream" === e.model && 0 === +e.looks && sdNative(e) && "m" !== e.pres),
+    /* not for a "Canon" man in Seedream: his Canon moves take the high forehead to medium height */
+    hi = /(^|\n)Face structure[^\n]*a high, broad forehead/.test(txt) && !("seedream" === e.model && 0 === +e.looks && sdNative(e) && "m" === e.pres);
+  txt = txt.replace(/(^|\n)(Individual details[^\n]*)/, function (m0, a, line) {
+    young && (line = line.replace("a faint vertical line between the eyebrows", "a small dimple at the left corner of the mouth").replace("a faint crease across the forehead", "the left eyebrow sitting slightly higher than the right"));
+    hi && (line = line.replace("a low hairline", "a rounded hairline"));
+    return a + line;
+  });
+  return +e.faceAngle <= 1
+    ? txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
+        return a + line.replace(/(^|[:,] )a square face(?=[,.])/, "$1a softly square face");
+      })
+    : txt;
+}
+/* v133 (user, a GPT head sheet with "Ordinaire": "c'est du moche, on dirait une sorcière"). The traits drawn at random are drawn one by one,
+   so a "Beau" or "Ordinaire" face could stack a long, rectangular face with a broad face, an aquiline nose bridge with an upturned tip,
+   a prominent, forward chin with a hooked or long nose or a long face (the nose-and-chin profile of a caricature), round and large eyes
+   (a staring look), and GPT was told "do not average it toward a generic face, and keep it even where it is less conventional". A
+   caricature is made by exaggerating the differences between a face and a norm (Rhodes, Brennan and Carey, Cognitive Psychology, 1987);
+   an ordinary face differs from it in a few traits, at an everyday degree. With "Beau" and "Ordinaire", after the character moves: the contradictory pairs resolved, the
+   caricature profile and the staring eyes ("Ordinaire") moved to a medium trait; from "Ordinaire" down, GPT keeps the structure "each
+   trait at the degree of a real, everyday face, never exaggerated or caricatured". "Quelconque" and "Ingrat" have their own moves
+   (SD_PLAIN). */
+var SD_ORD_ID = ". This structure is what makes the face recognizable: do not average it toward a generic face, and keep it even where it is less conventional.";
+function sdOrdFix(txt) {
+  if ("string" != typeof txt || "person" !== e.mode || sdChild(e) || e.photo) return txt;
+  var lk = +e.looks;
+  /* this repository keeps GPT's structure sentence (SD_ORD_ID) at every level: its "Ordinaire" to "Ingrat" texts were calibrated with
+     it; only the contradictory random pairs below are resolved */
+  if (lk < 1 || lk > 2) return txt;
   return txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
-    SD_CHAR_SWAP[c].forEach(function (p) {
+    var has = function (x) {
+      return line.indexOf(x) >= 0;
+    };
+    /(?:a long, rectangular face|a long face)(?=[,.])/.test(line) && (line = line.replace(/(?<=[:,] )a broad face(?=[,.])/, "a face of medium width"));
+    /a round face(?=[,.])/.test(line) && (line = line.replace(/(?<=[:,] )a narrow face(?=[,.])/, "a face of medium width"));
+    (has("an aquiline nose bridge") || has("a high nose bridge with a visible bump")) && (line = line.replace("an upturned nose tip", "a rounded nose tip"));
+    (has("an aquiline nose bridge") || has("a high nose bridge with a visible bump") || has("a long nose") || /a long(?:, rectangular)? face(?=[,.])/.test(line)) &&
+      (line = line.replace("a prominent, forward chin", "a chin of medium projection"));
+    2 === lk && has("round eyes") && (line = line.replace(/(?<=[:,] )large eyes(?=[,.])/, "medium-sized eyes"));
+    return a + line;
+  });
+}
+function sdCharFace(txt) {
+  return sdOrdFix(sdCharFace0(txt));
+}
+/* v134 (user, two Seedream head sheets audited: "no visible moles on the face", yet a dark spot at the left corner of the mouth in the
+   three-quarter view of both): with the neutral expression of the sheets a dimple does not show, and Seedream drew "a small dimple at
+   the left corner of the mouth" as a mark. In a native Seedream head (drawn, moved by Canon or by the under-30 fix) it becomes a drawn
+   detail of the same kind that does show at rest (the eye one, so the faces under 30 and with Canon do not all share the eyebrow one);
+   GPT, and Seedream 3D, 2D or from a photo (GPT's text), unchanged. */
+function sdDimpleFix(txt) {
+  var D = "a small dimple at the left corner of the mouth",
+    E = "the right eye very slightly smaller than the left";
+  return "string" == typeof txt
+    ? txt.replace(/(^|\n)(Individual details: [^\n]*)/, function (m0, a, line) {
+        return a + (line.indexOf(E) >= 0 ? line.replace(", " + D, "").replace(D + ", ", "") : line.replace(D, E));
+      })
+    : txt;
+}
+/* v134 review: Canon moves "a faint crease across the forehead" to "a small mole on the left cheekbone" (SD_CANON_F), on a line whose
+   drawn mark can be "no visible moles on the face" (a contradiction) or that same mole (said twice): there, the moved one becomes the
+   eyebrow detail (the eye one when the eyebrow is drawn; neither is, the crease took their place). Native Seedream head. */
+function sdMoleFix(txt) {
+  var M = "a small mole on the left cheekbone",
+    N = "no visible moles on the face",
+    B = "the left eyebrow sitting slightly higher than the right",
+    E = "the right eye very slightly smaller than the left";
+  return "string" == typeof txt
+    ? txt.replace(/(^|\n)(Individual details: [^\n]*)/, function (m0, a, line) {
+        var i = line.lastIndexOf(M);
+        if (i < 0 || !(line.indexOf(N) >= 0 || line.indexOf(M) !== i)) return m0;
+        return a + line.slice(0, i) + (line.indexOf(B) < 0 ? B : E) + line.slice(i + M.length);
+      })
+    : txt;
+}
+function sdCharFace0(txt) {
+  txt = sdFaceFix(sdFreckles(sdLossForehead(txt)));
+  var c = sdCharOn(),
+    b = sdCharBeau(),
+    sw = b ? SD_CHAR_SWAP_BEAU["gueule" === b && "m" === e.pres ? "gueuleM" : b] || SD_CHAR_SWAP[c] : SD_CHAR_SWAP[c];
+  if (!c || "string" != typeof txt) return txt;
+  +e.faceAngle <= 1 &&
+    (sw = sw.map(function (p) {
+      return [p[0], SD_SOFT_TRAIT[p[1]] || p[1]];
+    }));
+  return txt.replace(/(^|\n)(Face structure[^\n]*)/, function (m0, a, line) {
+    sw.forEach(function (p) {
       line = line.split(p[0]).join("\u0000" + p[1] + "\u0000");
     });
     line = line.replace(/\u0000/g, "");
+    /* v129: cheeks moved to lean, then the cheekbones never say "full cheeks" (the v128 sheet had both) */
+    /* v129 review: from "Quelconque" down in the plain register (SD_PLAIN gives the same as v128 in Seedream) */
+    /lean cheeks/.test(line) && (line = line.replace("wide cheekbones with full cheeks", +e.looks >= 3 ? "low, broad cheekbones" : "wide, prominent cheekbones"));
     /* a trait moved onto one already drawn appears once */
-    SD_CHAR_SWAP[c].forEach(function (p) {
+    sw.forEach(function (p) {
       var i = line.indexOf(p[1]), j = line.lastIndexOf(", " + p[1]);
       i >= 0 && j > i && (line = line.slice(0, j) + line.slice(j + 2 + p[1].length));
     });
@@ -3795,6 +8778,18 @@ var SD_GPT_LOOKS_OLD = {
   3: "a plain, forgettable face, the kind nobody notices in a crowd: features slightly out of proportion with each other, a little heavy or a little bland in places, no striking feature",
   4: "a homely, unconventional face: clearly irregular, uneven features that do not fit together harmoniously, nothing striking or glamorous",
 };
+/* v134 (user: GPT drew a head sheet in "wide panoramic landscape, 2.7:1 aspect ratio" on its own, "ça a placé les visages parfaitement
+   sans rien couper"; "Oui, GPT seulement"): four panels of 0.675 width for 1 height instead of 0.44 in 16:9, room for a head with its hair.
+   GPT adult person head sheet only (children, animals and Seedream keep 16:9); one render, not yet checked further. */
+var SD_GPT_WIDE = ["A 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop.\nEach panel is a tight close-up of the head and neck", "A wide panoramic landscape image, 2.7:1 aspect ratio, split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop.\nEach panel is a tight close-up of the head and neck"];
+function sdGptWide(t, m) {
+  if ("person" !== t.mode || sdChild(t) || "string" != typeof m.head || m.head.indexOf(SD_GPT_WIDE[0]) < 0) return m;
+  var o = {},
+    k;
+  for (k in m) o[k] = m[k];
+  o.head = m.head.replace(SD_GPT_WIDE[0], SD_GPT_WIDE[1]);
+  return o;
+}
 function sdGptPost(t, m) {
   if (!(t.looks >= 2) || "person" !== t.mode || t.photo) return m;
   var lv = Math.min(4, +t.looks),
@@ -3862,6 +8857,7 @@ function sdSolo(m) {
 function sdGptSdText(x, body, photo2) {
   var s = String(x || "")
     .replace(/\n\nGENERATION LIMIT:[\s\S]*$/, "")
+    .replace(SD_ARMS_OUT_G, SD_ARMS_OUT_GS)
     .replace(/^This is a new[^\n]* from earlier images in this conversation\.\n/gm, "")
     .replace(/,? never (?:a|an|any|anything)\b[^.;\n]*? from earlier images in this conversation/g, "");
   if (!body) return s;
@@ -3898,14 +8894,21 @@ function sdWrap(t, m) {
     k;
   if ("seedream" !== t.model || "person" !== t.mode) {
     o = sdAnimalSplit(t, sdObjSplit(t, sdGptPost(t, m)));
+    /* a person's GPT prompts: face fat, wide head sheet, very low bust, nose and pose rewrites (each one checks the person itself) */
+    o = sdPoseM(sdNoseM(sdDropM(sdGptWide(t, sdFaceFatMap(o)))));
     return "seedream" === t.model ? sdSolo(o) : o;
   }
-  if (!sdNative(t)) return sdGptSd(t, sdGptPost(t, m));
+  if (!sdNative(t)) return sdPoseM(sdGptSd(t, sdNoseM(sdDropM(sdFaceFatMap(sdGptPost(t, m))))));
   for (k in m) o[k] = m[k];
-  o.head = sdCanonFace(sdPlainFace(sdAdult(sdHead()), t.looks), t);
-  o.body = sdAdult(sdBody());
-  o.iter = String(e.sdIter || "").trim() || "dressMine" === e.sdIterOp ? sdAdult(sdIterText()) : nw() && "free" !== e.sdIterOp ? sdAdult(sdPresetJoin()) : "";
-  return o;
+  o.head = sdFaceFatTrim(sdNoseSkin(sdMoleFix(sdDimpleFix(sdManAdult(sdCanonFace(sdPlainFace(sdAdult(sdHead()), t.looks), t), t)))));
+  o.body = sdDropFix(sdAdult(sdBody()));
+  o.iter = sdDropFix(String(e.sdIter || "").trim() || "dressMine" === e.sdIterOp ? sdAdult(sdIterText()) : nw() && "free" !== e.sdIterOp ? sdAdult(sdPresetJoin()) : "");
+  /* v155: step 4, "Finition photo" */
+  o.fin = sdFinOn(t) ? sdDropFix(sdAdult(sdPresetFinish())) : "";
+  o.grow = sdGrowOn(t) ? sdGrowPrompt() : "";
+  o.growUp = sdGrowUpOn(t) ? sdGrowUpPrompt() : "";
+  o.growBust = sdGrowBustOn(t) ? sdGrowBustPrompt() : "";
+  return sdPoseM(sdNoseM(o));
 }
 function sdLen(s, sd) {
   var c = String(s || "").length,
@@ -3934,6 +8937,14 @@ function sdRows(t, m, R, q) {
   for (k in q) o[k] = q[k];
   if (!sdOff(t) && ("seedream" !== t.model || "person" !== t.mode)) {
     for (k in o) "string" == typeof m[k] && o[k] && (o[k] = o[k].concat([["Longueur", sdLen(m[k], "seedream" === t.model)]]));
+    /* v134: the format the GPT head prompt now asks */
+    "string" == typeof m.head && m.head.indexOf(SD_GPT_WIDE[1]) >= 0 &&
+      ["head", "editHead"].forEach(function (k) {
+        o[k] &&
+          (o[k] = o[k].map(function (r) {
+            return "Format" === r[0] ? ["Format", "2.7:1, demandé dans le prompt : vérifie l'image obtenue"] : r;
+          }));
+      });
     return o;
   }
   if (!sdOk(t)) return q;
@@ -3966,7 +8977,7 @@ function sdRows(t, m, R, q) {
     return o;
   }
   o.head = [
-    [J, "Aucune image"],
+    [J, sdChildPh(t) ? "La photo de l'enfant" : "Aucune image"],
     ["Format", F],
     [N, R(rU(sdBaby(t) ? "bebe" : "tete"))],
     ["Longueur", sdLen(m.head, !0)],
@@ -3974,7 +8985,7 @@ function sdRows(t, m, R, q) {
   o.body = [
     [
       J,
-      nw() || sdChildHl(t)
+      nw() || (sdChildHl(t) && !sdChildPh(t))
         ? t.sdShapeRef && !sdChild(t)
           ? "1. ton image guide de forme"
           : "Aucune image"
@@ -3998,13 +9009,44 @@ function sdRows(t, m, R, q) {
           "Ce prompt redessine le corps : la poitrine peut changer. Pour garder un corps validé, fais-le sans tête (« Planche corps sans tête » dans Corps), puis « Assembler tête et corps » en carte 3. N'ajoute jamais une image en maillot à côté d'un visage.",
       }),
     ]);
+  sdGrowOn(t) &&
+    (o.grow = [
+      [J, nw() ? "1. ta planche corps sans tête, celle de la carte 2" : "1. ta planche corps, celle de la carte 2"],
+      ["Format", "Identique à l'image 1"],
+      [N, "Même nom + _v2, _v3…"],
+      ["Longueur", sdLen(m.grow, !0)],
+    ]);
+  sdGrowUpOn(t) &&
+    (o.growUp = [
+      [J, nw() ? "1. ta planche corps sans tête, celle de la carte 2" + (sdGrowOn(t) ? " ou de la retouche 2b" : "") : "1. ta planche corps, celle de la carte 2" + (sdGrowOn(t) ? " ou de la retouche 2b" : "")],
+      ["Format", "Identique à l'image 1"],
+      [N, "Même nom + _v2, _v3…"],
+      ["Longueur", sdLen(m.growUp, !0)],
+    ]);
+  /* v155: step 4 */
+  sdFinOn(t) &&
+    (o.fin = [
+      [J, "1. ta planche " + sdFinWord(0)],
+      ["Format", "Identique à l'image 1"],
+      [N, "Même nom + _v2, _v3…"],
+      ["Longueur", sdLen(m.fin, !0)],
+    ]);
+  sdGrowBustOn(t) &&
+    (o.growBust = [
+      [J, nw() ? "1. ta planche corps sans tête, celle de la carte 2" + (sdGrowOn(t) ? " ou de la retouche 2b" : "") : "1. ta planche corps, celle de la carte 2" + (sdGrowOn(t) ? " ou de la retouche 2b" : "")],
+      ["Format", "Identique à l'image 1"],
+      [N, "Même nom + _v2, _v3…"],
+      ["Longueur", sdLen(m.growBust, !0)],
+    ]);
   o.iter = [
     [
       J,
       "join" === sdOp(e)
-        ? "1 : ta planche corps sans tête validée. 2 : la planche tête."
+        ? sdJoinNoPrep()
+          ? "1 : ta planche corps sans tête validée, telle quelle, sans préparation. 2 : la planche tête."
+          : "1 : ta planche corps sans tête validée, préparée ci-dessus (+25 % en haut). 2 : la planche tête."
         : "heads" === sdIterOpEff(e)
-        ? "1 : ta planche habillée, agrandie de 25 % vers le haut. 2 : la planche tête."
+        ? "1 : ta planche habillée, préparée ci-dessus (+25 % en haut). 2 : la planche tête."
         : "dress" === sdIterOpEff(e)
           ? "1. ta planche corps sans tête validée"
           : "dressMine" === sdOp(e)
@@ -4015,4 +9057,619 @@ function sdRows(t, m, R, q) {
     [N, "Même nom + _v2, _v3…"],
   ];
   return o;
+}
+/* v153 (user: "on peut cliquer « Tenue en un seul texte » et « Tenue de référence corps » mais du coup il va prendre lequel en compte, et la
+   section Habiller c'est quoi le deal", then "c'est pas clair pour moi, les utilisateurs vont se poser la question"): the Tenue tab says,
+   live, what the head and body sheets and "Habiller avec ma tenue" wear, read with the same functions as the prompts (nv, nC, sdFreeOn,
+   sdFreeText, sdPhotoClothes, nj, on the state shown); card 3 says which outfit "Habiller avec ma tenue" uses. Card 3 and its "Habiller avec
+   ma tenue" exist only with Seedream, an adult in Photo style and no starting photo (sdMineTenue, the same guard as the Tenue tab's note). */
+function sdDressMineOn(t) {
+  return "person" === t.mode && !sdChild(t) && sdMineTenue(t);
+}
+/* an outfit source, as the summary names it; card: from card 3, where "ci-dessous" would be wrong */
+function sdWearWord(s, card) {
+  return rq(s, function () {
+    if (sdFreeOn()) {
+      if (sdFreeText()) return card ? sdT("ton texte de l'onglet Tenue", "your text in the Outfit tab") : sdT("ton texte", "your text");
+      var raw = sdFreeClean(e.outfitText);
+      return raw
+        ? sdT("une tenue simple de tous les jours, unie (« " + raw + " » ne décrit pas de tenue)", "a simple everyday outfit in plain colors (“" + raw + "” describes no outfit)")
+        : sdT("une tenue simple de tous les jours, unie (ton texte est vide)", "a simple everyday outfit in plain colors (your text is empty)");
+    }
+    if (sdPhotoClothes()) return sdT("les habits de ta photo", "the clothes in your photo");
+    return nj()
+      ? card
+        ? sdT("tes choix de l'onglet Tenue", "your choices in the Outfit tab")
+        : sdT("tes choix ci-dessous", "your choices below")
+      : card
+        ? sdT("une tenue simple de tous les jours, unie (rien de coché dans l'onglet Tenue)", "a simple everyday outfit in plain colors (nothing ticked in the Outfit tab)")
+        : sdT("une tenue simple de tous les jours, unie (rien de coché)", "a simple everyday outfit in plain colors (nothing ticked)");
+  });
+}
+/* the summary at the top of the Tenue tab, for an adult; not with the photo's clothes, whose own note already says the sheets keep them.
+   Read on sdG(t), the state the prompts are written from (a piece field set to "random" is drawn there, possibly to nothing). Review of
+   v153: with the head, Seedream dresses the body in the fitted top and leggings, or takes the body from the dressed sheet (sdOutfit,
+   sdCoverNote), not the reference choice below; a text typed in card 3 replaces the outfit of "Habiller avec ma tenue" (sdIterText). */
+function sdTenueLines(t) {
+  if ("person" !== t.mode || sdChild(t)) return [];
+  var g = sdG(t);
+  if (rq(g, nC)) return [];
+  var ref = rq(g, nv),
+    mine = sdDressMineOn(t),
+    off = Object.assign({}, g, { bodyRef: !1 }),
+    tn = sdIterNorm(t),
+    typed = "dressMine" === tn.sdIterOp && !!String(tn.sdIter || "").trim(),
+    dressW = typed ? sdT("ton texte écrit dans la carte 3 (l'onglet Tenue n'est plus lu)", "the text you typed in card 3 (the Outfit tab is no longer read)") : sdWearWord(off),
+    L = [];
+  if (ref) {
+    /* not "bleu cobalt" here: a man's head sheet in GPT shows a bare neck */
+    L.push(sdT("Planches tête et corps : la tenue de référence, pas ta tenue.", "Head and body sheets: the reference outfit, not your outfit."));
+    sdNat(t) &&
+      !t.headless &&
+      L.push(
+        rq(g, sdUseBodyImg)
+          ? sdT("Planche corps : avec la tête, le corps et sa tenue viennent de ta planche habillée (« Le corps vient de », carte 2).", "Body sheet: with the head, the body and its outfit come from your dressed sheet (“The body comes from”, card 2).")
+          : "m" === t.pres
+            ? sdT(
+                "Planche corps : avec la tête, un haut de sport sans manches et un collant de course bleu cobalt ; le choix ci-dessous ne sert qu'avec « Planche corps sans tête » (onglet Corps).",
+                "Body sheet: with the head, a cobalt-blue sleeveless training top and running tights; the choice below only applies with “Headless body sheet” (Body tab).",
+              )
+            : sdT(
+                "Planche corps : avec la tête, un haut court ajusté sans manches et un legging bleu cobalt ; le choix ci-dessous ne sert qu'avec « Planche corps sans tête » (onglet Corps).",
+                "Body sheet: with the head, a fitted cobalt-blue sleeveless cropped top and leggings; the choice below only applies with “Headless body sheet” (Body tab).",
+              ),
+      );
+    L.push(
+      mine
+        ? sdT("« Habiller avec ma tenue » (carte 3), sur ta planche corps validée : ", "“Dress in my outfit” (card 3), on your approved body sheet: ") + dressW + "."
+        : rq(off, sdPhotoClothes)
+          ? sdT("Les habits de ta photo ne sont pas utilisés : la tenue de référence les remplace.", "The clothes in your photo are not used: the reference outfit replaces them.")
+          : sdT(
+              "Tant que « Tenue de référence corps » est cochée, ta tenue n'est pas utilisée : décoche-la pour habiller les planches avec ta tenue.",
+              "While “Body reference outfit” is on, your outfit is not used: switch it off to dress the sheets in your outfit.",
+            ),
+    );
+  } else if (mine && !typed)
+    L.push(sdT("Planches tête et corps, et « Habiller avec ma tenue » (carte 3) : ", "Head and body sheets, and “Dress in my outfit” (card 3): ") + sdWearWord(g) + ".");
+  else {
+    L.push(sdT("Planches tête et corps : ", "Head and body sheets: ") + sdWearWord(g) + ".");
+    mine && L.push(sdT("« Habiller avec ma tenue » (carte 3) : ", "“Dress in my outfit” (card 3): ") + dressW + ".");
+  }
+  /* the piece choices, hidden while the text replaces them, are kept: said where they would otherwise be used */
+  (!ref || (mine && !typed)) &&
+    rq(off, sdFreeOn) &&
+    rq(off, nj) &&
+    L.push(sdT("Tes choix de pièces sont gardés mais ignorés tant que « Tenue en un seul texte » est coché.", "Your piece choices are kept but ignored while “Outfit in a single text” is on."));
+  return L;
+}
+function sdTenueSum(t) {
+  var L = sdTenueLines(t);
+  return L.length
+    ? (0, l.jsxs)("div", {
+        "data-sd-wear": "1",
+        className: "my-4 rounded-xl bg-muted p-4 text-sm",
+        children: [(0, l.jsx)("p", { className: "font-semibold", children: sdT("Ce que portent tes planches", "What your sheets wear") }, "h")].concat(
+          L.map(function (x, i) {
+            return (0, l.jsx)("p", { className: "mt-1", children: x }, i);
+          }),
+        ),
+      })
+    : null;
+}
+/* v154 "Finition photo" (card 3 in v154, step 4 since v155; user: "les nombreuses itérations sortent une image plus contrastée qui ensuite devient du vrai plastique sur
+   Seedance", "il faut que le réalisme des photos soit le mieux possible en termes de texture de peau et couleur de peau ainsi que luminosité";
+   his own test prompt asked for soft natural daylight, visible pores, fine body hair, slightly uneven tone, redness at the elbows and
+   knuckles, natural muscle tone instead of sculpted shiny definition, no glossy highlights, light film grain). On the final sheet, last:
+   only the photographic rendering changes. The light keeps its direction, hardness and shadows (a daylight change would move the shading
+   that draws the shapes; v154 review: no added fill either, against the weak fill the sheets set for the muscles and the skin texture),
+   its contrast never stronger than image 1's; the muscles keep their definition (set in the Corps tab), read from light and shadow, not shine;
+   the skin color and texture follow the settings (skin tone, Imperfections, body hair, age) as the sheets say them (sdSkinBody,
+   sdSkinHead). À VÉRIFIER on renders.
+   v154 reviews: image 1 is one of three sheets, chosen under the hint ("Planche à finir": the combined sheet, the headless body sheet or
+   the head sheet with "Sans tête"; the body sheet, which has the head, or the head sheet without it), so the prompt names only what that
+   sheet shows: no face, hair or glasses on a headless body (v134: they made a chin and glasses show above the collarbones), the cut at
+   the collarbones kept there only, no body, hands or body hair on a head sheet. Each word is the sheet's own, at its strength (v144: no
+   flaw added or made stronger): the body sheet's "fine pores" and the head sheet's stronger pores on the nose and cheeks; the tone of
+   each sheet ("Canon" evens the face at "Naturelles" only, v104); the redness on the knees and elbows only where the body sheet asks it
+   (sdSkinBody: not with the head and the reference outfit), the rest of the skin no redder; no knuckles (no sheet names them); the head
+   sheet's peach fuzz or beard shadow (sdFaceFuzz); "chest" for a man and for "Très menue" (sdJoinNanoText's rule); the cellulite only
+   where the body sheet names it; an "État du moment" (sweat, flush, wet skin) kept, the matte words dropped then; at Imperfections 3
+   and 4 the head sheet's oily shine not forbidden on the face, the body kept matte as its sheet says at every level; "adult" under 21,
+   as sdPresetJoin; no "identity" on the headless body (it anchors a face in this tool); the head sheet's Purpose is a character's. (v154's
+   typed text and pasted prompt under "Finition photo" went with card 3: a free retouche is card 3's.) */
+/* v155 (user: "le truc de finition a disparu … c'est pas clair tout ça"; then, asked, "Étape 4 à part"): "Finition photo" is step 4, a card
+   of its own under card 3, shown wherever card 3 is (Seedream, an adult in Photo style, no starting photo): no folded list to open, no
+   card 3 retouche to give up. Its text cannot be written over any more (a free retouche is card 3's "Retouche libre"). The card holds,
+   above what to add: what it does, then "Planche à finir" with its tooltips; its tooltip and its copy message; its button in the phone's
+   bottom bar ("Finition") once a sheet is chosen, as card 3's once a retouche is (v155 review: always there, it crowded the bar to two
+   rows or past a 320 px screen). Its prompt box is drawn when "Détails et prompt" is opened (the copy never reads it). */
+function sdFinOn(t) {
+  return "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t);
+}
+function sdFinCopyMsg() {
+  sdNewClear("card:fin");
+  return sdT("Copié. Dans Seedream, ajoute ta planche " + sdFinWord(0) + " (image 1), puis compare le résultat avec elle.", "Copied. In Seedream, add your " + sdFinWord(1) + " sheet (image 1), then compare the result with it.");
+}
+function sdFinPre(t, g) {
+  return (0, l.jsxs)("div", {
+    className: "mt-3 grid gap-3 text-sm",
+    children: [
+      sdNewHas("card:fin")
+        ? (0, l.jsxs)("p", {
+            "data-sd-new-card": "fin",
+            className: "font-semibold",
+            children: [
+              (0, l.jsx)("span", { className: "mr-2 inline-block rounded-full px-2 py-0.5 text-xs font-bold text-white", style: { background: "hsl(var(--destructive))" }, children: sdT("Nouveau", "New") }),
+              sdT("absente de ton fichier : la dernière étape avant Seedance.", "not in your file: the last step before Seedance."),
+            ],
+          })
+        : null,
+      (0, l.jsx)("p", {
+        className: "text-muted-foreground",
+        children: sdT(
+          "À faire en dernier, sur ta planche finale, avant Seedance : la peau, sa couleur et la lumière d'une vraie photo, le reste inchangé. Le texte suit tes réglages de peau : onglets Visage (teint, imperfections, beauté), Corps (âge, pilosité, cellulite) et Signes (état du moment). Pars toujours de ta planche finale, jamais d'une image déjà finie, et garde la plus naturelle des deux. Tête et corps donnés séparément à Seedance : finis les deux et vérifie que la peau reste la même.",
+          "Do it last, on your final sheet, before Seedance: the skin, its color and the light of a real photograph, everything else unchanged. The text follows your skin settings: Face tab (skin tone, imperfections, beauty), Body tab (age, body hair, cellulite) and Marks tab (state of the moment). Always start from your final sheet, never from an image already finished, and keep the more natural of the two. Head and body given to Seedance separately: finish both and check the skin stays the same.",
+        ),
+      }),
+      (0, l.jsxs)("div", {
+        children: [
+          /* v154 (user: "je comprends pas ce que ça veut dire … assemblé, corps sans tête et tête ???? il faut un tooltip hover"): the heading's
+             tooltip (hover, keyboard focus, tap) says what each sheet is; each option says its own on hover */
+          (0, l.jsx)("div", {
+            className: "mb-2",
+            children: sdTip((0, l.jsx)("span", { className: "font-semibold", children: "Planche à finir" }), sdFinTip(), "sd-fintg-tip"),
+          }),
+          (0, l.jsx)(ab, {
+            label: "Planche à finir",
+            value: nw() || "head" === sdFinTg() ? sdFinTg() : "full",
+            onChange: (v) => (sdNewClear("card:fin"), g("sdFinTg", v)),
+            wrap: !0,
+            options: nw()
+              ? [
+                  ["join", "Assemblée", sdFinTipText("join")],
+                  ["body", "Corps sans tête", sdFinTipText("body")],
+                  ["head", "Tête", sdFinTipText("head")],
+                ]
+              : [
+                  ["full", "Corps", sdFinTipText("full")],
+                  ["head", "Tête", sdFinTipText("head")],
+                ],
+          }),
+        ],
+      }),
+    ],
+  });
+}
+/* v154 review: the saved choice ("join", "body" for the headless body, "full" for the body with the head, "head") never turns a body with
+   the head into a headless one when "Sans tête" is ticked afterwards (a radio click saves even the option already checked) */
+function sdFinTg() {
+  var v = e.sdFinTg;
+  return nw() ? ("body" === v || "head" === v ? v : "join") : "head" === v ? "head" : "body";
+}
+/* v154 (user: "je comprends pas ce que ça veut dire finition photo, assemblé, corps sans tête et tête ???? il faut un tooltip hover"): what
+   each sheet of "Planche à finir" is, on hover of each option and in the heading's tooltip */
+function sdFinTipText(k) {
+  return {
+    join: sdT(
+      "Assemblée : la planche où la tête est posée sur le corps, le résultat de « Assembler tête et corps » ou de « Ajouter les têtes » (carte 3).",
+      "Combined: the sheet where the head sits on the body, the result of “Combine head and body” or “Add the heads” (card 3).",
+    ),
+    body: sdT("Corps sans tête : ta planche corps sans tête (carte 2), telle que tu l'as validée.", "Headless body: your headless body sheet (card 2), as you approved it."),
+    full: sdT("Corps : ta planche corps avec la tête (carte 2), telle que tu l'as validée.", "Body: your body sheet with the head (card 2), as you approved it."),
+    head: sdT("Tête : ta planche tête (carte 1), les gros plans du visage.", "Head: your head sheet (card 1), the close-ups of the face."),
+  }[k];
+}
+function sdFinTip() {
+  return [
+    sdT(
+      "Choisis la planche que tu joins en image 1. Le prompt ne parle que de ce qu'elle montre : pas de visage sur un corps sans tête, pas de corps sur une tête.",
+      "Choose the sheet you add as image 1. The prompt only speaks of what it shows: no face on a headless body, no body on a head.",
+    ),
+  ]
+    .concat(
+      (nw() ? ["join", "body", "head"] : ["full", "head"]).map(function (k) {
+        return sdFinTipText(k);
+      }),
+    )
+    .map(function (x, i) {
+      return (0, l.jsx)("span", { style: { display: "block", marginTop: i ? "0.45rem" : 0 }, children: x }, i);
+    });
+}
+/* the sheet "Finition photo" finishes, as the attach row and the copy message say it (French 0, English 1) */
+function sdFinWord(en) {
+  return { join: ["assemblée", "combined"], body: nw() ? ["corps sans tête", "headless body"] : ["corps", "body"], head: ["tête", "head"] }[sdFinTg()][en ? 1 : 0];
+}
+function sdPresetFinish() {
+  var tg = sdFinTg(),
+    face = "body" !== tg || !nw(),
+    body = "head" !== tg,
+    lv = +e.imperf || 0,
+    st = rl(),
+    young = (+e.age || 30) < 21,
+    w = (young ? "adult " : "") + sdWho(),
+    x = ["fine pores on all the skin that shows" + (face && 2 === lv ? (0 === e.looks ? ", visible on the face" : ", visible on the nose and cheeks") : face && 3 === lv ? ", enlarged on the nose and cheeks" : "")],
+    ht = face ? [null, "a slightly uneven tone", 0 === e.looks ? "an even tone" : "a slightly uneven tone", "an uneven, slightly blotchy tone", "a blotchy tone"][lv] : null,
+    bt = body ? [null, null, "a slightly uneven tone", "an uneven tone", "a blotchy tone"][lv] : null,
+    k = "body" === tg && nw() ? [] : ["the identity"];
+  ht && bt ? x.push(ht === bt ? ht : ht + " on the face, " + bt + " on the body") : ht ? x.push(ht + (body ? " on the face" : "")) : bt && x.push(bt + (face ? " on the body" : ""));
+  body && lv >= 1 && (nw() || !nv()) && x.push("faint natural redness on " + (sdKneesSmooth() ? "the elbows" : "the knees and elbows") + ", wherever they show; the rest of the skin no redder than in image 1");
+  body && !sdBodyHair() && x.push("faint, fine body hair");
+  face && lv >= 1 && x.push(sdFaceFuzz());
+  /* matte as the body sheet says it at every level ("Matte texture", "Not oiled"); the head sheet's oily shine at Imperfections 3 and 4, and an
+     "État du moment" (sweat, wet skin), keep the highlights of image 1 */
+  x.push(
+    st || (lv >= 3 && !body)
+      ? "the highlights on the skin as in image 1, never waxy or plastic"
+      : lv >= 3 && face
+        ? "matte on the body, the highlights as small and soft as in image 1 or softer, never oily, waxy, glossy or plastic; on the face, the highlights as in image 1, never waxy or plastic"
+        : "matte, the highlights on the skin as small and soft as in image 1 or softer, never oily, waxy, glossy or plastic",
+    "no airbrushing or smoothing",
+  );
+  face && k.push("the face with every feature and its expression, the hair, any glasses and makeup");
+  body
+    ? k.push(
+        "the body's size, shape and proportions, " +
+          ("m" === e.pres || !(e.chest >= 1) ? "the chest" : "the bust's size, shape and hang") +
+          ", the muscles and how defined they are (read from light and shadow, not from shine), the hands with five fingers each",
+      )
+    : k.push("the neck and shoulders");
+  k.push(
+    "every freckle, mole, vein, scar, tattoo or other mark already on the skin" +
+      (body && "none" !== e.cellulite && "m" !== e.pres && (nw() || !nv()) ? ", and the cellulite" : "") +
+      ", at the same place, size and strength",
+  );
+  st && k.push("the current state of image 1 (" + st + ")");
+  k.push(
+    "the pose, the framing, crop and scale of every panel" +
+      ("body" === tg && nw() ? " (a body cut at the collarbones stays cut there, nothing added above)" : "") +
+      ", every view, the outfit, the backdrop and the panel layout",
+  );
+  return (
+    "Edit image 1, the approved " +
+    { join: "combined head and body", body: nw() ? "headless body" : "body", head: "head" }[tg] +
+    " reference sheet of this " +
+    w +
+    ".\nPurpose: a neutral " +
+    ("head" === tg ? "character" : nv() ? "anatomy and costume-fitting" : "costume and character") +
+    " reference for a film's VFX team.\n" +
+    ("Change only the photographic rendering, the same in every panel, so that it looks like an unretouched photograph taken with a real camera, not a render.\n" +
+        "Light: the same direction, hardness and shadows as in image 1; the natural contrast of a real photograph, never stronger than in image 1: the shadows keep their detail, no highlight is blown out, no HDR look, no glow or bloom.\n" +
+        "Color: neutral white balance; skin color: " +
+        t7("skin") +
+        ", true to life, not redder, more orange, more tanned or more saturated than that" +
+        (st ? ", apart from the current state kept below" : "") +
+        "; the backdrop stays a plain neutral grey.\n" +
+        "Skin: " +
+        x.join("; ") +
+        "." +
+        (body && sdBodyHair() ? " " + t6(sdBodyHair()) + "." : "") +
+        " Texture only: no new mark, spot, line or wrinkle, none made stronger. The skin of " +
+        (/^(8|11|18|8\d)$/.test(String(e.age)) ? "an " : "a ") +
+        e.age +
+        "-year-old" +
+        (young ? " adult" : "") +
+        ", not older.\n" +
+        "Detail: real lens sharpness with no sharpening halos or crunchy edges, fine even film grain over the whole image.\n" +
+        "Keep everything else exactly as in image 1, each wherever it shows: ") +
+    k.join("; ") +
+    "; nothing grows, shrinks, lifts or slims. " +
+    /* no "marks above" or outfit text in this prompt: the lettering of image 1 (a tattoo, a print) is simply kept */
+    "Nothing added: no captions, labels, panel numbers or watermark; any lettering already in image 1 stays exactly as it is."
+  );
+}
+/* v155 (user: "il faut passer trois heures à aller vers le haut ; une flèche ne peut pas s'afficher, pour quand on descend un peu trop loin :
+   on clique et on va direct en bas ou direct en haut, comme sur ChatGPT ou Claude"): two round arrows. "Tout en haut" shows once the page is
+   scrolled more than one screen down, "Tout en bas" while more than one screen is left below; each jumps straight to its end (smoothly,
+   at once with "reduce motion"). Wide screens (the three steps beside the settings): in the settings sheet's right padding and the gap
+   before the steps, so they cover no control and no step. Narrower: 4 px from the right edge, in the page's margin as far as it goes,
+   above the bottom bar (its height measured, two rows too). Labels and hover tooltips in French and English. */
+function sdScrollGo(top) {
+  var d = document.documentElement,
+    rm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: top ? 0 : d.scrollHeight, behavior: rm ? "auto" : "smooth" });
+}
+function SdScrollNav() {
+  var st = (0, s.useState)(null),
+    v = st[0],
+    setV = st[1];
+  (0, s.useEffect)(function () {
+    var raf = 0;
+    function upd() {
+      raf = 0;
+      var d = document.documentElement,
+        vh = window.innerHeight,
+        vw = d.clientWidth,
+        y = window.scrollY || d.scrollTop || 0,
+        left = d.scrollHeight - vh - y,
+        aside = document.querySelector("aside"),
+        ar = aside && aside.getBoundingClientRect(),
+        bar = document.querySelector("div.fixed.inset-x-0.bottom-0"),
+        bh = bar && "none" !== getComputedStyle(bar).display ? bar.getBoundingClientRect().height : 0,
+        /* the steps beside the settings (lg): the arrows sit just left of them */
+        side = !!(ar && ar.width && ar.left > vw / 2 && ar.top < vh);
+      var n = { up: y > vh, down: left > vh, right: side ? Math.round(vw - ar.left + 2) : 4, bottom: bh ? Math.round(bh + 12) : 0, side: side };
+      setV(function (o) {
+        return o && o.up === n.up && o.down === n.down && o.right === n.right && o.bottom === n.bottom && o.side === n.side ? o : n;
+      });
+    }
+    function on() {
+      raf || (raf = requestAnimationFrame(upd));
+    }
+    upd();
+    window.addEventListener("scroll", on, { passive: !0 });
+    window.addEventListener("resize", on);
+    /* a fold opened or closed changes the page's height without a scroll */
+    var ro = "function" == typeof ResizeObserver ? new ResizeObserver(on) : null;
+    ro && ro.observe(document.getElementById("root") || document.body);
+    return function () {
+      window.removeEventListener("scroll", on);
+      window.removeEventListener("resize", on);
+      ro && ro.disconnect();
+      raf && cancelAnimationFrame(raf);
+    };
+  }, []);
+  if (!v || !(v.up || v.down)) return null;
+  var size = v.side ? 40 : 44,
+    btn = function (top) {
+      var lab = top ? sdT("Aller tout en haut", "Go to the top") : sdT("Aller tout en bas", "Go to the bottom");
+      return (0, l.jsx)(
+        "button",
+        {
+          type: "button",
+          "aria-label": lab,
+          title: lab,
+          "data-sd-scroll": top ? "top" : "bottom",
+          onClick: function () {
+            sdScrollGo(top);
+          },
+          className:
+            "inline-flex items-center justify-center rounded-full border bg-card text-foreground shadow-md transition-colors hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          style: { width: size, height: size },
+          children: (0, l.jsx)("svg", {
+            width: 18,
+            height: 18,
+            viewBox: "0 0 24 24",
+            fill: "none",
+            stroke: "currentColor",
+            strokeWidth: 2.25,
+            strokeLinecap: "round",
+            strokeLinejoin: "round",
+            "aria-hidden": "true",
+            children: (0, l.jsx)("path", { d: top ? "M12 19V5M5 12l7-7 7 7" : "M12 5v14M19 12l-7 7-7-7" }),
+          }),
+        },
+        top ? "top" : "bottom",
+      );
+    };
+  return (0, l.jsxs)("div", {
+    id: "sd-scrollnav",
+    style: {
+      position: "fixed",
+      right: v.right,
+      bottom: v.bottom ? v.bottom : "calc(16px + env(safe-area-inset-bottom, 0px))",
+      zIndex: 25,
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+    },
+    children: [v.up ? btn(!0) : null, v.down ? btn(!1) : null],
+  });
+}
+/* v155 (user, after importing an older file: "le truc de finition a disparu, on a l'impression que je suis revenu à une ancienne version ; il
+   devrait dire qu'il faut remplir des trucs qui n'existaient pas avant, sinon je vais avoir des soucis de compatibilité, et mes utilisateurs
+   aussi ; mettre les sliders en rouge pour dire que ce sont des nouveaux trucs, et laisser les curseurs sur normal ou sur rien, à toi de
+   voir"). The loader already gives every setting missing from an older file or an older saved page its default value (ac: "n in e ? e[n] :
+   tJ[n]"); what was missing is telling it. A setting of the tabs that a full older state does not hold is marked "new": a red bar at its
+   left (no layout shift: the bar takes the room it adds back), a red dot on its tab, a line under Exporter / Importer with "Retirer les
+   marques"; step 4, "Finition photo", too when the state predates it (no "sdFinTg"): a red "Nouveau" on its card, gone on its first copy or
+   sheet choice. The value stays the default. Marks are kept in the browser until they go.
+   v155 review: a mark goes when its setting is used (a click, a value typed or slid, a key that changes it; not a finger that scrolls past
+   it, not Tab) or when its value changes by any other way (a random draw, a silhouette button...): the value seen the first time the mark
+   is drawn is kept and compared. The notice and the tab dots count only what the page shows (a setting hidden by another one, step 4 where
+   it exists); a hidden mark shows once its setting does. A full state holds at least 60% of the settings of the tabs (every export and saved
+   page since v125 holds 70% or more of today's; the tests' states 47 keys at most): a partial one, written by hand, marks nothing. */
+var SD_NEW_KEY = "fiche-perso-seedance-new-v1",
+  sdNewSet = null,
+  sdNewWrapSet = {};
+/* marks: { key: the value first drawn with the mark (JSON), or null before it is drawn } */
+function sdNewLoad() {
+  if (sdNewSet) return sdNewSet;
+  sdNewSet = {};
+  try {
+    var a = JSON.parse(localStorage.getItem(SD_NEW_KEY) || "{}");
+    a &&
+      "object" == typeof a &&
+      !Array.isArray(a) &&
+      Object.keys(a).forEach(function (k) {
+        sdNewSet[k] = "string" == typeof a[k] ? a[k] : null;
+      });
+  } catch (x) {}
+  for (var k in sdNewSet) sdNewWrapSet[k] = 1;
+  return sdNewSet;
+}
+function sdNewSave() {
+  try {
+    Object.keys(sdNewSet || {}).length ? localStorage.setItem(SD_NEW_KEY, JSON.stringify(sdNewSet)) : localStorage.removeItem(SD_NEW_KEY);
+  } catch (x) {}
+}
+function sdNewHas(k) {
+  return k in sdNewLoad();
+}
+function sdFieldKeys() {
+  var o = {};
+  [t2, t3, t4].forEach(function (tabs) {
+    (tabs || []).forEach(function (tb) {
+      (tb.items || []).forEach(function (it) {
+        it && "string" == typeof it.k && it.k in tJ && (o[it.k] = 1);
+      });
+    });
+  });
+  return Object.keys(o);
+}
+/* the settings a full older state does not hold, and "card:fin" when it predates "Finition photo" */
+function sdNewMissing(raw) {
+  if (!raw || "object" != typeof raw || Array.isArray(raw)) return [];
+  var f = sdFieldKeys(),
+    m = f.filter(function (k) {
+      return !(k in raw);
+    });
+  if (f.length - m.length < 0.6 * f.length) return [];
+  "sdFinTg" in raw || m.push("card:fin");
+  return m;
+}
+/* at start-up (ac with no file): the marks of an older saved page join the ones kept; an import sets its own (sdIoApply) */
+function sdNewSeen(raw, isImport) {
+  try {
+    if (!isImport) {
+      var m = sdNewMissing(raw);
+      if (m.length) {
+        sdNewLoad();
+        m.forEach(function (k) {
+          k in sdNewSet || (sdNewSet[k] = null);
+          sdNewWrapSet[k] = 1;
+        });
+        sdNewSave();
+      }
+    }
+  } catch (x) {}
+  return raw;
+}
+function sdNewSetAll(m) {
+  sdNewLoad();
+  sdNewSet = {};
+  sdNewWrapSet = {};
+  (m || []).forEach(function (k) {
+    sdNewSet[k] = null;
+    sdNewWrapSet[k] = 1;
+  });
+  sdNewSave();
+}
+function sdNewClear(k, node) {
+  if (!sdNewHas(k)) return;
+  delete sdNewSet[k];
+  sdNewSave();
+  node && node.style && (node.style.borderLeftColor = "transparent");
+}
+/* the tab settings the page shows now (the tabs of the current type, each with its own condition) */
+function sdNewShown() {
+  var tabs = "object" === e.mode ? t3 : "animal" === e.mode ? t4 : t2,
+    o = {};
+  (tabs || []).forEach(function (tb) {
+    (!tb.show || tb.show()) &&
+      (tb.items || []).forEach(function (it) {
+        it && "string" == typeof it.k && (!it.show || it.show()) && (o[it.k] = 1);
+      });
+  });
+  return o;
+}
+function sdNewTabOn(tb) {
+  return (tb.items || []).some(function (it) {
+    return it && "string" == typeof it.k && sdNewHas(it.k) && (!it.show || it.show());
+  });
+}
+/* what the notice counts: the shown settings, and step 4 where it exists */
+function sdNewCounts() {
+  var sh = sdNewShown(),
+    f = Object.keys(sdNewLoad()).filter(function (k) {
+      return "card:fin" !== k && sh[k];
+    }).length;
+  return { f: f, fin: sdNewHas("card:fin") && sdFinOn(e) };
+}
+function sdNewCount() {
+  var c = sdNewCounts();
+  return c.f + (c.fin ? 1 : 0);
+}
+/* the field renderer of the tabs (M), wrapped: a marked setting gets its bar; the wrapper stays for the session once there, so touching a
+   slider never remounts it mid-drag */
+function sdNewM(M) {
+  return function (r) {
+    return sdNewWrap(r, M(r));
+  };
+}
+var SD_NEW_NOKEY = ["Tab", "Shift", "Control", "Alt", "Meta", "Escape", "CapsLock", "ContextMenu"];
+function sdNewWrap(r, el) {
+  var k = r && r.k;
+  if (!el || "string" != typeof k || (sdNewLoad(), !sdNewWrapSet[k])) return el;
+  var on = sdNewHas(k);
+  if (on) {
+    /* the value first drawn with the mark; any other value since (set from elsewhere) takes the mark away */
+    var cur = JSON.stringify(void 0 === e[k] ? null : e[k]);
+    null === sdNewSet[k] ? ((sdNewSet[k] = cur), sdNewSave()) : sdNewSet[k] !== cur && (sdNewClear(k), (on = !1));
+  }
+  var go = function (ev) {
+    sdNewClear(k, ev.currentTarget);
+  };
+  return (0, l.jsxs)(
+    "div",
+    {
+      "data-sd-new": k,
+      title: on ? sdT("Nouveau réglage : absent de ton fichier, il est sur sa valeur par défaut. Touche-le pour retirer la marque.", "New setting: not in your file, it is on its default value. Touch it to remove the mark.") : void 0,
+      style: { borderLeft: "3px solid " + (on ? "hsl(var(--destructive))" : "transparent"), paddingLeft: 12, marginLeft: -15 },
+      onClickCapture: go,
+      onInputCapture: go,
+      onChangeCapture: go,
+      onKeyDownCapture: function (ev) {
+        SD_NEW_NOKEY.indexOf(ev.key) < 0 && go(ev);
+      },
+      children: [
+        on
+          ? (0, l.jsx)("span", {
+              style: { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap" },
+              children: sdT("Nouveau réglage, sur sa valeur par défaut.", "New setting, on its default value."),
+            })
+          : null,
+        el,
+      ],
+    },
+    k,
+  );
+}
+/* the red dot of a tab that shows a marked setting */
+function sdNewTab(tab) {
+  return tab && sdNewTabOn(tab)
+    ? (0, l.jsx)("span", {
+        "data-sd-new-tab": "1",
+        "aria-hidden": "true",
+        style: { display: "inline-block", width: 8, height: 8, borderRadius: 999, background: "hsl(var(--destructive))", marginLeft: 6, verticalAlign: "middle" },
+      })
+    : null;
+}
+/* the line under Exporter / Importer while shown marks remain */
+function sdNewNotice(h) {
+  var c = sdNewCounts(),
+    f = c.f,
+    fin = c.fin;
+  if (!f && !fin) return null;
+  return (0, l.jsxs)("div", {
+    id: "sd-new-notice",
+    role: "status",
+    /* the red edge inline: design.css gives every bordered rounded-xl box the light edge */
+    className: "w-full rounded-xl border bg-card p-3 text-sm",
+    style: { borderColor: "hsl(var(--destructive))" },
+    children: [
+      (0, l.jsx)("p", {
+        children: sdT(
+          "Nouveautés depuis ton fichier ou ta version précédente du HTML : " +
+            (f ? f + (f > 1 ? " réglages, marqués" : " réglage, marqué") + " d'une barre rouge (leur onglet a un point rouge), sur leur valeur par défaut" : "") +
+            (f && fin ? " ; " : "") +
+            (fin ? "l'étape 4, « Finition photo »" : "") +
+            ". Règle-les ou laisse-les ; une marque s'enlève dès que tu touches le réglage.",
+          "New since your file or your previous version of the HTML: " +
+            (f ? f + (f > 1 ? " settings, marked" : " setting, marked") + " with a red bar (their tab has a red dot), on their default value" : "") +
+            (f && fin ? "; " : "") +
+            (fin ? "step 4, “Final photo pass”" : "") +
+            ". Set them or leave them; a mark goes as soon as you touch the setting.",
+        ),
+      }),
+      (0, l.jsx)("button", {
+        type: "button",
+        className: "mt-2 inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        onClick: function () {
+          sdNewSetAll([]);
+          h(sdT("Marques retirées.", "Marks removed."));
+        },
+        children: sdT("Retirer les marques", "Remove the marks"),
+      }),
+    ],
+  });
 }
