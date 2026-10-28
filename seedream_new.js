@@ -6265,6 +6265,28 @@ function sdA3dNip() {
 function sdA3dAre() {
   return sdA3dManual("a3dAre", SD_A3D_AREOLAS) ? e.a3dAre : "AUTO";
 }
+/* follow-up (user: "il y a des aréoles disgracieuses ... on doit pouvoir le faire"; "analyser la forme des seins ... ça peut amener à
+   des choses supplémentaires"): "Relief de l'aréole" and "Tubercules", Auto by default (the prompt unchanged), geometry only, in the
+   "mamelons" shape key. Sources: Sanuki, Fukuma and Uchida 2009 (see SD_A3D_NIPS: the elevated plateau type without constriction, 60.2% of
+   breasts, the most common); the herniated areola of the tuberous breast (Grolleau, as described by Denoël et al., Rev Med Liège 2002,
+   57(10):655-660). No published height of either relief was read, nor a reliable count of the areolar (Montgomery) tubercles: those stay
+   free, marked "À VALIDER". */
+var SD_A3D_RELIEFS = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas au relief des aréoles du maillage.", "The prompt leaves the relief of the mesh's areolas as it is."],
+  ["PLATE", "Plate", "Flush", "Au ras du sein, sans marche ni bourrelet au bord.", "Flush with the breast, with no step or ridge at its edge."],
+  ["PLATEAU", "En plateau", "Raised plateau", "Surélevée en plateau, sans étranglement à sa base : le type le plus fréquent (60,2 % des seins chez Sanuki 2009).", "Raised as a plateau, with no constriction at its base: the most common type (60.2% of breasts in Sanuki 2009)."],
+  ["HERNIEE", "Bombée", "Domed", "Bombée en dôme, un sillon à sa base : l'aréole des seins tubéreux (Grolleau, Denoël 2002).", "Domed, with a groove at its base: the areola of tuberous breasts (Grolleau, Denoël 2002)."],
+];
+var SD_A3D_TUBS = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas aux petites bosses de l'aréole.", "The prompt leaves the small bumps of the areola as they are."],
+  ["VISIBLES", "Visibles", "Visible", "Petites bosses arrondies des glandes aréolaires (Montgomery) ; nombre et taille libres, aucun chiffre fiable lu.", "Small round bumps of the areolar (Montgomery) glands; count and size free, no reliable figure read."],
+];
+function sdA3dRel() {
+  return sdA3dManual("a3dRel", SD_A3D_RELIEFS) ? e.a3dRel : "AUTO";
+}
+function sdA3dTub() {
+  return sdA3dManual("a3dTub", SD_A3D_TUBS) ? e.a3dTub : "AUTO";
+}
 function sdA3dOn(t) {
   return "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && !t.photo && sdRevealOk(t);
 }
@@ -6338,6 +6360,8 @@ var SD_A3D_EN = [
   ["TAILLE_PERSONNAGE", "CHARACTER_HEIGHT"], ["MAMELON", "NIPPLE"], ["AREOLE", "AREOLA"], ["PLAT", "FLAT"], ["MOYENNE", "AVERAGE"],
   ["MOYEN", "AVERAGE"], ["SAILLANT", "PROJECTING"], ["OMBILIQUE", "UMBILICATED"], ["GRANDE", "LARGE"], ["areole_G", "areola_L"],
   ["areole_D", "areola_R"],
+  ["RELIEF_AREOLE", "AREOLA_RELIEF"], ["TUBERCULES", "TUBERCLES"], ["PLATEAU", "PLATEAU"], ["PLATE", "FLUSH"], ["HERNIEE", "DOMED"],
+  ["VISIBLES", "VISIBLE"],
 ];
 function sdA3dEnPass(t) {
   if ("en" !== sdLang) return t;
@@ -6391,10 +6415,14 @@ function sdA3dText() {
     manG = "auto" !== (e.a3dGrade || "auto") && sdA3dManual("a3dGrade", SD_A3D_GRADES),
     nip = sdA3dNip(),
     are = sdA3dAre(),
-    nac = "AUTO" !== nip || "AUTO" !== are,
+    rel = sdA3dRel(),
+    tub = sdA3dTub(),
+    /* a geometry asked: the nipple, the relief of the areola or its tubercles, in the "mamelons" shape key */
+    geo = "AUTO" !== nip || "AUTO" !== rel || "AUTO" !== tub,
+    nac = "AUTO" !== nip || "AUTO" !== are || "AUTO" !== rel || "AUTO" !== tub,
     taken =
       sdT(" Une shape key ou un vertex group déjà nommé ", " A shape key or vertex group already named ") +
-      ["AUTO" !== nip ? "\"mamelons\"" : "", "AUTO" !== are ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
+      [geo ? "\"mamelons\"" : "", "AUTO" !== are ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
       sdT(" : arrête-toi et demande, ne renomme rien.", ": stop and ask, rename nothing."),
     pd = "AUTO" === nip ? "" : "OMBILIQUE" === nip ? ", p" : sdT(", p et d", ", p and d"),
     hcm = Math.round(+e.height || 170),
@@ -6498,6 +6526,8 @@ function sdA3dText() {
           ("AUTO" !== nip ? tr("mamelons ", "nipples ") + nip : tr("mamelons du mesh gardés", "the mesh's nipples kept")) +
           ", " +
           ("AUTO" !== are ? tr("aréoles ", "areolas ") + are : tr("aréoles du mesh gardées", "the mesh's areolas kept")) +
+          ("AUTO" !== rel ? tr(", relief de l'aréole ", ", areola relief ") + rel : "") +
+          ("AUTO" !== tub ? tr(", tubercules ", ", tubercles ") + tub : "") +
           tr(" (voir CIBLES).", " (see TARGETS).")
         : ""),
     "",
@@ -6550,6 +6580,8 @@ function sdA3dText() {
     L.push(
       "- MAMELON = " + nip + tr(" (AUTO, PLAT, MOYEN, SAILLANT ou OMBILIQUE ; ", " (AUTO, PLAT, MOYEN, SAILLANT or OMBILIQUE; ") + ("AUTO" !== nip ? tr("choisi à la main", "chosen by hand") : tr("AUTO : le mamelon du mesh, inchangé", "AUTO: the mesh's nipple, unchanged")) + ")",
       "- AREOLE = " + are + tr(" (AUTO, PETITE, MOYENNE ou GRANDE ; ", " (AUTO, PETITE, MOYENNE or GRANDE; ") + ("AUTO" !== are ? tr("choisie à la main", "chosen by hand") : tr("AUTO : l'aréole du mesh, inchangée", "AUTO: the mesh's areola, unchanged")) + ")",
+      "- RELIEF_AREOLE = " + rel + tr(" (AUTO, PLATE, PLATEAU ou HERNIEE ; ", " (AUTO, PLATE, PLATEAU or HERNIEE; ") + ("AUTO" !== rel ? tr("choisi à la main", "chosen by hand") : tr("AUTO : le relief du mesh, inchangé", "AUTO: the mesh's relief, unchanged")) + ")",
+      "- TUBERCULES = " + tub + tr(" (AUTO ou VISIBLES ; ", " (AUTO or VISIBLES; ") + ("AUTO" !== tub ? tr("choisi à la main", "chosen by hand") : tr("AUTO : ceux du mesh, inchangés", "AUTO: the mesh's own, unchanged")) + ")",
       "- TAILLE_PERSONNAGE = " + hcm + tr(" cm (planche ; échelle des cibles en millimètres)", " cm (sheet; scale of the targets in millimetres)"),
     );
   L.push(
@@ -6706,6 +6738,27 @@ function sdA3dText() {
             { PLAT: tr("moyenne de Demiröz moins un écart-type", "Demiröz's mean minus one SD"), MOYEN: tr("entre les moyennes de Demiröz et de Lee", "between the Demiröz and Lee means"), SAILLANT: tr("moyenne de Sanuki", "Sanuki's mean") }[nip] +
             tr("), d = 10 mm (moyenne de Lee ; 13 mm chez Sanuki)", "), d = 10 mm (Lee's mean; 13 mm in Sanuki)"),
       );
+    "AUTO" !== rel &&
+      tg.push(
+        {
+          PLATE: tr("aréole PLATE : |h_ar| ≤ 0,5 mm, son bord sans marche ni bourrelet", "areola PLATE: |h_ar| ≤ 0,5 mm, its edge with no step or ridge"),
+          PLATEAU: tr(
+            "aréole PLATEAU : h_ar > 0, le dessus de l'aréole à peu près plat, son bord monté directement depuis la peau du sein, sans sillon (type « plateau surélevé sans étranglement », 60,2 % des seins chez Sanuki) ; h_ar libre, À VALIDER",
+            "areola PLATEAU: h_ar > 0, the top of the areola roughly flat, its edge rising straight from the skin of the breast, with no groove (the “elevated plateau without constriction” type, 60,2 % of breasts in Sanuki); h_ar free, TO VALIDATE",
+          ),
+          HERNIEE: tr(
+            "aréole HERNIEE : h_ar > 0, l'aréole bombée en dôme, un sillon de resserrement à sa base (hernie aréolaire du sein tubéreux, Grolleau décrit par Denoël et al. 2002) ; h_ar et profondeur du sillon libres, À VALIDER",
+            "areola HERNIEE: h_ar > 0, the areola domed, a constricting groove at its base (the areolar herniation of the tuberous breast, Grolleau as described by Denoël et al. 2002); h_ar and the groove's depth free, TO VALIDATE",
+          ),
+        }[rel],
+      );
+    "AUTO" !== tub &&
+      tg.push(
+        tr(
+          "tubercules VISIBLES : petites bosses arrondies sur l'aréole (glandes aréolaires de Montgomery) ; nombre, taille et position libres, À VALIDER (aucun chiffre publié fiable lu)",
+          "tubercles VISIBLES: small round bumps on the areola (Montgomery's areolar glands); count, size and position free, TO VALIDATE (no reliable published figure read)",
+        ),
+      );
     L.push(tr("Mamelons et aréoles (réglés à la main) : données publiées ; aucune de ces populations ne couvre à elle seule ce personnage.", "Nipples and areolas (set by hand): published data; none of these populations alone covers this character."), "");
     L.push(
       tr("| Source | Population, méthode | Aréole, diamètre | Mamelon, diamètre | Mamelon, hauteur |", "| Source | Population, method | Areola, diameter | Nipple, diameter | Nipple, height |"),
@@ -6737,9 +6790,17 @@ function sdA3dText() {
             "- Areola: the mesh's own, unchanged; D_ar = its diameter, read from its relief or its vertex group; unreadable: stop and ask.",
           ),
     );
+    (nipSet || "AUTO" !== rel) &&
+      L.push(tr("- Plan de l'aréole : plan ajusté par moindres carrés sur les vertices situés entre 0,8 et 1,0 × D_ar / 2 de C.", "- Areola plane: a least-squares plane fitted to the vertices between 0,8 and 1,0 × D_ar / 2 from C."));
+    "AUTO" !== rel &&
+      L.push(
+        tr(
+          "- h_ar : hauteur de l'aréole, distance entre le plan de l'aréole et un plan ajusté sur la peau du sein juste autour (entre 1,0 et 1,3 × D_ar / 2 de C), le long de leur normale moyenne, positive vers l'avant.",
+          "- h_ar: height of the areola, the distance between the areola plane and a plane fitted to the breast skin just around it (between 1,0 and 1,3 × D_ar / 2 from C), along their mean normal, positive forward.",
+        ),
+      );
     nipSet &&
       L.push(
-        tr("- Plan de l'aréole : plan ajusté par moindres carrés sur les vertices situés entre 0,8 et 1,0 × D_ar / 2 de C.", "- Areola plane: a least-squares plane fitted to the vertices between 0,8 and 1,0 × D_ar / 2 from C."),
         tr("- p : distance signée entre ce plan et le ", "- p: the signed distance between this plane and the ") +
           ("OMBILIQUE" === nip ? tr("fond du creux", "bottom of the dip") : tr("sommet du mamelon", "tip of the nipple")) +
           tr(", le long de la normale du plan, négative sous le plan.", ", along the plane's normal, negative below the plane."),
@@ -6752,7 +6813,7 @@ function sdA3dText() {
   L.push("## DEFINITION OF DONE", "");
   L.push(
     (nac
-      ? "AUTO" !== nip
+      ? geo
         ? tr("Shape keys \"nu_relache\" et \"mamelons\" sur le corps ; à 1,0, V1 à V11 OK", "Shape keys \"nu_relache\" and \"mamelons\" on the body; at 1,0, V1 to V11 OK")
         : tr("Shape key \"nu_relache\" et vertex groups des aréoles sur le corps ; à 1,0, V1 à V11 OK", "Shape key \"nu_relache\" and the areola vertex groups on the body; at 1,0, V1 to V11 OK")
       : tr("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK", "Shape key \"nu_relache\" on the body; at 1,0, V1 to V10 OK")) +
@@ -6763,8 +6824,8 @@ function sdA3dText() {
   L.push(tr("1. Blender avec Python (bpy, bmesh, mathutils). Blender absent ou import raté : arrête-toi et signale.", "1. Blender with Python (bpy, bmesh, mathutils). Blender missing or the import failing: stop and report."));
   L.push(
     tr(
-      "2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\"" + ("AUTO" !== nip ? ", celle des mamelons dans \"mamelons\"" : "") + " ; forme de base intacte.",
-      "2. Never overwrite FICHIER_SOURCE; save with the suffix \"_nu\" (.blend) in the same folder. Every deformation in \"nu_relache\"" + ("AUTO" !== nip ? ", that of the nipples in \"mamelons\"" : "") + "; base shape untouched.",
+      "2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\"" + (geo ? ", celle des mamelons et des aréoles dans \"mamelons\"" : "") + " ; forme de base intacte.",
+      "2. Never overwrite FICHIER_SOURCE; save with the suffix \"_nu\" (.blend) in the same folder. Every deformation in \"nu_relache\"" + (geo ? ", that of the nipples and areolas in \"mamelons\"" : "") + "; base shape untouched.",
     ),
   );
   L.push(tr("3. Topologie (vertices, arêtes, faces), UV, vertex groups, poids de skinning et shape keys existants inchangés.", "3. Topology (vertices, edges, faces), UVs, vertex groups, skinning weights and existing shape keys unchanged."));
@@ -6773,8 +6834,8 @@ function sdA3dText() {
   L.push(
     nac
       ? tr(
-          "6. Hors périmètre : textures et UV (couleur et grain de l'aréole compris), jiggle, rig, autres zones ; mamelons et aréoles : seulement ce que demandent MAMELON et AREOLE. Signale les problèmes sans les corriger.",
-          "6. Out of scope: textures and UVs (the areola's color and grain included), jiggle, rig, other areas; nipples and areolas: only what MAMELON and AREOLE ask. Report problems without fixing them.",
+          "6. Hors périmètre : textures et UV (couleur et grain de l'aréole compris), jiggle, rig, autres zones ; mamelons et aréoles : seulement ce que demandent MAMELON, AREOLE, RELIEF_AREOLE et TUBERCULES. Signale les problèmes sans les corriger.",
+          "6. Out of scope: textures and UVs (the areola's color and grain included), jiggle, rig, other areas; nipples and areolas: only what MAMELON, AREOLE, RELIEF_AREOLE and TUBERCULES ask. Report problems without fixing them.",
         )
       : tr("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.", "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig, other areas. Report problems without fixing them."),
   );
@@ -6813,8 +6874,8 @@ function sdA3dText() {
   L.push(tr("   - z_SMS (B) ; grade de la forme de base, reporté.", "   - z_SMS (B); grade of the base shape, reported."));
   L.push(tr("   - V : duplique les faces de poids > 0 dans un bmesh, bmesh.ops.holes_fill, bm.calc_volume().", "   - V: duplicate the faces of weight > 0 into a bmesh, bmesh.ops.holes_fill, bm.calc_volume()."));
   L.push(tr("   - Plan de paroi, P, W, A", "   - Wall plane, P, W, A") + (cone ? "." : tr(" ; règle de la forme de base hors cibles.", "; the rule for a base shape off target.")));
-  nac && L.push(tr("   - Mamelons et aréoles du mesh : C, D_ar", "   - The mesh's nipples and areolas: C, D_ar") + pd + tr(", reportés.", ", reported."));
-  L.push(tr("7. Déformation, uniquement dans \"nu_relache\"", "7. Deformation, only in \"nu_relache\"") + ("AUTO" !== nip ? tr(" (M : dans \"mamelons\")", " (M: in \"mamelons\")") : "") + tr(" :", ":"));
+  nac && L.push(tr("   - Mamelons et aréoles du mesh : C, D_ar", "   - The mesh's nipples and areolas: C, D_ar") + pd + ("AUTO" !== rel ? ", h_ar" : "") + tr(", reportés.", ", reported."));
+  L.push(tr("7. Déformation, uniquement dans \"nu_relache\"", "7. Deformation, only in \"nu_relache\"") + (geo ? tr(" (M : dans \"mamelons\")", " (M: in \"mamelons\")") : "") + tr(" :", ":"));
   L.push(tr("   - A : a. descente pondérée jusqu'à HU_cible (UBP reste au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.", "   - A: a. a weighted lowering to HU_cible (UBP stays at the edge, the drop is on BP); b. a lateral spread of (WBB_avant × r_h) / 2 at the level of BP."));
   methA ||
     L.push(
@@ -6842,14 +6903,26 @@ function sdA3dText() {
   );
   nac &&
     L.push(
-      "AUTO" !== nip
+      geo
         ? tr(
             "   - M (mamelons et aréoles), en fin d'étape 7, dans une shape key \"mamelons\" distincte, calculée sur \"nu_relache\" à 1,0 et ajoutée à la base, pour pouvoir l'enlever seule : ",
             "   - M (nipples and areolas), at the end of step 7, in a separate shape key \"mamelons\", computed on \"nu_relache\" at 1,0 and added to the base, so that it can be removed on its own: ",
           ) +
-            ("OMBILIQUE" === nip
-              ? tr("creux central, le mamelon au fond, le bord de l'aréole inchangé", "a central dip, the nipple at its bottom, the edge of the areola unchanged")
-              : tr("mamelon remodelé autour de C à p et d visés, flancs nets, sommet arrondi", "the nipple reshaped around C to the target p and d, clean sides, a rounded tip")) +
+            [
+              "AUTO" === nip
+                ? tr("le mamelon du mesh gardé", "the mesh's nipple kept")
+                : "OMBILIQUE" === nip
+                  ? tr("creux central, le mamelon au fond, le bord de l'aréole inchangé", "a central dip, the nipple at its bottom, the edge of the areola unchanged")
+                  : tr("mamelon remodelé autour de C à p et d visés, flancs nets, sommet arrondi", "the nipple reshaped around C to the target p and d, clean sides, a rounded tip"),
+              {
+                PLATE: tr("aréole ramenée au ras du sein", "the areola brought flush with the breast"),
+                PLATEAU: tr("aréole surélevée en plateau, bord net sans sillon", "the areola raised as a plateau, a clean edge with no groove"),
+                HERNIEE: tr("aréole bombée en dôme, un sillon à sa base", "the areola domed, a groove at its base"),
+              }[rel] || "",
+              "AUTO" !== tub ? tr("petites bosses arrondies sur l'aréole", "small round bumps on the areola") : "",
+            ]
+              .filter(Boolean)
+              .join(tr(" ; ", "; ")) +
             ("AUTO" !== are ? tr(" ; vertex groups des aréoles au diamètre D_ar", "; areola vertex groups at the diameter D_ar") : "") +
             tr(
               " ; seuls les vertices du disque de l'aréole bougent. Topologie inchangée : trop peu de vertices dans le disque pour porter la forme (moins de 3 anneaux d'arêtes dans d, seuil À VALIDER) : arrête-toi et signale, ne subdivise pas.",
@@ -6863,7 +6936,7 @@ function sdA3dText() {
     );
   L.push(
     tr("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6", "8. Measures AFTER: BP, UBP and the lowest point detected again; z_SMS from step 6") +
-      (nac ? tr(" ; C, D_ar", "; C, D_ar") + pd + ("AUTO" !== nip ? tr(" avec \"mamelons\" à 1,0", " with \"mamelons\" at 1,0") : "") : "") +
+      (nac ? tr(" ; C, D_ar", "; C, D_ar") + pd + ("AUTO" !== rel ? ", h_ar" : "") + (geo ? tr(" avec \"mamelons\" à 1,0", " with \"mamelons\" at 1,0") : "") : "") +
       ".",
   );
   L.push(tr("9. Vérifications, \"nu_relache\" à 1,0 :", "9. Checks, \"nu_relache\" at 1,0:"));
@@ -6894,7 +6967,13 @@ function sdA3dText() {
         [
           "AUTO" !== are ? tr("diamètre de \"areole_G\" et \"areole_D\" = D_ar à ± 2 mm mis à l'échelle", "diameter of \"areole_G\" and \"areole_D\" = D_ar within ± 2 mm, scaled") : "",
           "AUTO" === nip ? "" : "OMBILIQUE" === nip ? tr("p < 0, le fond du creux au centre de l'aréole", "p < 0, the bottom of the dip at the centre of the areola") : tr("p et d à leur cible, à ± 1 mm et ± 2 mm mis à l'échelle", "p and d at their target, within ± 1 mm and ± 2 mm, scaled"),
-          "AUTO" !== nip ? tr("\"mamelons\" à 0 : V1 à V10 inchangés ; dans \"mamelons\", vertices hors des disques des aréoles déplacés de 1e-6 unité de scène au plus", "\"mamelons\" at 0: V1 to V10 unchanged; in \"mamelons\", vertices outside the areola discs moved by 1e-6 scene unit at most") : "",
+          {
+            PLATE: tr("|h_ar| ≤ 0,5 mm mis à l'échelle", "|h_ar| ≤ 0,5 mm, scaled"),
+            PLATEAU: tr("h_ar > 0, pas de sillon au bord de l'aréole", "h_ar > 0, no groove at the edge of the areola"),
+            HERNIEE: tr("h_ar > 0, un sillon au bord de l'aréole", "h_ar > 0, a groove at the edge of the areola"),
+          }[rel] || "",
+          "AUTO" !== tub ? tr("des bosses sur l'aréole, leur nombre reporté", "bumps on the areola, their count reported") : "",
+          geo ? tr("\"mamelons\" à 0 : V1 à V10 inchangés ; dans \"mamelons\", vertices hors des disques des aréoles déplacés de 1e-6 unité de scène au plus", "\"mamelons\" at 0: V1 to V10 unchanged; in \"mamelons\", vertices outside the areola discs moved by 1e-6 scene unit at most") : "",
         ]
           .filter(Boolean)
           .join(tr(" ; ", "; ")) +
@@ -6911,7 +6990,7 @@ function sdA3dText() {
         "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à " + (nac ? "V11" : "V10") + " OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE",
         "per side, every before/after measure with its target and ΔV%; free parameters TO VALIDATE; V1 to " + (nac ? "V11" : "V10") + " OK or FAILED with values; anomalies (missing geometry, inherited shape, original cone, asymmetry, insufficient topology, interfering modifiers); UNVERIFIABLE list",
       ) +
-      (nac ? tr(" ; mamelons et aréoles : C, D_ar", "; nipples and areolas: C, D_ar") + pd + tr(" par côté, avant et après, avec cibles et écarts", " per side, before and after, with targets and gaps") : "") +
+      (nac ? tr(" ; mamelons et aréoles : C, D_ar", "; nipples and areolas: C, D_ar") + pd + ("AUTO" !== rel ? ", h_ar" : "") + ("AUTO" !== tub ? tr(", nombre de tubercules", ", tubercle count") : "") + tr(" par côté, avant et après, avec cibles et écarts", " per side, before and after, with targets and gaps") : "") +
       ".",
   );
   L.push(tr("4. Captures PNG avant/après et carte de poids.", "4. Before/after PNG screenshots and the weight map."), "");
@@ -6923,7 +7002,7 @@ function sdA3dText() {
         ? tr("Faire descendre le mamelon sous le sillon, faire passer le sein sous le sillon, vider le haut du sein ou l'écarter au-delà d'ECARTEMENT ; ", "Lowering the nipple below the fold, letting the breast pass below the fold, emptying the upper breast or spreading it beyond ECARTEMENT; ")
         : tr("Garder une forme soutenue (haut rond et plein, mamelon haut) en grade ", "Keeping a supported shape (a round, full upper breast, a high nipple) at grade ") + grade + tr(" ; écarter au-delà d'ECARTEMENT ; ", "; spreading beyond ECARTEMENT; ")) +
       (cone ? "" : tr("livrer un profil en cône ou en obus ; ", "delivering a cone or bullet profile; ")) +
-      (nac ? tr("toucher aux mamelons ou aux aréoles au-delà de MAMELON et AREOLE ; peindre une texture ; ", "touching the nipples or areolas beyond MAMELON and AREOLE; painting a texture; ") : "") +
+      (nac ? tr("toucher aux mamelons ou aux aréoles au-delà de MAMELON, AREOLE, RELIEF_AREOLE et TUBERCULES ; peindre une texture ; ", "touching the nipples or areolas beyond MAMELON, AREOLE, RELIEF_AREOLE and TUBERCULES; painting a texture; ") : "") +
       tr("ramener la poitrine à une forme moyenne ; inventer un grade ou des ratios ; annoncer « terminé » sans rapport.", "bringing the bust back to an average shape; inventing a grade or ratios; announcing “done” without a report."),
   );
   return sdA3dEnPass(L.join("\n"));
@@ -7011,6 +7090,10 @@ function sdAgent3d(t, set) {
       sdA3dChips(t, set, "a3dNip", SD_A3D_NIPS),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Aréoles", "Areolas") }),
       sdA3dChips(t, set, "a3dAre", SD_A3D_AREOLAS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Relief de l'aréole", "Areola relief") }),
+      sdA3dChips(t, set, "a3dRel", SD_A3D_RELIEFS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Tubercules de Montgomery", "Montgomery tubercles") }),
+      sdA3dChips(t, set, "a3dTub", SD_A3D_TUBS),
       (0, l.jsx)("textarea", { readOnly: !0, value: txt, rows: 8, className: "mt-2 w-full rounded-md border bg-card p-2 font-mono text-xs", "aria-label": sdT("Prompt de l'agent 3D", "3D agent prompt") }),
       (0, l.jsx)("button", {
         type: "button",

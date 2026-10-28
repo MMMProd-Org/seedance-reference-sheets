@@ -1129,6 +1129,20 @@ with sync_playwright() as p:
     areola_auto.click()
     text = agent.evaluate(A3D)
     assert "nipple UMBILICATED: p < 0" in text and "- AREOLA = AUTO (" in text and "d = 10 mm" not in text and "D_ar = 41 mm" not in text and "D_ar = its diameter" in text, text[-800:]
+    # "Areola relief" and "Montgomery tubercles": geometry in the "nipples" shape key, their inputs and check
+    agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
+    agent.locator("[data-a3d='a3dTub:VISIBLES']").click()
+    assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
+    text = agent.evaluate(A3D)
+    for want in ("- AREOLA_RELIEF = DOMED (", "- TUBERCLES = VISIBLE (", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
+                 "tubercles VISIBLE: small round bumps on the areola", "- h_ar: height of the areola", "h_ar > 0, a groove at the edge of the areola",
+                 "Shape keys \"bare_rest\" and \"nipples\""):
+        assert want in text, (want, text[-800:])
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3D)
+    for want in ("- RELIEF_AREOLE = HERNIEE (", "- TUBERCULES = VISIBLES (", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
+        assert want in text, (want, text[-800:])
+    set_lang(agent, "English", "en")
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
     panel = "() => [...document.querySelectorAll('#sd-a3d summary, #sd-a3d p, #sd-a3d button')].map((n) => [n.textContent.trim(), n.title])"
     en = agent.evaluate(panel)
