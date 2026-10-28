@@ -1705,8 +1705,8 @@ function sdPoseTxt0(s) {
       .split("so each side of the outline shows a double curve, the hip and then the saddlebag below it, in the front and back views").join("so each side of the outline widens again below the hip at the saddlebag, in the front and back views")
       .split(" rather than one smooth, idealized curve").join("")
       .split(" Front view: each side of the lower body shows the double curve, hip then saddlebag, never a single smooth curve.").join(""));
-  /* v157 review: a slender bust never said wide at the base; an athletic bust from "Généreuse" up keeps its tissue */
-  "slender" === e.bustShape &&
+  /* v157 review: a slender bust never said wide at the base; an athletic bust from "Généreuse" up keeps its tissue; nor a tuberous one */
+  ("slender" === e.bustShape || "tuberous" === e.bustShape) &&
     (s = s
       .split(" with a wide base spanning the full width of the chest, its outer edges reaching the inner side of the upper arms in the front view").join("")
       .split(", its base covering most of the width of the chest in the front view").join("")
@@ -2996,6 +2996,12 @@ var SD_BUST_POS = {
   /* v157c (user, on his reference: "c'est une poitrine qui goutte vers l'avant", the shape and the spacing groups gave no forward
      projection): pointing ahead, the slight natural outward angle kept (his photos), the projection read in the side views */
   fwd: "each side projecting straight forward, only slightly angled outward, the forward projection clear in the side views, never implant-like",
+  /* follow-up of v158 (user: "analyser la forme des seins ... pour avoir un logiciel qui est capable de faire tout le monde"): "Basse", the
+     placement of 20% of 156 white American women of 26 to 35 scanned in 3D (Suh and Park, "Breast Geometry Characterization of Young
+     American Females Using 3D Image Analysis", Applied Sciences 2022, 12(17):8578: high 36%, medium 44%, low and open 20%; 61% of the
+     large busts low and open, none high; the droopy cluster never low and open). Its "open" part is the spacing group's (Écartée, Vers
+     l'extérieur), so the two can be ticked together; never with "Tombante" or the chute, whose texts give their own low landmarks. */
+  lowset: "set low on the chest: the fullest point near the bottom of the ribcage, a long, gently sloping upper part above it",
 };
 var SD_BUST_NOHIGH = ["low", "pear", "slender"];
 /* a drooping, pear, slender or athletic shape (flatter in profile) and a chute never point straight forward; v157c review: nor the conical
@@ -3021,7 +3027,8 @@ function sdBustPos() {
   if (!sdBustOk()) return "";
   /* v157 review: no height below "Moyenne" (a nearly flat bust "set high, the upper part full" contradicts itself); "firm" never next to a
      setting of "Peau de la poitrine" */
-  var h = SD_BUST_NOHIGH.indexOf(e.bustShape) >= 0 || sdDropX() || !(e.chest >= 2) ? "" : SD_BUST_POS[e.bustHigh] || "",
+  /* "Basse" goes with every shape but "Tombante" (its own low landmarks), the chute too */
+  var h = ("lowset" === e.bustHigh ? "low" === e.bustShape : SD_BUST_NOHIGH.indexOf(e.bustShape) >= 0) || sdDropX() || !(e.chest >= 2) ? "" : SD_BUST_POS[e.bustHigh] || "",
     w = "close" === e.bustWide || "out" === e.bustWide ? SD_BUST_POS[e.bustWide] : "";
   sdBustFwdOn() && (w = SD_BUST_POS.fwd);
   /* "never implant-like" once */
@@ -3037,8 +3044,10 @@ var SD_BUST_UI = [
   ["athletic", "Athlétique", "f"],
   ["slender", "Fine et allongée", "f"],
   ["low", "Tombante", "f"],
+  ["tuberous", "Tubéreuse", "f"],
   ["high", "Haute", "h"],
   ["vhigh", "Très haute", "h"],
+  ["lowset", "Basse", "h"],
   ["wide", "Écartée", "w"],
   ["close", "Rapprochée", "w"],
   ["out", "Vers l'extérieur", "w"],
@@ -3049,9 +3058,10 @@ var SD_BUST_UI = [
 function sdBustSel(t) {
   var f = t.bustShape,
     o = [];
-  ["round", "teardrop", "conical", "pear", "athletic", "slender", "low"].indexOf(f) >= 0 && o.push(f);
+  ["round", "teardrop", "conical", "pear", "athletic", "slender", "low", "tuberous"].indexOf(f) >= 0 && o.push(f);
   ("high" === f || "high" === t.bustHigh) && o.push("high");
   "vhigh" === t.bustHigh && o.indexOf("high") < 0 && o.push("vhigh");
+  "lowset" === t.bustHigh && o.indexOf("high") < 0 && o.push("lowset");
   /* v157 review: the spacing of a saved shape first, as the prompt says it */
   var w = "wide" === f ? "wide" : "close" === f ? "close" : "eastwest" === f ? "out" : "yes" === t.bustWide ? "wide" : "close" === t.bustWide ? "close" : "out" === t.bustWide ? "out" : "fwd" === t.bustWide ? "fwd" : "";
   w && o.push(w);
@@ -3079,6 +3089,10 @@ function sdBustClick(t, id) {
   nh && hh && (sel = sel.filter(function (x) {
     return SD_BUST_NOHIGH.indexOf(id) >= 0 ? "high" !== x && "vhigh" !== x : SD_BUST_NOHIGH.indexOf(x) < 0;
   }));
+  /* "Basse" and "Tombante", whose text has its own low landmarks, never together: the last click wins */
+  sel.indexOf("low") >= 0 && sel.indexOf("lowset") >= 0 && (sel = sel.filter(function (x) {
+    return "low" === id ? "lowset" !== x : "low" !== x;
+  }));
   /* v157c: "Vers l'avant" and a drooping, pear, slender or athletic shape never together: the last click wins */
   var nf = sel.some(function (x) {
     return SD_BUST_NOFWD.indexOf(x) >= 0;
@@ -3105,13 +3119,13 @@ function sdBustClick(t, id) {
 function sdBustAuto(t) {
   var sel = sdBustSel(t),
     w = sel.indexOf("wide") >= 0 ? "yes" : sel.indexOf("close") >= 0 ? "close" : sel.indexOf("out") >= 0 ? "out" : sel.indexOf("fwd") >= 0 ? "fwd" : "no";
-  return { bustShape: "auto", bustHigh: sel.indexOf("high") >= 0 ? "high" : sel.indexOf("vhigh") >= 0 ? "vhigh" : "auto", bustWide: w, bustAsym: sel.indexOf("asym") >= 0 ? "yes" : "no" };
+  return { bustShape: "auto", bustHigh: sel.indexOf("high") >= 0 ? "high" : sel.indexOf("vhigh") >= 0 ? "vhigh" : sel.indexOf("lowset") >= 0 ? "lowset" : "auto", bustWide: w, bustAsym: sel.indexOf("asym") >= 0 ? "yes" : "no" };
 }
 function sdBustChips(t, set, hint) {
   if ("person" !== t.mode || sdChild(t) || "m" === t.pres || !(t.chest >= 1)) return null;
   var sel = sdBustSel(t),
     auto = !sel.some(function (x) {
-      return ["round", "teardrop", "conical", "pear", "athletic", "slender", "low"].indexOf(x) >= 0;
+      return ["round", "teardrop", "conical", "pear", "athletic", "slender", "low", "tuberous"].indexOf(x) >= 0;
     }),
     cls = "relative inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium cursor-pointer select-none transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring ",
     chip = function (id, lab, on, click) {
@@ -3159,8 +3173,8 @@ function sdBustChips(t, set, hint) {
         children: (0, l.jsx)(SdMore, {
           text:
             sdT(
-              "Coche plusieurs choix, un par groupe : la forme (Ronde, Goutte, En obus, Poire, Athlétique, Fine et allongée, Tombante), la hauteur (Haute, Très haute, dès « Moyenne »), l'écartement (Écartée, Rapprochée, Vers l'extérieur, Vers l'avant dès « Moyenne ») et Asymétrique. Goutte décrit le profil (le bas plus plein), pas l'orientation. Tombante, Poire et Fine et allongée ne vont pas avec une hauteur ; Tombante, Poire, Fine et allongée, Athlétique et En obus (déjà projetée vers l'avant) ne vont pas avec Vers l'avant. Sans forme cochée : Auto, selon l'âge, ronde avec une hauteur ou Vers l'avant.",
-              "Tick several, one per group: the shape (Round, Teardrop, Conical, Pear, Athletic, Slender, Drooping), the height (High, Very high, from “Average” up), the spacing (Wide-set, Close-set, East-west, Forward from “Average” up) and Asymmetric. Teardrop is the profile (the lower half fuller), not the direction. Drooping, Pear and Slender do not go with a height; Drooping, Pear, Slender, Athletic and Conical (already projecting forward) do not go with Forward. No shape ticked: Auto, by age, round with a height or Forward.",
+              "Coche plusieurs choix, un par groupe : la forme (Ronde, Goutte, En obus, Poire, Athlétique, Fine et allongée, Tombante, Tubéreuse), la hauteur (Haute, Très haute, Basse, dès « Moyenne »), l'écartement (Écartée, Rapprochée, Vers l'extérieur, Vers l'avant dès « Moyenne ») et Asymétrique. Goutte décrit le profil (le bas plus plein), pas l'orientation. Tubéreuse : base étroite et resserrée, le bas court, l'aspect tubulaire. Basse : posée bas sur le thorax ; pour une poitrine basse et ouverte, coche aussi Écartée ou Vers l'extérieur ; pas avec Tombante. Tombante, Poire et Fine et allongée ne vont pas avec Haute ni Très haute ; Tombante, Poire, Fine et allongée, Athlétique et En obus (déjà projetée vers l'avant) ne vont pas avec Vers l'avant. Sans forme cochée : Auto, selon l'âge, ronde avec une hauteur ou Vers l'avant.",
+              "Tick several, one per group: the shape (Round, Teardrop, Conical, Pear, Athletic, Slender, Drooping, Tuberous), the height (High, Very high, Low, from “Average” up), the spacing (Wide-set, Close-set, East-west, Forward from “Average” up) and Asymmetric. Teardrop is the profile (the lower half fuller), not the direction. Tuberous: a narrow, constricted base, a short lower half, a tubular look. Low: set low on the chest; for a low, open bust, also tick Wide-set or East-west; not with Drooping. Drooping, Pear and Slender do not go with High or Very high; Drooping, Pear, Slender, Athletic and Conical (already projecting forward) do not go with Forward. No shape ticked: Auto, by age, round with a height or Forward.",
             ) + (hint ? " " + sdTr(hint) : ""),
         }),
       }),
@@ -3176,6 +3190,7 @@ function sdAsymGpt(x) {
   x = sdBustPos() ? (x ? x + "; " : "") + sdBustPosIn(x) : x;
   x = sdWideOn() ? (x ? x + "; " : "") + SD_WIDE_GPT : x;
   x = sdBustSkin() ? (x ? x + "; " : "") + sdBustSkin() : x;
+  x = sdBustVeins() ? (x ? x + "; " : "") + sdBustVeins() : x;
   return sdAsymOn() ? (x ? x + "; " : "") + SD_ASYM_GPT : x;
 }
 /* v140 (user's reference photo: a low, teardrop bust that is also wide-set, two shapes the "Forme" choice kept apart): "Écartement de la
@@ -3192,6 +3207,16 @@ var SD_BUST_SKIN = {
   soft: "the skin of the bust supple, settling with its weight, with a gentle fold only where the bust rests on the ribcage, wherever the outfit leaves it bare",
   loose: "the skin of the bust relaxed, finely creased on the upper slope, with a gentle crease at the bottom, wherever the outfit leaves it bare",
 };
+/* follow-up of v158 (user: "il y a aussi des [veines] qui sortent du sein"): "Veines du buste", bluish superficial veins on the upper
+   chest and the upper bust, where the outfit leaves the skin bare, both engines. No published frequency was found: a design choice, to
+   check on renders. Words kept away from the ones the lessons file lists (no "breasts", no "nipples"). */
+var SD_BUST_VEINS = {
+  light: "faint bluish veins showing through the thin skin of the upper chest and the upper bust, wherever the outfit leaves it bare",
+  visible: "bluish veins clearly visible under the skin of the upper chest and the upper bust, branching downward, wherever the outfit leaves it bare",
+};
+function sdBustVeins() {
+  return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1 && SD_BUST_VEINS[e.bustVeins] ? SD_BUST_VEINS[e.bustVeins] : "";
+}
 function sdBustSkin() {
   return "person" === e.mode && !sdChild(e) && "m" !== e.pres && sdCi(e.chest) >= 2 && !sdDropX() && SD_BUST_SKIN[e.bustSkin] ? SD_BUST_SKIN[e.bustSkin] : "";
 }
@@ -5043,23 +5068,29 @@ function sdBust() {
             close: "close-set: both sides sitting close to the center of the chest, little space between them, the inner edges nearly touching",
             eastwest: "each side angled outward, pointing away from the center of the chest toward the sides, a clear gap between them at the center",
             slender: "slender: narrow at the base and longer than wide, sitting a little low and pointing slightly downward, little fullness at the top",
+            /* follow-up of v158 (user, same request): the tuberous shape, from the grades of Grolleau as described by Denoël, Soubirac,
+               Lopez, Grolleau and Chavoin, "Les seins tubéreux : une mise au point", Revue Médicale de Liège 2002, 57(10):655-660 (grade I
+               56%, II 26%, III 18% of their cases, not a prevalence): a lower pole deficient, a narrowed base, a tubular look; its areola
+               (enlarged, herniated) is hidden by the outfit, so not said */
+            tuberous: "tuberous: a narrow, constricted base and a short, underdeveloped lower half with a high, tight crease below it, so each side looks tubular, projecting forward and pointing slightly down",
           }[e.bustShape]
         : "";
   sdBustPos() && (sh = (sh ? sh + "; " : "") + sdBustPosIn(sh));
   sdWideOn() && (sh = (sh ? sh + "; " : "") + SD_WIDE_SD);
   sdBustSkin() && (sh = (sh ? sh + "; " : "") + sdBustSkin());
+  sdBustVeins() && (sh = (sh ? sh + "; " : "") + sdBustVeins());
   sdAsymOn() && (sh = (sh ? sh.replace("; slightly uneven, the left side a little lower", "") + "; " : "") + SD_ASYM_SD);
   var big = 5 === ci,
     out =
       size +
       (cup ? " (" + cup + ")" : "") +
       /* "Assez généreuse": same front landmark as the GPT text (v93); not with the conical shape, whose base is narrow */
-      (3 === ci && "conical" !== e.bustShape ? ", its base covering most of the width of the chest in the front view" : "") +
+      (3 === ci && ["conical", "tuberous"].indexOf(e.bustShape) < 0 ? ", its base covering most of the width of the chest in the front view" : "") +
       /* v135 (user: with "Moyenne" on a slim body the bust came out small in every sheet, the profile 1.4 to 1.5% of the body height ahead of
          the ribs; one step up, 2.1%, was the bust wanted): on a slim build (Mince, Très mince) the medium bust is said full for the frame,
          with the front landmark of "Assez généreuse" (calibration on the user's renders, not a measurement) */
-      (2 === ci && e.fat <= 1 && "conical" !== e.bustShape && !sdDropX() ? ", full for " + ("f" === e.pres ? "her" : "the") + " slim frame, covering most of the chest width" : "") +
-      (c >= 3 && !big && ["low", "conical"].indexOf(e.bustShape) < 0 ? " with a wide base" : "") +
+      (2 === ci && e.fat <= 1 && ["conical", "tuberous"].indexOf(e.bustShape) < 0 && !sdDropX() ? ", full for " + ("f" === e.pres ? "her" : "the") + " slim frame, covering most of the chest width" : "") +
+      (c >= 3 && !big && ["low", "conical", "tuberous"].indexOf(e.bustShape) < 0 ? " with a wide base" : "") +
       (3 === c && ["pear", "conical"].indexOf(e.bustShape) >= 0 ? ", clearly larger than average" : "") +
       (sh ? ", " + sh : "");
   /* "Très généreuse": visibly bigger than "Généreuse" through landmarks and its cup (about an H, v80), no nipple wording */

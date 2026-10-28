@@ -4394,6 +4394,38 @@ rep('''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);''', '''
 rep('''    t1("glutes", e.glutes) +
     (3 === e.glutes ? " in proportion with the hips" : "") +''', '''    sdGlVol(t1("glutes", e.glutes)) +
     (3 === e.glutes ? " in proportion with the hips" : "") +''')
+# P157 (follow-up of v158): "Tubéreuse" (GPT's line; Seedream's in seedream_new.js), "Veines du buste" (bustVeins: Auto, Légères,
+# Visibles) before "Peau de la poitrine", the GPT bust phrase said with it
+rep('''      ["slender", "Fine et allongée", "a slender bust line: narrow at the base and longer than wide, sitting a little low and pointing slightly downward, little fullness at the top"],
+''', '''      ["slender", "Fine et allongée", "a slender bust line: narrow at the base and longer than wide, sitting a little low and pointing slightly downward, little fullness at the top"],
+      ["tuberous", "Tubéreuse", "a tuberous bust line: a narrow, constricted base, the lower half short and underdeveloped with a high, tight crease below it, each side looking tubular, projecting forward and pointing slightly down"],
+''')
+rep('''    cupTG: "h",\n    bustSkin: "auto",\n''', '''    cupTG: "h",\n    bustSkin: "auto",\n    bustVeins: "auto",\n''')
+rep('''    bustSkin: [
+      ["auto", "Auto", ""],''', '''    bustVeins: [
+      ["auto", "Auto", ""],
+      ["light", "Légères", ""],
+      ["visible", "Visibles", ""],
+    ],
+    bustSkin: [
+      ["auto", "Auto", ""],''')
+rep('''        {
+          t: "chips",
+          k: "bustSkin",
+          l: "Peau de la poitrine",''', '''        {
+          t: "chips",
+          k: "bustVeins",
+          l: "Veines du buste",
+          show: function () {
+            return "person" === e.mode && !sdChild(e) && "m" !== e.pres && e.chest >= 1;
+          },
+          hint: "Veines bleutées sous la peau du haut de la poitrine et du buste, là où la tenue la découvre. Légères : fines, à peine visibles. Visibles : nettes, qui se ramifient vers le bas. Aucune fréquence publiée trouvée : à vérifier sur tes rendus.",
+        },
+        {
+          t: "chips",
+          k: "bustSkin",
+          l: "Peau de la poitrine",''')
+rep('''!!sdBustSkin() || !!sdBustPos()))) return "";''', '''!!sdBustSkin() || !!sdBustPos() || !!sdBustVeins()))) return "";''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
