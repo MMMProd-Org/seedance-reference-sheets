@@ -775,6 +775,29 @@ with sync_playwright() as p:
         slim.close()
     assert not errors, errors
 
+    # Thighs the leg definition says soft (hip and thigh fat from "Light", saddlebags, cellulite, front thigh fat from "Visible")
+    # are never "slim, lean thighs" in the size line, in either engine (owner's render, 2026-10-28); without them "lean" stays.
+    for model in ("seedream", "gpt"):
+        for extra, lean in (
+            ("", True),
+            ("fatLower: 1", False),
+            ("fatLower: 4", False),
+            ("saddle: 'light'", False),
+            ("cellulite: 'light'", False),
+            ("fatThighs: 1", True),
+            ("fatThighs: 2", False),
+        ):
+            soft = clipboard_page(browser, errors)
+            soft.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'person', style: 'photo', pres: 'f', age: 26, faceSeed: 5, fat: 1, thighs: 1, headless: true, bodyRef: true,
+                refCover: 'tanga', {extra}}}))""")
+            soft.reload()
+            text = "\n".join(prompts(soft))
+            assert ("slim, lean thighs, clearly narrower than the hips" in text) == lean, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            assert lean or "slim thighs, clearly narrower than the hips" in text, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            soft.close()
+    assert not errors, errors
+
     # A saved GPT session from before the model choice was recorded keeps GPT, and so does one saved by an earlier build
     # without a hand pick for a subject Seedream can do; a first visit opens on Seedream.
     kept = clipboard_page(browser, errors)

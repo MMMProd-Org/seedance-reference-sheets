@@ -5169,7 +5169,10 @@ function sdOptFix(k, x) {
   if ("pecs" === k) return "flat chest" === x && sdFatOn("fatChest") >= 2 ? "chest with little muscle under the fat" : x;
   if ("thighs" === k) {
     /* v139: thighs carrying fat at the front from "Visible" up are never said lean */
-    sdFatOn("fatThighs") >= 2 && (x = x.replace("slim, lean thighs", "slim thighs"));
+    /* owner's render, 2026-10-28 ("Graisse : hanches et cuisses" at "Légère" on "Fines" thighs, no difference): the same for every soft
+       thigh the leg definition already says soft (sdThighSoft: hip and thigh fat, saddlebags or cellulite, as well as the front fat),
+       never "slim, lean thighs" next to it (both engines) */
+    sdThighSoft() && (x = x.replace("slim, lean thighs", "slim thighs"));
     /* v140: "Intérieur des cuisses" set to touching: no gap said by the size */
     sdPick(SD_THIGHGAP, "thighGap") && "gap" !== e.thighGap && (x = x.replace(" with a clear gap between them", ""));
     /* v141 (prompt check): "not bulky" never next to visible saddlebags, marked hip and thigh fat or front thigh fat */
