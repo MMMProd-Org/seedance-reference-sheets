@@ -1,0 +1,145 @@
+/* sd-design (v152): restyle layer over the compiled original CSS, inserted after it by patch_new.py (P108).
+   Style dealt by design-taste-frontend (app screen, kind builder): "framed-sheet", seed 1168561698, brand kept
+   (Schibsted Grotesk, JetBrains Mono for prompts and file names, gaffer-tape orange).
+   Face: a film set's tape labels, black marker on orange gaffer tape: the copy actions carry a near-black label on
+   the orange (5.2:1, was white at 3.6:1). Mark: the sheet itself, four panels, before the title.
+   No markup, text or behaviour change: selectors use the compiled class names and the ARIA attributes. */
+
+/* tokens. --border (216 12% 84%, #d1d5db) stays the line of every control (chips, tracks, switches, fields, the name's
+   underline); only the surfaces take the lighter --edge */
+:root {
+  --background: 216 14% 96%;   /* frame, was 216 14% 91% (#e5e7eb) */
+  --edge: 216 14% 91%;         /* sheet and card edges, rules between rows: #e5e7eb, 1.24:1 on white (#d1d5db is 1.48:1) */
+  --tape-ink: 220 16% 8%;      /* label on the orange: near-black, 5.2:1 (white was 3.6:1) */
+  --tape-text: 18 100% 40%;    /* orange as text on white: #cc3d00, 4.95:1 (the fill #f54900 is 3.6:1) */
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) { --tape-text: 20 100% 58%; --edge: 220 8% 21%; }
+}
+:root[data-theme=dark] { --tape-text: 20 100% 58%; --edge: 220 8% 21%; }
+
+/* orange text reads at 4.5:1 or more */
+.text-\[hsl\(var\(--tape\)\)\] { color: hsl(var(--tape-text)); }
+
+/* sheets: one 1px edge, 16px corners, no shadow */
+section.rounded-3xl.bg-card {
+  border: 1px solid hsl(var(--edge));
+  border-radius: 16px;
+  box-shadow: none;
+}
+.shadow-sm[role=radiogroup] { box-shadow: none; }
+
+/* cards, boxes and row rules take the lighter edge; boxes with an edge colour of their own (orange, transparent) keep it, a
+   dashed box keeps the stronger line (a 1px dash at 1.24:1 nearly vanishes), and so does the phone's floating bottom bar (border-t) */
+.rounded-2xl.border:not([role=radiogroup]):not([class*="border-["]):not(.border-dashed),
+div.rounded-xl.border:not([class*="border-["]):not(.border-transparent),
+.border-b {
+  border-color: hsl(var(--edge));
+}
+
+/* fields: white with the control line, never a grey well (the orange focus edge still wins) */
+textarea.bg-muted, input.bg-muted {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+:is(input, textarea)[class]::placeholder { color: hsl(var(--muted-foreground) / .88); }
+
+/* settings tabs: a 2px underline on the tab rule, no pill. The row never wraps (an underline on a first row would float
+   between rows, at a large text zoom say): it scrolls sideways instead, and since a scrolling row clips at its padding box,
+   the rule is drawn inside it, under the tabs */
+[role=tablist] {
+  padding-bottom: 0;
+  column-gap: 8px;
+  margin-left: -8px;
+  margin-right: -8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  border-bottom-width: 0;
+  box-shadow: inset 0 -1px 0 hsl(var(--edge));
+}
+[role=tablist]::-webkit-scrollbar { display: none; }
+[role=tab] {
+  border-radius: 0;
+  padding: 10px 8px 11px;
+  border-bottom: 2px solid transparent;
+  background-color: transparent;
+}
+[role=tab][aria-selected=true] {
+  background-color: transparent;
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--foreground));
+}
+[role=tab]:focus-visible { border-radius: 6px; box-shadow: inset 0 0 0 2px hsl(var(--ring)); }
+
+/* section jumps: quiet grey pills, so they no longer look like the choices below them */
+#sd-secnav button[data-sec-go] {
+  border-color: transparent;
+  background-color: hsl(var(--secondary));
+  transition: background-color .15s;
+}
+#sd-secnav button[data-sec-go]:hover { border-color: transparent; background-color: hsl(var(--edge)); }
+
+/* green actions (Exporter, Importer, « Copié ») in dark: the dark label, as on the orange (white on that green is 2.6:1, the dark label 7.5:1) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme=light]) button.text-white[style*="--ok"],
+  :root:not([data-theme=light]) .bg-\[hsl\(var\(--ok\)\)\].text-white { color: hsl(var(--tape-ink)); }
+}
+:root[data-theme=dark] button.text-white[style*="--ok"],
+:root[data-theme=dark] .bg-\[hsl\(var\(--ok\)\)\].text-white { color: hsl(var(--tape-ink)); }
+
+/* copy actions: legible when disabled (grey, not a 40% orange) */
+button.tape-chip:disabled {
+  opacity: 1;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+  filter: none;
+}
+
+/* the product's mark: a 16:9 reference sheet split in four equal panels, as the prompts describe it, in the tape */
+header h1::before {
+  content: "";
+  display: inline-block;
+  width: 1.07em;
+  height: .6em;
+  margin-right: .32em;
+  vertical-align: .04em;
+  background-color: hsl(var(--tape));
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 18'%3E%3Crect x='0' width='6.8' height='18' rx='1'/%3E%3Crect x='8.4' width='6.8' height='18' rx='1'/%3E%3Crect x='16.8' width='6.8' height='18' rx='1'/%3E%3Crect x='25.2' width='6.8' height='18' rx='1'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 18'%3E%3Crect x='0' width='6.8' height='18' rx='1'/%3E%3Crect x='8.4' width='6.8' height='18' rx='1'/%3E%3Crect x='16.8' width='6.8' height='18' rx='1'/%3E%3Crect x='25.2' width='6.8' height='18' rx='1'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* phone (Tailwind's sm starts at 640px): the frame goes, the sheets run to the screen edges; rows that scroll sideways run
+   to the edge too */
+@media (width < 640px) {
+  section.rounded-3xl.bg-card {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+    border-left-width: 0;
+    border-right-width: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  [role=tablist] {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  html body #sd-secnav {
+    margin-left: -16px;
+    margin-right: -16px;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+/* at exactly 640px the runtime section-row style (max-width: 640px) still sets a 4px inset inside a framed sheet: none */
+@media (min-width: 640px) and (max-width: 640px) {
+  html body #sd-secnav { padding-left: 0 !important; padding-right: 0 !important; }
+}
+
+/* v155: a setting marked new is wrapped (sdNewWrap, a red bar at its left); its row keeps the rule below it, which "last:border-0" would
+   drop inside the wrapper, unless the wrapper is the last row of its list */
+[data-sd-new]:not(:last-child) > .border-b { border-bottom-width: 1px; }

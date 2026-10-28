@@ -58,7 +58,7 @@ A head sheet for the face, a body sheet for the body: give each clip the same ch
 
 ## How it works
 
-1. **Set it up.** Pick Person, Child, Baby, Animal or Object. Adjust the available controls or leave them on Auto. *Random character* if you have no idea yet.
+1. **Set it up.** Pick Person, Child, Baby, Animal, Object or Place. Adjust the available controls or leave them on Auto. *Random character* if you have no idea yet.
 2. **Copy the prompt.** Each card says which image model it is for and which images to attach.
 3. **Generate and reuse.** Make the sheet in GPT Image 2.5 or Seedream 5.0, then add it to Seedance 2.5 as a reference. The suggested file names keep every sheet easy to find.
 
@@ -69,17 +69,19 @@ A head sheet for the face, a body sheet for the body: give each clip the same ch
 ## What's inside
 
 - **One role per image.** For a person, a head sheet for the face and a body sheet for the body. For an animal, one sheet of the whole animal, with optional head close-ups made from it. For an object or a place, one image per view; an object can also have its three views side by side in one image (a triptych). Each reference does one job.
-- **People, animals, objects and places.** Cars on their wheels, boats on a cradle, aircraft on the ground, other vehicles staged by their kind; clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own, and a house exterior or an interior, by day and by night.
+- **People, animals, objects and places.** Cars on their wheels, boats on a cradle, aircraft on the ground, other vehicles staged by their kind; clothing on an invisible mannequin (laid flat for its optional third view; a garment kept exactly as in your photo goes on it only if you tick the option), products shot on their own. Places have their own type: a house exterior, an interior or an outdoor location, described in your own words with helper buttons, from dawn to night, with 24 moods.
 - **Children and babies.** Separate, dressed reference prompts: head and body for children aged 3–12, one sheet for a nine-month-old baby. Adult body settings stay out of these modes.
 - **Choose the clothes from a photo.** Keep the photo's clothes, or use the Outfit tab for both the head and body sheets. Existing saved outfits are preserved. Sheet layout only keeps the whole photo as it is.
 - **Describe an outfit once.** Use one text for clothes and accessories on both sheets and the own-outfit retouch. Switching it off restores your individual garment choices.
 - **Face character.** Rugged, Menacing, Kind or Angelic guides traits left on Auto, while your manual choices and Beauty keep priority. Available for adults without a source photo.
 - **Choose your views.** Pick 1–4 separate views for an object or place. Existing saves keep their usual views; the object triptych remains available. Houses also have a plain grey floor and backdrop option.
 - **Fine control where it matters.** Age shown through visible signs, facial structure, skin realism, separate sliders for muscle volume and definition, outfits with wear and dirt, scars and marks pinned to a side and a spot.
-- **Edits that preserve the reference.** Choose an applicable retouch for an approved sheet, dress it in the outfit you choose, or combine head and body. Editing a preset keeps its operation and images. The mobile Retouch button opens help when no change is set. Prompts ask to preserve proportions; check the generated result.
+- **Real bodies.** Silhouette presets, fat by zone, bust shapes, glute shape, flaws and muscles, hips, thighs and legs, knees, ankles and fingers, stretch marks, posture and body hair, in named sections of the Body tab. Arms are held out on full-body sheets so every part of the body reads.
+- **Edits that preserve the reference.** Choose an applicable retouch for an approved sheet, dress it in the outfit you choose, or combine head and body. Editing a preset keeps its operation and images. The mobile Retouch button opens help when no change is set. A last step, *Final photo pass*, gives the final sheet the skin, color and light of a real photograph. Prompts ask to preserve proportions; check the generated result.
 - **Image integration.** Prepare a prompt to insert an asset into a still photo, matching its camera, light, shadows and texture. Add the two images in your image generator.
 - **A cast, not just a character.** Name several characters in one GPT Image conversation. Each prompt points to its own character and keeps the others out.
 - **Two image models.** Prompts written for GPT Image 2.5 or Seedream 5.0, with a length counter that warns you when a prompt gets long enough for the model to skip parts of it.
+- **Export and import.** Save every setting of a character to a file, and load it back later.
 - **English or French interface.**
 - **Private by design.** Everything runs in your browser. There is no backend, and your settings stay in your browser's local storage. The only outside request is for the fonts.
 
