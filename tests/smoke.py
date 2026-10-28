@@ -1157,7 +1157,7 @@ with sync_playwright() as p:
     for want in ("\n- AREOLA_RELIEF = DOMED\n", "\n- TUBERCLES = VISIBLE\n", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
                  "tubercles VISIBLE: small round bumps on the areola",
                  "h_ar = the distance from the areola plane to that of the skin between 1.0 and 1.3 × D_ar / 2 from C, positive forward",
-                 "p = the signed distance from the plane to the bottom of a central dip", "96.23 % of inverted nipples, Park et al. 1999",
+                 "p = the signed distance from the plane to the bottom of a central dip", "96.23% of inverted nipples, Park et al. 1999",
                  "h_ar > 0, a groove at the edge of the areola", "Shape keys \"bare_rest\" and \"nipples\""):
         assert want in text, (want, text[-800:])
     # the step that builds the geometry names both operations (the nipple is the umbilicated one set above)
