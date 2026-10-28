@@ -6229,10 +6229,10 @@ var SD_A3D_NIPS = [
 ];
 var SD_A3D_AREOLAS = [
   ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas aux aréoles du maillage.", "The prompt leaves the mesh's areolas as they are."],
-  ["PETITE", "Petites", "Small", "Environ 21 mm de diamètre.", "About 21 mm across."],
-  ["MOYENNE", "Moyennes", "Average", "Environ 31 mm de diamètre.", "About 31 mm across."],
+  ["PETITE", "Petites", "Small", "Environ 21 mm de diamètre : la zone est marquée pour la texture, le maillage ne bouge pas pour elle.", "About 21 mm across: the area is marked for the texture, the mesh does not move for it."],
+  ["MOYENNE", "Moyennes", "Average", "Environ 31 mm de diamètre : la zone est marquée pour la texture, le maillage ne bouge pas pour elle.", "About 31 mm across: the area is marked for the texture, the mesh does not move for it."],
   /* "Big", not "Large": the page translates the French chip "Large" (a waist) into "Wide" */
-  ["GRANDE", "Grandes", "Big", "Environ 41 mm de diamètre.", "About 41 mm across."],
+  ["GRANDE", "Grandes", "Big", "Environ 41 mm de diamètre : la zone est marquée pour la texture, le maillage ne bouge pas pour elle.", "About 41 mm across: the area is marked for the texture, the mesh does not move for it."],
 ];
 /* the target of each type, in real millimetres (design choices on the data above) */
 var SD_A3D_NIP_MM = { PLAT: 2, MOYEN: 5, SAILLANT: 9 },
@@ -6322,6 +6322,7 @@ function sdA3dText() {
     nip = sdA3dNip(),
     are = sdA3dAre(),
     nac = "AUTO" !== nip || "AUTO" !== are,
+    taken = " Une shape key ou un vertex group déjà nommé " + ["AUTO" !== nip ? "\"mamelons\"" : "", "AUTO" !== are ? "\"areole_G\" ou \"areole_D\"" : ""].filter(Boolean).join(", ") + " : arrête-toi et demande, ne renomme rien.",
     pd = "AUTO" === nip ? "" : "OMBILIQUE" === nip ? ", p" : ", p et d",
     hcm = Math.round(+e.height || 170),
     forms = sdBustSel(e)
@@ -6517,8 +6518,8 @@ function sdA3dText() {
         ? "   - M (mamelons et aréoles), en fin d'étape 7, dans une shape key \"mamelons\" distincte, calculée sur \"nu_relache\" à 1,0 et ajoutée à la base, pour pouvoir l'enlever seule : " +
             ("OMBILIQUE" === nip ? "creux central, le mamelon au fond, le bord de l'aréole inchangé" : "mamelon remodelé autour de C à p et d visés, flancs nets, sommet arrondi") +
             ("AUTO" !== are ? " ; vertex groups des aréoles au diamètre D_ar" : "") +
-            " ; seuls les vertices du disque de l'aréole bougent. Topologie inchangée : trop peu de vertices dans le disque pour porter la forme (moins de 3 anneaux d'arêtes dans d, seuil À VALIDER) : arrête-toi et signale, ne subdivise pas."
-        : "   - M (aréoles) : vertex groups des aréoles au diamètre D_ar, sur \"nu_relache\" à 1,0 ; aucune déformation, pas de shape key \"mamelons\".",
+            " ; seuls les vertices du disque de l'aréole bougent. Topologie inchangée : trop peu de vertices dans le disque pour porter la forme (moins de 3 anneaux d'arêtes dans d, seuil À VALIDER) : arrête-toi et signale, ne subdivise pas." + taken
+        : "   - M (aréoles) : vertex groups des aréoles au diamètre D_ar, sur \"nu_relache\" à 1,0 ; aucune déformation, pas de shape key \"mamelons\" : la taille choisie se verra par la texture peinte plus tard dans ces groupes (hors périmètre)." + taken,
     );
   L.push("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6" + (nac ? " ; C, D_ar" + pd + ("AUTO" !== nip ? " avec \"mamelons\" à 1,0" : "") : "") + ".");
   L.push("9. Vérifications, \"nu_relache\" à 1,0 :");
