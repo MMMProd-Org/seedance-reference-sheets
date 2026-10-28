@@ -1242,6 +1242,86 @@ with sync_playwright() as p:
         pg.close()
     assert not errors, errors
 
+    # "3D agent: glutes" (owner, 2026-10-28: "pour éviter que les fesses restent en l'air", "si elles doivent descendre parce qu'elles sont
+    # grosses elles descendent, si elles ne bougent pas parce qu'elles sont musclées elles ne bougent pas"): gated as the bust's panel, the
+    # bottom read from the outfit, the natural ptosis grade from the glute settings, only ever lowered to, the context line in plain words.
+    A3G = "() => (document.querySelector('#sd-a3g textarea') || {}).value || ''"
+    glute_state = ("pres: 'f', age: 26, fat: 1, chest: 2.5, bodyRef: true, refCover: 'tanga', headless: true, height: 160, glutesShape: 'auto',"
+                   " gluteMus: 0, glutes: 2")
+    for state, shown in ((glute_state, True), ("pres: 'x', age: 30", True), ("pres: 'm', age: 26", False), ("pres: 'f', age: 20", False)):
+        pg = saved_page(state)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        assert (pg.locator("#sd-a3g").count() == 1) == shown, state
+        pg.close()
+    for extra, grade in (("", "0"), ("glutes: 3", "1"), ("glutes: 3, gluteMus: 2", "0"), ("fatGlutes: 3", "2"), ("fatGlutes: 4, gluteMus: 3", "2"),
+                         ("glutesShape: 'low'", "2"), ("glutesDef: ['sag']", "4"), ("glutesShape: 'high', fatGlutes: 4", "0"), ("fat: 4", "3")):
+        pg = saved_page(glute_state + (", " + extra if extra else ""))
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        text = pg.evaluate(A3G)
+        assert f"\n- GLUTEAL_PTOSIS_GRADE = {grade} (taken from the sheet's glutes)\n" in text, (extra, re.findall(r"GLUTEAL_PTOSIS_GRADE = .*", text))
+        pg.close()
+    for extra, model, bottom in (("", "seedream", "TANGA_THONG"), ("refCover: 'sport'", "seedream", "FITTED_SHORTS"),
+                                 ("refCover: 'onepiece'", "seedream", "ONE_PIECE"), ("", "gpt", "FITTED_SHORTS"),
+                                 ("refCover: 'sport'", "gpt", "COMPRESSION_SHORTS")):
+        pg = saved_page(glute_state + ", model: '" + model + "'" + (", " + extra if extra else ""))
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        text = pg.evaluate(A3G)
+        assert f"\n- BOTTOM_TYPE = {bottom} (read from the sheet)\n" in text, (extra, model, re.findall(r"BOTTOM_TYPE = .*", text))
+        # an image model given this text as an edit prompt keeps the top; a one-piece starts from the bust prompt's result
+        keep = "Only the bottom is removed: the top keeps exactly its cut, color and fabric, and everything else stays as it is."
+        assert (keep in text.split("\n")[4]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n")[4])
+        assert (bottom == "ONE_PIECE") == ("Start from the result of the bust prompt" in text), (extra, model)
+        pg.close()
+    agent = saved_page(glute_state)
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    agent.locator("#sd-a3g summary").click()
+    text = agent.evaluate(A3G)
+    assert text.startswith("# Agent prompt: glutes without a bottom, 3D character\n"), text[:120]
+    for want in ("Character sheet: build: slim; glutes: average.", "   - b. drop: none (grade 0); outside \"edge_band\", nothing moves.",
+                 "Gluteal ptosis grades (Gonzalez, Aesthetic Plastic Surgery 2006, 30(3):320-326; definitions read in a secondary source,"
+                 " Blaya 2020: TO VALIDATE)", "7. Out of scope: the genital area (neither modelled nor changed)", "V1 to V8 OK or FAILED",
+                 "Tanga or thong: it neither covers nor carries the mass of the glutes (a mechanical deduction, no published measure)"):
+        assert want in text, (want, text[:1200])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_BAS|GRADE_PTOSE_FESSIERE|FICHIER_SOURCE|nu_fesses|bande_bord|region_fessiere|À VALIDER"
+                         r"|TANGA_STRING|CULOTTE_\w+|SHORT_\w+)\b", text), re.findall(r".{20}[àâçéèêëîïôùûüœ«»]", text)[:5]
+    line = text.split("\n")[4]
+    assert line.endswith(" Glutes: at their height and in their shape, a short crease under each, on the inner side; the same size, the same"
+                         " skin and grain; the marks left by the bottom's edges erased."), line
+    assert len(line.split()) < 600 and not re.search(r"\b[A-Z]{3,}_[A-Z_]+\b", line), line
+    # every choice has its tooltip; a grade set by hand is saved, said "by hand", and its drop asked in the steps
+    assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3g [data-a3d]')].every((b) => b.title)")
+    agent.locator("[data-a3d='a3gGrade:3']").click()
+    assert agent.evaluate(f"{SAVED}.a3gGrade") == "3"
+    text = agent.evaluate(A3G)
+    assert "\n- GLUTEAL_PTOSIS_GRADE = 3 (by hand)\n" in text and "   - b. drop, only if the base is below grade 3: " in text, text[-1500:]
+    assert "running past the middle of the back of the thigh" in text.split("\n")[4], text.split("\n")[4]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3G)
+    for want in ("# Prompt agent : fesses sans bas, personnage 3D\n", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
+                 "\n- GRADE_PTOSE_FESSIERE = 3 (à la main)\n", "Seul le bas est retiré : le haut garde exactement sa coupe",
+                 "shape key \"nu_relache\" reste alors strictement inchangée"):
+        assert want in text, (want, text[:1200])
+    panel = "() => [...document.querySelectorAll('#sd-a3g summary, #sd-a3g p, #sd-a3g button')].map((n) => [n.textContent.trim(), n.title])"
+    fr = agent.evaluate(panel)
+    set_lang(agent, "English", "en")
+    en = agent.evaluate(panel)
+    same = [a for pair in zip(en, fr) for a, b in zip(*pair) if a == b and re.search(r"[A-Za-zÀ-ÿ]{3,}", a)
+            and a not in SAME_IN_BOTH and not NEUTRAL.match(a)]
+    assert len(en) == len(fr) and not same, same
+    agent.close()
+    # the longest glute prompts fit the 10,000 characters of an image tool's prompt box, each line break counted twice, in both languages
+    for extra in ("glutesDef: ['sag', 'square', 'dips'], glutesShape: 'low', gluteMus: 4, fatGlutes: 4, glutes: 4, a3gBottom: 'SHORT_COMPRESSION'",
+                  "a3gBottom: 'CULOTTE_REMBOURREE', a3gGrade: '4', glutesShape: 'shelf', gluteMus: 3, fatGlutes: 2",
+                  "a3gBottom: 'UNE_PIECE', glutesDef: ['sag'], fatGlutes: 3, gluteMus: 1"):
+        pg = saved_page(glute_state + ", " + extra)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        for label, code in (("Français", "fr"), ("English", "en")):
+            set_lang(pg, label, code)
+            text = pg.evaluate(A3G)
+            assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+        pg.close()
+    assert not errors, errors
+
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)
     for style, model in (("3D", "gpt"), ("Photo", "seedream")):

@@ -4391,6 +4391,14 @@ rep('''        { t: "sdsec", id: "taille",''', '''        { t: "sdagent3d", show
         { t: "sdsec", id: "taille",''')
 rep('''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);''', '''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);
           if ("sdagent3d" === r.t) return sdAgent3d(t, n);''')
+# owner (2026-10-28, his "enlève le bas bleu" Blender prompt; "pour éviter que les fesses restent en l'air", "comme un anatomiste"):
+# "Agent 3D : fesses", a closed panel at the end of "Hanches", before "Jambes" (sdAgent3g), its choices in the state (a3gBottom, a3gGrade;
+# Auto by default)
+rep('''    a3dTub: "auto",\n''', '''    a3dTub: "auto",\n    a3gBottom: "auto",\n    a3gGrade: "auto",\n''')
+rep('''        { t: "sdsec", id: "jambes",''', '''        { t: "sdagent3g", show: function () { return sdA3gOn(e); } },
+        { t: "sdsec", id: "jambes",''')
+rep('''          if ("sdagent3d" === r.t) return sdAgent3d(t, n);''', '''          if ("sdagent3d" === r.t) return sdAgent3d(t, n);
+          if ("sdagent3g" === r.t) return sdAgent3g(t, n);''')
 # P156 (port review): GPT's glute volume loses its profile words when "Fessiers : galbe" is "Plats" or "Bas" (sdGlVol, seedream_new.js)
 rep('''    t1("glutes", e.glutes) +
     (3 === e.glutes ? " in proportion with the hips" : "") +''', '''    sdGlVol(t1("glutes", e.glutes)) +
