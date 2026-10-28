@@ -1112,9 +1112,14 @@ with sync_playwright() as p:
                  "   - V11: ", "V1 to V11 OK or FAILED", "(Lee et al. 2008: 30.93 ± 10.07 mm, mean plus one SD; Sanuki et al. 2009: 40 mm)",
                  "p = 9 mm (the mean of Sanuki et al. 2009)",
                  "(the areola's color and grain included)",
-                 "A shape key or vertex group already named \"nipples\", \"areola_L\" or \"areola_R\": stop and ask, rename nothing."):
+                 "Names \"nipples\", \"areola_L\" or \"areola_R\" already taken (shape key or vertex group): stop and ask, rename nothing.",
+                 "; the top hidden (hide_viewport, hide_render), not deleted; the bottom unchanged."):
         assert want in text, (want, text[-800:])
+    assert "swimsuit hidden" not in text, text  # step 1 once hid the whole swimsuit, the bottom with it
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
+    # an image model given this text redrew the bottom (owner: "il ne faut pas que le prompt change le tanga"): only the top goes
+    keep = " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is."
+    assert keep in text.split("\n")[4], text.split("\n")[4]
 
     # the context line says the choices in plain words, early enough for an image model that reads the start (600 words for Seedream)
     def context(text, want):
@@ -1123,17 +1128,17 @@ with sync_playwright() as p:
         assert not re.search(r"\b(AUTO|PLAT|MOYENN?E?|SAILLANT|OMBILIQUE|PETITE|GRANDE|PLATE|PLATEAU|HERNIEE|VISIBLES|FLAT|AVERAGE|PROJECTING"
                              r"|UMBILICATED|SMALL|LARGE|FLUSH|DOMED|VISIBLE)\b", line), line
 
-    context(text, " Nipples and areolas (set by hand): projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
+    context(text, " Nipples and areolas: projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
-    context(text, " Mamelons et aréoles (réglés à la main) : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
+    context(text, " Mamelons et aréoles : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
             " grandes aréoles, environ 41 mm de diamètre.")
     for want in ("\n- MAMELON = SAILLANT\n", "\n- AREOLE = GRANDE\n", "\n- TAILLE_PERSONNAGE = 160 cm\n", "aréole GRANDE : D_ar = 41 mm",
                  "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
                  "   - V11 : ", "V1 à V11 OK ou KO", "(Lee et al. 2008 : 30,93 ± 10,07 mm, moyenne plus un écart-type ; Sanuki et al. 2009 : 40 mm)",
                  "p = 9 mm (moyenne de Sanuki et al. 2009)",
                  "(couleur et grain de l'aréole compris)",
-                 "Une shape key ou un vertex group déjà nommé \"mamelons\", \"areole_G\" ou \"areole_D\" : arrête-toi et demande, ne renomme rien."):
+                 "Noms \"mamelons\", \"areole_G\" ou \"areole_D\" déjà pris (shape key ou vertex group) : arrête-toi et demande, ne renomme rien."):
         assert want in text, (want, text[-800:])
     set_lang(agent, "English", "en")
     agent.locator("[data-a3d='a3dNip:PLAT']").click()
@@ -1149,7 +1154,7 @@ with sync_playwright() as p:
     agent.locator("[data-a3d='a3dTub:VISIBLES']").click()
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
-    context(text, " Nipples and areolas (set by hand): umbilicated nipples, drawn into a dip at the centre of the areola;"
+    context(text, " Nipples and areolas: umbilicated nipples, drawn into a dip at the centre of the areola;"
             " areola size unchanged; puffy areolas: each whole areola forms a small, soft, rounded cone that extends the tip of the breast;"
             " in profile the tip has two steps, the curve of the breast then the cone of the areola, the nipple on top; at its base a slight"
             " constriction that blends into the skin, with no sharp edge or ring; the same skin and grain as the breast;"
@@ -1177,7 +1182,7 @@ with sync_playwright() as p:
     text = agent.evaluate(A3D)
     for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
         assert want in text, (want, text[-800:])
-    context(text, " Mamelons et aréoles (réglés à la main) : mamelons inchangés ; taille des aréoles inchangée ;"
+    context(text, " Mamelons et aréoles : mamelons inchangés ; taille des aréoles inchangée ;"
             " aréoles bombées (puffy areolas) : chaque aréole entière forme un petit cône arrondi et souple qui prolonge la pointe du sein ;"
             " de profil, la pointe a deux étages, la courbe du sein puis le cône de l'aréole, le mamelon au sommet ; à sa base, un léger"
             " étranglement qui se fond dans la peau, sans arête ni anneau ; même peau et même grain que le sein ;"
@@ -1208,6 +1213,9 @@ with sync_playwright() as p:
             set_lang(pg, label, code)
             text = pg.evaluate(A3D)
             assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+            # a one-piece has no separate bottom to keep; the sentence is in the language picked, never in the other one
+            here, other = ("Only the top is removed:", "Seul le haut est retiré :")[:: 1 if code == "en" else -1]
+            assert (here in text) != ("UNE_PIECE" in extra) and other not in text, (extra, code)
         pg.close()
     assert not errors, errors
 

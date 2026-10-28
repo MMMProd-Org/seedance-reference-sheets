@@ -6441,6 +6441,7 @@ function sdA3dText() {
     methA = "B_C" === size && coques,
     none = "AUCUNE" === grade,
     soft = ["TRIANGLE_SOUPLE", "MAILLOT_SOUPLE", "HAUT_AMPLE"].indexOf(top) >= 0,
+    onePiece = /^UNE_PIECE/.test(top),
     light = "HAUT_AJUSTE" === top || "UNE_PIECE_AJUSTEE" === top,
     asym = sdAsymOn() || "asym" === e.bustShape,
     manT = "auto" !== (e.a3dTop || "auto") && sdA3dManual("a3dTop", SD_A3D_TOPS),
@@ -6453,9 +6454,9 @@ function sdA3dText() {
     geo = "AUTO" !== nip || "AUTO" !== rel || "AUTO" !== tub,
     nac = "AUTO" !== nip || "AUTO" !== are || "AUTO" !== rel || "AUTO" !== tub,
     taken =
-      sdT(" Une shape key ou un vertex group déjà nommé ", " A shape key or vertex group already named ") +
+      sdT(" Noms ", " Names ") +
       [geo ? "\"mamelons\"" : "", "AUTO" !== are ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
-      sdT(" : arrête-toi et demande, ne renomme rien.", ": stop and ask, rename nothing."),
+      sdT(" déjà pris (shape key ou vertex group) : arrête-toi et demande, ne renomme rien.", " already taken (shape key or vertex group): stop and ask, rename nothing."),
     pd = "AUTO" === nip ? "" : "OMBILIQUE" === nip ? ", p" : sdT(", p et d", ", p and d"),
     hcm = Math.round(+e.height || 170),
     forms = sdBustSel(e)
@@ -6501,7 +6502,7 @@ function sdA3dText() {
               "A top with almost no support: the mesh is already close to rest; lowering and spreading only if it does not yet meet the requested grade and spacing, never further (no published measure: TO VALIDATE).",
             )
           : light
-            ? tr("Le haut suivait la poitrine sans la remonter ni l'aplatir", "The top followed the bust without lifting or flattening it") +
+            ? tr("Maintien léger", "Light support") +
               (!manT && e.chest >= 2 ? tr(" (c'est ce que dit la planche)", " (this is what the sheet says)") : "") +
               tr(" : déformation minimale jusqu'au grade et à l'écartement demandés, jamais au-delà (aucune mesure publiée : À VALIDER).", ": a minimal deformation to the requested grade and spacing, never further (no published measure: TO VALIDATE).")
             : "UNE_PIECE_GAINANTE" === top
@@ -6561,8 +6562,11 @@ function sdA3dText() {
         ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne.",
         ". Goal: a version of the bust without the top, at rest, standing, with no support at all, true to the shape of THIS character, never brought back to an average shape.",
       ) +
+      /* owner (2026-10-28): "il ne faut pas que le prompt change le tanga il faut qu'il le garde": an image model given this text as an
+         edit prompt redrew the bottom (a regular brief for a Brazilian tanga); a one-piece has no separate bottom */
+      (onePiece ? "" : tr(" Seul le haut est retiré : le bas garde exactement sa coupe, sa couleur et son tissu, et tout le reste reste tel quel.", " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is.")) +
       (nac
-        ? tr(" Mamelons et aréoles (réglés à la main) : ", " Nipples and areolas (set by hand): ") +
+        ? tr(" Mamelons et aréoles : ", " Nipples and areolas: ") +
           [SD_A3D_LOOK.nip[nip], SD_A3D_LOOK.are[are], SD_A3D_LOOK.rel[rel], SD_A3D_LOOK.tub[tub]]
             .filter(Boolean)
             .map(function (x) {
@@ -6664,7 +6668,7 @@ function sdA3dText() {
       profTarget +
       "." +
       (cone ? "" : methA ? tr(" Base en cône : demande s'il faut passer en B.", " A conical base: ask whether to switch to B.") : tr(" Base en cône : 7f corrige.", " A conical base: 7f corrects it.")) +
-      tr(" Seuil P/W : repère de population (Shahlini 2014)", " P/W threshold: a population benchmark (Shahlini 2014)") +
+      tr(" Seuil P/W (Shahlini 2014)", " P/W threshold (Shahlini 2014)") +
       (cone
         ? tr(" ; la forme « En obus » réglée passe avant", "; the “Conical” shape set comes first")
         : "0,6" === pw
@@ -6688,7 +6692,7 @@ function sdA3dText() {
           SD_A3D_ARE_MM[are] +
           tr(" mm (Lee et al. 2008 : 30,93 ± 10,07 mm, ", " mm (Lee et al. 2008: 30,93 ± 10,07 mm, ") +
           { PETITE: tr("moyenne moins un écart-type", "mean minus one SD"), MOYENNE: tr("moyenne", "mean"), GRANDE: tr("moyenne plus un écart-type ; Sanuki et al. 2009 : 40 mm", "mean plus one SD; Sanuki et al. 2009: 40 mm") }[are] +
-          tr("), disque géodésique centré sur C, vertex groups \"areole_G\" et \"areole_D\" (poids 1 dedans, 0 dehors ; rien n'est peint)", "), a geodesic disc centred on C, vertex groups \"areole_G\" and \"areole_D\" (weight 1 inside, 0 outside; nothing is painted)")
+          tr("), disque géodésique centré sur C, vertex groups \"areole_G\" et \"areole_D\" (poids 1 dedans, 0 dehors)", "), a geodesic disc centred on C, vertex groups \"areole_G\" and \"areole_D\" (weight 1 inside, 0 outside)")
         : tr("aréole du mesh inchangée, D_ar = son diamètre (relief ou vertex group ; illisible : demande)", "the mesh's areola unchanged, D_ar = its diameter (relief or vertex group; unreadable: ask)"),
     ];
     (nipSet || "AUTO" !== rel) && tg.push(tr("plan de l'aréole = moindres carrés des vertices entre 0,8 et 1,0 × D_ar / 2 de C", "areola plane = least squares of the vertices between 0,8 and 1,0 × D_ar / 2 from C"));
@@ -6756,11 +6760,12 @@ function sdA3dText() {
   );
   L.push(tr("## ÉTAPES", "## STEPS"), "");
   L.push(
-    tr("1. Inventaire : objets, corps, maillot, modificateurs, shape keys, armature ; maillot masqué (hide_viewport, hide_render), pas supprimé.", "1. Inventory: objects, body, swimsuit, modifiers, shape keys, armature; swimsuit hidden (hide_viewport, hide_render), not deleted."),
+    tr("1. Inventaire : objets, corps, maillot, modificateurs, shape keys, armature ; haut masqué (hide_viewport, hide_render), pas supprimé", "1. Inventory: objects, body, swimsuit, modifiers, shape keys, armature; the top hidden (hide_viewport, hide_render), not deleted") +
+      (onePiece ? "." : tr(" ; bas inchangé.", "; the bottom unchanged.")),
     tr("2. Complétude : mesh continu et fermé sous le haut ; arête moyenne de la zone ≤ 2 × celle du torse ; sinon ARRÊT, captures, aucune reconstruction.", "2. Completeness: a continuous, closed mesh under the top; mean edge length in the area ≤ 2 × the torso's; otherwise STOP, screenshots, no reconstruction."),
     tr(
-      "3. Forme héritée (shape key, Shrinkwrap, modificateur qui plaque le corps sur le maillot) : signale-la, ne corrige rien ; si elle écraserait \"nu_relache\" : ARRÊT et demande. Écart corps / maillot (BVHTree.find_nearest) : min, médiane, max, traversées.",
-      "3. Inherited shape (a shape key, Shrinkwrap or modifier pressing the body onto the swimsuit): report it, fix nothing; if it would override \"nu_relache\": STOP and ask. Body-to-swimsuit gap (BVHTree.find_nearest): min, median, max, crossings.",
+      "3. Forme héritée (shape key, Shrinkwrap, modificateur qui plaque le corps sur le maillot) : signale-la, ne corrige rien ; si elle écraserait \"nu_relache\" : ARRÊT et demande. Écart corps / haut (BVHTree.find_nearest) : min, médiane, max, traversées.",
+      "3. Inherited shape (a shape key, Shrinkwrap or modifier pressing the body onto the swimsuit): report it, fix nothing; if it would override \"nu_relache\": STOP and ask. Body-to-top gap (BVHTree.find_nearest): min, median, max, crossings.",
     ),
     tr("4. Repère : axes vertical, avant et latéral en rest pose (armature, sinon normale moyenne du torse) ; H ; unité.", "4. Frame: vertical, forward and lateral axes in rest pose (armature, otherwise the torso's mean normal); H; unit."),
     tr("5. Zone : groupes poitrine du rig, sinon \"sein_G\" et \"sein_D\" jusqu'au sillon, au sternum et à la ligne axillaire antérieure ; poids 1 au centre, 0 au bord, décroissance douce fixe", "5. Area: the rig's breast groups, otherwise \"sein_G\" and \"sein_D\" up to the fold, the sternum and the anterior axillary line; weight 1 at the centre, 0 at the edge, a fixed soft falloff") +
