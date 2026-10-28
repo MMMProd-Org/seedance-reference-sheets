@@ -6575,7 +6575,7 @@ function sdA3dText() {
   L.push(
     tr("Règle centrale : volume inchangé ; le haut retiré ne change la poitrine qu'autant qu'il la soutenait. ", "Central rule: volume unchanged; removing the top changes the bust only as much as it supported it. ") +
       supp +
-      (B ? tr(" Méthode B : grade de ptose (Regnault modifié), écartement et forme ci-dessous.", " Method B: ptosis grade (modified Regnault), spacing and shape below.") : ""),
+      "",
     "",
   );
   L.push(tr("## ENTRÉES", "## INPUTS"), "");
@@ -6621,11 +6621,11 @@ function sdA3dText() {
   } else {
     L.push(
       tr(
-        "Méthode B, par côté : z_SMS = hauteur du sillon sous-mammaire dans le plan vertical de BP, forme de base (fixe ; AUTO : courbure concave maximale sous le sein ; ambiguë : demande le vertex group) ; z_BP = hauteur de BP (mamelon) et z_bas du point le plus bas du sein, après déformation ; tol = 0,003 × H (H : taille en unités de scène).",
-        "Method B, per side: z_SMS = height of the inframammary fold in the vertical plane of BP, base shape (fixed; AUTO: maximum concave curvature under the breast; ambiguous: ask for the vertex group); z_BP = height of BP (nipple) and z_bas of the lowest point of the breast, after deformation; tol = 0,003 × H (H: height in scene units).",
+        "Méthode B, par côté : z_SMS = hauteur du sillon sous-mammaire dans le plan vertical de BP, forme de base (fixe ; AUTO : courbure concave maximale sous le sein ; ambiguë : demande le vertex group) ; z_BP = hauteur de BP (mamelon) et z_bas du point le plus bas du sein, après déformation ; WBB = écart latéral entre les BP gauche et droit ; tol = 0,003 × H (H : taille en unités de scène).",
+        "Method B, per side: z_SMS = height of the inframammary fold in the vertical plane of BP, base shape (fixed; AUTO: maximum concave curvature under the breast; ambiguous: ask for the vertex group); z_BP = height of BP (nipple) and z_bas of the lowest point of the breast, after deformation; WBB = lateral distance between the left and right BP; tol = 0,003 × H (H: height in scene units).",
       ),
       "",
-      tr("Grade demandé : ", "Requested grade: ") +
+      tr("Grade de ptose demandé (Regnault modifié) : ", "Requested ptosis grade (modified Regnault): ") +
         gradeTxt +
         (manG ? tr(" (à la main)", " (by hand)") : tr(" (tiré de la planche : choix de conception, À VALIDER)", " (from the sheet: a design choice, TO VALIDATE)")) +
         tr(" ; condition : ", "; condition: ") +
@@ -6718,7 +6718,7 @@ function sdA3dText() {
     L.push(
       tr("Mamelons et aréoles, par côté, sur \"nu_relache\" à 1,0 (choix de conception, À VALIDER) : ", "Nipples and areolas, per side, on \"nu_relache\" at 1,0 (design choices, TO VALIDATE): ") +
         tg.join(tr(" ; ", "; ")) +
-        tr(". Échelle : mm d'une personne de " + hcm + " cm ; en unités de scène, multiplie-les par H / " + hcm * 10 + ".", ". Scale: mm of a person of " + hcm + " cm; in scene units, multiply them by H / " + hcm * 10 + "."),
+        tr(". Échelle : cibles et tolérances en mm d'une personne de " + hcm + " cm ; en unités de scène, multiplie-les par H / " + hcm * 10 + ".", ". Scale: targets and tolerances in mm of a person of " + hcm + " cm; in scene units, multiply them by H / " + hcm * 10 + "."),
       "",
     );
   }
@@ -6776,7 +6776,7 @@ function sdA3dText() {
       ? tr("   - a. descente pondérée jusqu'à HU_cible (UBP au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.", "   - a. a weighted lowering to HU_cible (UBP at the edge, the drop on BP); b. a lateral spread of (WBB_avant × r_h) / 2 at the level of BP.")
       : tr("   - a. descente de la masse, croissante vers le bas, jusqu'au grade ", "   - a. lowering of the mass, increasing downward, to grade ") +
           grade +
-          tr(", pas au-delà (aucune s'il est déjà rempli)", ", no further (none if already met)") +
+          tr(", pas au-delà", ", no further") +
           (none ? "" : tr(" ; le bas peut passer sous le sillon et toucher le thorax sans le traverser", "; the lower breast may pass below the fold and touch the chest without going through it")) +
           tr(" ; b. écartement selon ECARTEMENT ; c. ", "; b. spread as ECARTEMENT; c. ") +
           orient +
@@ -6822,11 +6822,11 @@ function sdA3dText() {
     tr("9. Vérifications, \"nu_relache\" à 1,0 :", "9. Checks, \"nu_relache\" at 1,0:"),
     tr("   - V1 : ", "   - V1: ") +
       (methA ? tr("HU_après / HU_avant = 1 - r_v à ±0,01. V2 : WBB_après / WBB_avant = 1 + r_h à ±0,01.", "HU_après / HU_avant = 1 - r_v within ±0,01. V2: WBB_après / WBB_avant = 1 + r_h within ±0,01.") : tr("grade " + grade + " vrai par sein (z_SMS, z_BP, z_bas, tol reportés). V2 : ", "grade " + grade + " true for each breast (z_SMS, z_BP, z_bas, tol reported). V2: ") + (noSpread ? "|WBB_après - WBB_avant| ≤ tol." : "WBB_après ≥ WBB_avant.")),
-    tr("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par sein. V4 : nombres de vertices, arêtes, faces et UV de la source. V5 : poids 0 déplacés de 1e-6 unité au plus.", "   - V3: |V_après - V_avant| / V_avant ≤ 0,02 for each breast. V4: the source's numbers of vertices, edges, faces and UVs. V5: weight 0 moved by 1e-6 unit at most."),
+    tr("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par sein. V4 : vertices, arêtes, faces et UV en même nombre que la source. V5 : vertices de poids 0 déplacés de 1e-6 unité de scène au plus.", "   - V3: |V_après - V_avant| / V_avant ≤ 0,02 for each breast. V4: vertices, edges, faces and UVs in the same number as the source. V5: weight-0 vertices moved by 1e-6 scene unit at most."),
     tr("   - V6 : aucune auto-intersection dans la zone, sein / thorax compris (BVHTree.overlap, hors faces voisines), aucune normale inversée, aucune aire de face × 3 ou plus.", "   - V6: no self-intersection in the area, breast against chest included (BVHTree.overlap, neighbouring faces excluded), no flipped normal, no face area × 3 or more."),
     tr("   - V7 : ", "   - V7: ") +
       (methA ? tr("écart des ratios gauche / droite ≤ 0,01", "gap between the left and right ratios ≤ 0,01") : tr("même grade des deux côtés", "the same grade on both sides")) +
-      (asym ? tr(" ; ASYMETRIE = OUI : garde l'asymétrie d'origine, ne la corrige pas, mesure-la, signale-la.", "; ASYMETRIE = OUI: keep the original asymmetry, do not correct it, measure it, report it.") : tr(" ; asymétrie d'origine gardée, mesurée, signalée.", "; original asymmetry kept, measured, reported.")),
+      (asym ? tr(" ; ASYMETRIE = OUI : asymétrie d'origine gardée, non corrigée, mesurée, signalée.", "; ASYMETRIE = OUI: original asymmetry kept, not corrected, measured, reported.") : tr(" ; asymétrie d'origine gardée, mesurée, signalée.", "; original asymmetry kept, measured, reported.")),
     tr("   - V8 : avec armature, captures en rest pose, bras levés, buste penché, sans artefact ; sinon INVÉRIFIABLE et pourquoi. V9 : rendus avant/après de face, profil, trois-quarts, même caméra et lumière ; point le plus bas et sillon lisibles de profil. V10 : cibles de profil vraies.", "   - V8: with an armature, screenshots in rest pose, arms raised, torso bent, with no artefact; otherwise UNVERIFIABLE and why. V9: before/after renders, front, profile, three-quarter, same camera and light; the lowest point and the fold readable in profile. V10: the profile targets true."),
   );
   nac &&
