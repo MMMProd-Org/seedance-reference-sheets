@@ -1062,6 +1062,42 @@ with sync_playwright() as p:
             gl.close()
     assert not errors, errors
 
+    # Bust morphology: "Tuberous" (no wide-base words), "Low" placement (with every shape but "Drooping", which its click
+    # unticks), "Bust veins", both engines.
+    wide = re.compile(r"wide base|covering most of the|fills the whole width of the chest")
+    for model in ("gpt", "seedream"):
+        for chest in (2, 3, 4):
+            bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: {chest}, bustShape: 'tuberous'")
+            body = next(t for t in prompts(bm) if "standing" in t)
+            assert "tuberous" in body and "a narrow, constricted base" in body and not wide.search(body), (model, chest, wide.findall(body))
+            bm.close()
+        for shape, said in (("round", True), ("pear", True), ("low", False)):
+            bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: 3, bustShape: '{shape}', bustHigh: 'lowset'")
+            body = next(t for t in prompts(bm) if "standing" in t)
+            assert ("set low on the chest: the fullest point near the bottom of the ribcage" in body) == said, (model, shape)
+            bm.close()
+        bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: 1, bustVeins: 'visible'")
+        body = next(t for t in prompts(bm) if "standing" in t)
+        assert "bluish veins clearly visible under the skin of the upper chest and the upper bust" in body, model
+        bm.close()
+    bm = saved_page("pres: 'f', age: 30, chest: 3")
+    bm.get_by_role("tab", name=re.compile(r"^Body")).click()
+    open_folds(bm)
+    bust = bm.locator("#sd-bust")
+    for name in ("Tuberous", "Low"):
+        expect(bust.get_by_role("checkbox", name=name, exact=True)).to_have_count(1)
+    bust.get_by_role("checkbox", name="Low", exact=True).click()
+    bust.get_by_role("checkbox", name="Drooping", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["low", "auto"]
+    bust.get_by_role("checkbox", name="Low", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["auto", "lowset"]
+    bust.get_by_role("checkbox", name="Tuberous", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["tuberous", "lowset"]
+    expect(bust.get_by_role("checkbox", name="Auto (age)", exact=True)).not_to_be_checked()
+    expect(bm.get_by_text("Bust veins", exact=True)).to_have_count(1)
+    bm.close()
+    assert not errors, errors
+
     # "3D agent" (v158): its prompt follows the interface language, the French one as v158 wrote it.
     agent = saved_page("pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true")
     agent.get_by_role("tab", name=re.compile(r"^Body")).click()

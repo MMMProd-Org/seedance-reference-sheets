@@ -12,6 +12,17 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-28 · GPT Image 2.5 / Seedream 5.0 · Person, body sheet: tuberous bust, low placement, bust veins
+
+**RULE.** Owner's request (study real bodies "pour avoir un logiciel qui est capable de faire tout le monde"): three bust options, adults, both engines; default prompts unchanged (golden: 31 prompts match).
+- "Tubéreuse", a shape: `tuberous: a narrow, constricted base and a short, underdeveloped lower half with a high, tight crease below it, so each side looks tubular, projecting forward and pointing slightly down` (Seedream; GPT says the same as a bust line). The wide-base words of the size texts go with it. Source: the Grolleau grades as described by Denoël, Soubirac, Lopez, Grolleau and Chavoin, Rev Med Liège 2002, 57(10):655-660 (grade I 56%, II 26%, III 18% of their cases, not a prevalence). The enlarged, herniated areola is hidden by the outfit and not said.
+- "Basse", a height: `set low on the chest: the fullest point near the bottom of the ribcage, a long, gently sloping upper part above it`, with every shape but "Tombante" (its own low landmarks) and the chute. The "open" part is the spacing group's ("Écartée", "Vers l'extérieur"). Source: Suh and Park, Applied Sciences 2022, 12(17):8578 (3D scans of 156 white American women of 26 to 35: low and open placement 20%; 61% of the large busts low and open, none high).
+- "Veines du buste" (Légères, Visibles): bluish veins on the upper chest and the upper bust, where the outfit leaves the skin bare. No published frequency was found: a design choice.
+
+**REJECTED** before a test: an Auto that sets every large bust low and open, proposed to the owner. Suh and Park's 61% would have become all large busts on Auto, the other 39% reachable only by hand; the placement is a choice instead.
+
+**TO TEST** on renders, both engines: the three options; whether Seedream draws a tubular shape under the top.
+
 ## 2026-10-28 · GPT Image 2.5 / Seedream 5.0 · v115 to v158 integration
 
 **RULE.** Source: the owner's `planches-seedance-pipeline_v158_v52.zip`, whose rebuild matches its HTML byte for byte (1,772,536 bytes), and its [unaltered lessons](sources/lecons_prompts_planches_seedance-v158.md), with the sourced fabric notes behind v124 ([tissu_moulant_donnees.md](sources/tissu_moulant_donnees.md)). Its v114b to v158 delta is merged into this chain three ways (base: the v114b sources this repository integrated). The statuses below come from the owner's working session; no new render was made here.
