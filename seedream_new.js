@@ -6287,6 +6287,36 @@ function sdA3dRel() {
 function sdA3dTub() {
   return sdA3dManual("a3dTub", SD_A3D_TUBS) ? e.a3dTub : "AUTO";
 }
+/* owner's render (2026-10-28, Seedream 5.0, the sheet edited with this prompt: "Saillants", "Moyennes", "Bombée"): larger areolas and
+   more projecting nipples, no dome; the context line gave only the codes, and their description in words came at word 1,613 of 3,148,
+   past the 600 words reported for Seedream ("ça marchait bien avant ... parle lui comme si c'était un LLM qui construit des images").
+   The context line now says each choice in plain words, the same values as the targets; codes and targets stay in INPUTS and TARGETS. */
+var SD_A3D_LOOK = {
+  nip: {
+    AUTO: ["mamelons inchangés", "nipples unchanged"],
+    PLAT: ["mamelons plats, environ " + SD_A3D_NIP_MM.PLAT + " mm de haut au-dessus de l'aréole", "flat nipples, about " + SD_A3D_NIP_MM.PLAT + " mm high above the areola"],
+    MOYEN: ["mamelons moyens, environ " + SD_A3D_NIP_MM.MOYEN + " mm de haut au-dessus de l'aréole", "average nipples, about " + SD_A3D_NIP_MM.MOYEN + " mm high above the areola"],
+    SAILLANT: ["mamelons saillants, environ " + SD_A3D_NIP_MM.SAILLANT + " mm de haut au-dessus de l'aréole", "projecting nipples, about " + SD_A3D_NIP_MM.SAILLANT + " mm high above the areola"],
+    OMBILIQUE: ["mamelons ombiliqués, rentrés dans un creux au centre de l'aréole", "umbilicated nipples, drawn into a dip at the centre of the areola"],
+  },
+  are: {
+    AUTO: ["taille des aréoles inchangée", "areola size unchanged"],
+    PETITE: ["petites aréoles, environ " + SD_A3D_ARE_MM.PETITE + " mm de diamètre", "small areolas, about " + SD_A3D_ARE_MM.PETITE + " mm across"],
+    MOYENNE: ["aréoles moyennes, environ " + SD_A3D_ARE_MM.MOYENNE + " mm de diamètre", "average areolas, about " + SD_A3D_ARE_MM.MOYENNE + " mm across"],
+    GRANDE: ["grandes aréoles, environ " + SD_A3D_ARE_MM.GRANDE + " mm de diamètre", "big areolas, about " + SD_A3D_ARE_MM.GRANDE + " mm across"],
+  },
+  rel: {
+    PLATE: ["aréoles au ras de la peau du sein, sans marche ni bourrelet au bord", "areolas flush with the breast skin, with no step or ridge at their edge"],
+    PLATEAU: ["aréoles surélevées en plateau au-dessus de la peau du sein, sans étranglement à leur base", "areolas raised as a plateau above the breast skin, with no constriction at their base"],
+    /* owner's second render ("c'est déjà mieux mais toujours pas capable de faire un relief d'aréole bombée"): the dome said by what each
+       view shows, the side views first, where it stands out of the breast's outline */
+    HERNIEE: [
+      "aréoles bombées en dôme : sur chaque vue de profil, l'aréole dépasse nettement de la courbe du sein en un petit dôme distinct, le mamelon à son sommet, séparé du sein par un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli",
+      "domed areolas: in each side view the areola clearly stands out from the curve of the breast as a small, distinct dome with the nipple on top, set apart from the breast by a sharp crease at its base; from the front the areola looks swollen, ringed by the shadow of that crease",
+    ],
+  },
+  tub: { VISIBLES: ["petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles", "small round bumps (Montgomery tubercles) visible on the areolas"] },
+};
 function sdA3dOn(t) {
   return "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && !t.photo && sdRevealOk(t);
 }
@@ -6522,13 +6552,14 @@ function sdA3dText() {
         ". Goal: a version of the bust without the top, at rest, standing, with no support at all, true to the shape of THIS character, never brought back to an average shape.",
       ) +
       (nac
-        ? tr(" Mamelons et aréoles réglés à la main : ", " Nipples and areolas set by hand: ") +
-          ("AUTO" !== nip ? tr("mamelons ", "nipples ") + nip : tr("mamelons du mesh gardés", "the mesh's nipples kept")) +
-          ", " +
-          ("AUTO" !== are ? tr("aréoles ", "areolas ") + are : tr("aréoles du mesh gardées", "the mesh's areolas kept")) +
-          ("AUTO" !== rel ? tr(", relief de l'aréole ", ", areola relief ") + rel : "") +
-          ("AUTO" !== tub ? tr(", tubercules ", ", tubercles ") + tub : "") +
-          tr(" (voir CIBLES).", " (see TARGETS).")
+        ? tr(" Mamelons et aréoles réglés à la main (voir CIBLES) : ", " Nipples and areolas set by hand (see TARGETS): ") +
+          [SD_A3D_LOOK.nip[nip], SD_A3D_LOOK.are[are], SD_A3D_LOOK.rel[rel], SD_A3D_LOOK.tub[tub]]
+            .filter(Boolean)
+            .map(function (x) {
+              return tr(x[0], x[1]);
+            })
+            .join(tr(" ; ", "; ")) +
+          "."
         : ""),
     "",
   );
