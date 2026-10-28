@@ -6910,7 +6910,7 @@ function sdA3dText() {
           ) +
             [
               "AUTO" === nip
-                ? tr("le mamelon du mesh gardé", "the mesh's nipple kept")
+                ? tr("le mamelon du mesh gardé : ses vertices (la bosse locale autour de C) ne bougent pas", "the mesh's nipple kept: its vertices (the local bump around C) do not move")
                 : "OMBILIQUE" === nip
                   ? tr("creux central, le mamelon au fond, le bord de l'aréole inchangé", "a central dip, the nipple at its bottom, the edge of the areola unchanged")
                   : tr("mamelon remodelé autour de C à p et d visés, flancs nets, sommet arrondi", "the nipple reshaped around C to the target p and d, clean sides, a rounded tip"),
@@ -6968,11 +6968,15 @@ function sdA3dText() {
           "AUTO" !== are ? tr("diamètre de \"areole_G\" et \"areole_D\" = D_ar à ± 2 mm mis à l'échelle", "diameter of \"areole_G\" and \"areole_D\" = D_ar within ± 2 mm, scaled") : "",
           "AUTO" === nip ? "" : "OMBILIQUE" === nip ? tr("p < 0, le fond du creux au centre de l'aréole", "p < 0, the bottom of the dip at the centre of the areola") : tr("p et d à leur cible, à ± 1 mm et ± 2 mm mis à l'échelle", "p and d at their target, within ± 1 mm and ± 2 mm, scaled"),
           {
-            PLATE: tr("|h_ar| ≤ 0,5 mm mis à l'échelle", "|h_ar| ≤ 0,5 mm, scaled"),
+            PLATE: tr(
+              "|h_ar| ≤ 0,5 mm mis à l'échelle ; sur 8 coupes radiales passant par C, entre 0,8 et 1,2 × D_ar / 2 de C, la hauteur de la surface par rapport au plan de la peau autour reste dans ± 0,5 mm mis à l'échelle (ni marche ni bourrelet)",
+              "|h_ar| ≤ 0,5 mm, scaled; on 8 radial sections through C, between 0,8 and 1,2 × D_ar / 2 from C, the height of the surface against the plane of the skin around stays within ± 0,5 mm, scaled (no step or ridge)",
+            ),
             PLATEAU: tr("h_ar > 0, pas de sillon au bord de l'aréole", "h_ar > 0, no groove at the edge of the areola"),
             HERNIEE: tr("h_ar > 0, un sillon au bord de l'aréole", "h_ar > 0, a groove at the edge of the areola"),
           }[rel] || "",
           "AUTO" !== tub ? tr("des bosses sur l'aréole, leur nombre reporté", "bumps on the areola, their count reported") : "",
+          geo && "AUTO" === nip ? tr("MAMELON = AUTO : dans \"mamelons\", vertices du mamelon déplacés de 1e-6 unité de scène au plus", "MAMELON = AUTO: in \"mamelons\", nipple vertices moved by 1e-6 scene unit at most") : "",
           geo ? tr("\"mamelons\" à 0 : V1 à V10 inchangés ; dans \"mamelons\", vertices hors des disques des aréoles déplacés de 1e-6 unité de scène au plus", "\"mamelons\" at 0: V1 to V10 unchanged; in \"mamelons\", vertices outside the areola discs moved by 1e-6 scene unit at most") : "",
         ]
           .filter(Boolean)

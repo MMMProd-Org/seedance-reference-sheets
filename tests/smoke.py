@@ -1135,9 +1135,24 @@ with sync_playwright() as p:
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
     for want in ("- AREOLA_RELIEF = DOMED (", "- TUBERCLES = VISIBLE (", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
-                 "tubercles VISIBLE: small round bumps on the areola", "- h_ar: height of the areola", "h_ar > 0, a groove at the edge of the areola",
-                 "Shape keys \"bare_rest\" and \"nipples\""):
+                 "tubercles VISIBLE: small round bumps on the areola",
+                 "- h_ar: height of the areola, the distance between the areola plane and a plane fitted to the breast skin just around it"
+                 " (between 1.0 and 1.3 × D_ar / 2 from C), along their mean normal, positive forward.",
+                 "h_ar > 0, a groove at the edge of the areola", "Shape keys \"bare_rest\" and \"nipples\""):
         assert want in text, (want, text[-800:])
+    # the step that builds the geometry names both operations (the nipple is the umbilicated one set above)
+    step_m = next(x for x in text.split("\n") if x.startswith("   - M (nipples and areolas)"))
+    assert "the areola domed, a groove at its base" in step_m and "small round bumps on the areola" in step_m, step_m
+    # with the nipple on Auto, its vertices are kept and checked
+    agent.locator("[data-a3d='a3dNip:auto']").click()
+    text = agent.evaluate(A3D)
+    step_m = next(x for x in text.split("\n") if x.startswith("   - M (nipples and areolas)"))
+    assert "the mesh's nipple kept: its vertices (the local bump around C) do not move" in step_m, step_m
+    assert "NIPPLE = AUTO: in \"nipples\", nipple vertices moved by 1e-6 scene unit at most" in text, text[-800:]
+    agent.locator("[data-a3d='a3dRel:PLATE']").click()
+    text = agent.evaluate(A3D)
+    assert "on 8 radial sections through C, between 0.8 and 1.2 × D_ar / 2 from C" in text and "(no step or ridge)" in text, text[-800:]
+    agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
     for want in ("- RELIEF_AREOLE = HERNIEE (", "- TUBERCULES = VISIBLES (", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
