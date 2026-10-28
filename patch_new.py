@@ -523,7 +523,7 @@ rep('''              headKind: o ? (o.sameFace ? "same" : "updated") : "new",
               headOwner: n1(e.name),''', '''              headKind: o ? (o.sameFace ? "same" : "updated") : "new",
               headOwner: n1(e.name),
               headLooks: e.looks,
-              headFat: e.fat,''')
+              headFat: sdHeadFatNow(),''')
 # P37 headLooks and headFat (P34) live wherever the other head-sheet fields do: default state, per-subject cache and
 # defaults, and the two buttons that forget the head sheet; otherwise a reload or a subject switch loses them
 for a in ['''    headKind: "",
@@ -4390,6 +4390,10 @@ rep('''        { t: "sdsec", id: "taille",''', '''        { t: "sdagent3d", show
         { t: "sdsec", id: "taille",''')
 rep('''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);''', '''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);
           if ("sdagent3d" === r.t) return sdAgent3d(t, n);''')
+# P156 (port review): GPT's glute volume loses its profile words when "Fessiers : galbe" is "Plats" or "Bas" (sdGlVol, seedream_new.js)
+rep('''    t1("glutes", e.glutes) +
+    (3 === e.glutes ? " in proportion with the hips" : "") +''', '''    sdGlVol(t1("glutes", e.glutes)) +
+    (3 === e.glutes ? " in proportion with the hips" : "") +''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

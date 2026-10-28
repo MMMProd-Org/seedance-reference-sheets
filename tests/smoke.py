@@ -174,9 +174,12 @@ with sync_playwright() as p:
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
-        # the list of what is kept (a clothing change also gets a fit paragraph, which may name the outfit)
+        # the list of what is kept; anywhere in the prompt too, except for a clothing change, whose fit paragraph (v124) may
+        # name the outfit
         keep_line = next(x for x in retouch.text_content().splitlines() if x.startswith("Keep everything this change does not touch"))
         assert kept in keep_line and dropped not in keep_line, (text, keep_line)
+        if dropped != "the outfit":
+            expect(retouch).not_to_contain_text(dropped)
     change.fill("")
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
 
@@ -350,6 +353,35 @@ with sync_playwright() as p:
         old.get_by_role("slider", name="Beauty").press("ArrowRight")
         expect(variant).to_be_hidden()
         old.close()
+    assert not errors, errors
+
+    # A head copied before the port (v115 to v158) is still the same face: the long-hair back view of v118 and the
+    # contradictory random pairs v131 resolves ("a high, broad forehead" with "a low hairline") change no setting.
+    # A change of "Fat: face" (v156), the face's own fat, makes a new GPT face, as the build does.
+    old = clipboard_page(browser, errors)
+    old.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person',"
+                 " pres: 'f', age: 30, faceSeed: 7, hairLen: 'long'}))")
+    old.reload()
+    old.evaluate(HOLD_CLIPBOARD)
+    old.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    old.wait_for_function("window.writes.length === 1")
+    old.evaluate("() => window.writes[0]()")
+    old.wait_for_function(f"{SAVED}.headSig")
+    sig = old.evaluate(f"{SAVED}.headSig")
+    assert "showing how the hair falls at the back, its length and parting, worn down with no tie or clip" in sig, sig
+    assert "runs on past its bottom edge" not in sig and "a high, broad forehead" in sig and "a rounded hairline" in sig, sig
+    old.evaluate(f"""() => {{ const s = {SAVED}; s.headSig = s.headSig.replace('a rounded hairline', 'a low hairline');
+      localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(s)); }}""")
+    old.reload()
+    open_folds(old)
+    expect(old.get_by_text(re.compile(r"^The face has changed"))).to_be_hidden()
+    variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+    old.locator("label").filter(has_text=re.compile(r"^Man$")).click()
+    expect(variant).to_be_visible()
+    old.get_by_role("tab", name="Face").click()
+    old.get_by_role("slider", name="Fat: face", exact=True).press("ArrowRight")
+    expect(variant).to_be_hidden()
+    old.close()
     assert not errors, errors
 
     # A person's beauty level does not make a new animal of an animal's copied GPT sheet.
@@ -1018,6 +1050,34 @@ with sync_playwright() as p:
                 " the photo.") in text, text[-300:]
     photo.close()
 
+    # "Large" and "Very large" glutes keep their size but lose their profile words with a "Flat" or "Low" glute shape, which the
+    # shape's hint says is independent of the volume (both engines).
+    profile = re.compile(r"round glutes|projecting far behind|a hand's width behind the line of the shoulder blades|a deep shelf")
+    for model in ("gpt", "seedream"):
+        for size, shape, shown in ((3, "flat", False), (4, "low", False), (3, "round", True), (4, "auto", True)):
+            gl = saved_page(f"model: '{model}', pres: 'f', age: 30, glutes: {size}, glutesShape: '{shape}'")
+            body = next(t for t in prompts(gl) if "standing" in t)
+            assert bool(profile.search(body)) == shown, (model, size, shape, profile.findall(body))
+            assert ("very large" if 3 == size else "extremely large") in body, (model, size, shape)
+            gl.close()
+    assert not errors, errors
+
+    # "3D agent" (v158): its prompt follows the interface language, the French one as v158 wrote it.
+    agent = saved_page("pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true")
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    a3d = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
+    text = agent.evaluate(a3d)
+    assert text.startswith("# Agent prompt: bust without a top, 3D character\n"), text[:120]
+    for want in ("## INPUTS", "- TOP_TYPE = SOFT_TRIANGLE (", "- PTOSIS_GRADE = NONE (", "Shape key \"bare_rest\" on the body; at 1.0, V1 to V10 OK"):
+        assert want in text, (want, text[:400])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_HAUT|COQUES_|AUCUNE|nu_relache|À VALIDER)\b", text), re.findall(r"[àâçéèêëîïôùûüœ«»]", text)[:5]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(a3d)
+    assert text.startswith("# Prompt agent : poitrine sans haut, personnage 3D\n") and "- TYPE_DE_HAUT = TRIANGLE_SOUPLE (" in text, text[:200]
+    set_lang(agent, "English", "en")
+    agent.close()
+    assert not errors, errors
+
     # "3D agent" (v158) for an adult woman with a bust, never a man or a woman under 21. Its "Nipples" and "Areolas" choices: on
     # Auto the prompt keeps both out of scope; a type set by hand gives its sourced target, its own shape key and check V11.
     A3D = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
@@ -1031,8 +1091,8 @@ with sync_playwright() as p:
     agent.get_by_role("tab", name=re.compile(r"^Body")).click()
     agent.locator("#sd-a3d summary").click()
     text = agent.evaluate(A3D)
-    assert "6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig" in text and "- MAMELON =" not in text, text[-600:]
-    assert "V1 à V10 OK" in text and "V11" not in text
+    assert "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig" in text and "- NIPPLE =" not in text, text[-600:]
+    assert "V1 to V10 OK" in text and "V11" not in text
     projecting = agent.get_by_role("button", name="Projecting", exact=True)
     assert projecting.get_attribute("title") == "About 9 mm high above the areola."
     assert agent.get_by_role("button", name="Big", exact=True).get_attribute("title") == (
@@ -1041,18 +1101,28 @@ with sync_playwright() as p:
     agent.get_by_role("button", name="Big", exact=True).click()
     assert agent.evaluate(f"[{SAVED}.a3dNip, {SAVED}.a3dAre]") == ["SAILLANT", "GRANDE"]
     text = agent.evaluate(A3D)
+    for want in ("- NIPPLE = PROJECTING (", "- AREOLA = LARGE (", "- CHARACTER_HEIGHT = 160 cm", "areola LARGE: D_ar = 41 mm",
+                 "nipple PROJECTING: p = 9 mm", "d = 10 mm", "multiply them by H / 1600.", "Shape keys \"bare_rest\" and \"nipples\"",
+                 "   - V11: ", "V1 to V11 OK or FAILED", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
+                 "(the areola's color and grain included)",
+                 "A shape key or vertex group already named \"nipples\", \"areola_L\" or \"areola_R\": stop and ask, rename nothing."):
+        assert want in text, (want, text[-800:])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3D)
     for want in ("- MAMELON = SAILLANT (", "- AREOLE = GRANDE (", "- TAILLE_PERSONNAGE = 160 cm", "aréole GRANDE : D_ar = 41 mm",
                  "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
                  "   - V11 : ", "V1 à V11 OK ou KO", "Lee et al., Arch Plast Surg 2008", "Demiröz et al., J Plast Surg Hand Surg 2021",
                  "(couleur et grain de l'aréole compris)",
                  "Une shape key ou un vertex group déjà nommé \"mamelons\", \"areole_G\" ou \"areole_D\" : arrête-toi et demande, ne renomme rien."):
         assert want in text, (want, text[-800:])
+    set_lang(agent, "English", "en")
     agent.get_by_role("button", name="Umbilicated", exact=True).click()
     areola_auto = agent.locator("[data-a3d='a3dAre:auto']")
     assert areola_auto.inner_text() == "Auto (mesh)"
     areola_auto.click()
     text = agent.evaluate(A3D)
-    assert "mamelon OMBILIQUE : p < 0" in text and "- AREOLE = AUTO (" in text and "d = 10 mm" not in text and "D_ar = 41 mm" not in text and "D_ar = son diamètre" in text, text[-800:]
+    assert "nipple UMBILICATED: p < 0" in text and "- AREOLA = AUTO (" in text and "d = 10 mm" not in text and "D_ar = 41 mm" not in text and "D_ar = its diameter" in text, text[-800:]
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
     panel = "() => [...document.querySelectorAll('#sd-a3d summary, #sd-a3d p, #sd-a3d button')].map((n) => [n.textContent.trim(), n.title])"
     en = agent.evaluate(panel)
