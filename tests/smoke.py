@@ -1062,6 +1062,22 @@ with sync_playwright() as p:
             gl.close()
     assert not errors, errors
 
+    # "3D agent" (v158): its prompt follows the interface language, the French one as v158 wrote it.
+    agent = saved_page("pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true")
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    a3d = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
+    text = agent.evaluate(a3d)
+    assert text.startswith("# Agent prompt: bust without a top, 3D character\n"), text[:120]
+    for want in ("## INPUTS", "- TOP_TYPE = SOFT_TRIANGLE (", "- PTOSIS_GRADE = NONE (", "Shape key \"bare_rest\" on the body; at 1.0, V1 to V10 OK"):
+        assert want in text, (want, text[:400])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_HAUT|COQUES_|AUCUNE|nu_relache|À VALIDER)\b", text), re.findall(r"[àâçéèêëîïôùûüœ«»]", text)[:5]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(a3d)
+    assert text.startswith("# Prompt agent : poitrine sans haut, personnage 3D\n") and "- TYPE_DE_HAUT = TRIANGLE_SOUPLE (" in text, text[:200]
+    set_lang(agent, "English", "en")
+    agent.close()
+    assert not errors, errors
+
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)
     for style, model in (("3D", "gpt"), ("Photo", "seedream")):

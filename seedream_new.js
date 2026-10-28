@@ -6189,7 +6189,8 @@ function sdShapeName(k) {
    "Comparative Morphological Evaluation of Young Women's Breast-Bra Reshaping by Different Bra Cups", IJERPH 2023, 20(5):3856: 124
    Chinese students of 20.5 years on average, B and C cups, 3/4 bras with 13 and 23 mm cups, no underwire) kept for padded cups only,
    its ratios his own, marked "to validate" outside that population. Free thresholds are design choices, marked "À VALIDER", as in his
-   prompt. The text stays in French (his agent's language) and in a read-only field, never a <pre> (not a Seedream or GPT prompt). */
+   prompt. The text is in a read-only field, never a <pre> (not a Seedream or GPT prompt); French in the French interface (his agent's
+   language), English in the English one (sdA3dEnPass). */
 var SD_A3D_TOPS = [
   ["auto", "Auto (planche)", "Auto (sheet)"],
   ["COQUES_EPAISSES", "Coques épaisses", "Thick cups"],
@@ -6278,8 +6279,51 @@ function sdA3dSpread() {
 function sdA3dLab(T, k) {
   return ((T || []).filter(function (x) { return String(x[0]) === String(e[k]); })[0] || [])[1] || "";
 }
+/* port review (Codex; AGENTS.md: every visible French string has English): the agent prompt follows the interface language. French keeps
+   the owner's text as v158 wrote it; English says the same, and sdA3dEnPass then turns its codes, file and shape key names, measure
+   names and decimal commas into English (applied to the English text only, so the French one is unchanged) */
+var SD_A3D_EN = [
+  ["TAILLE_POITRINE", "BUST_SIZE"], ["PLUS_GRANDE", "LARGER"], ["PETITE", "SMALL"], ["TYPE_DE_HAUT", "TOP_TYPE"],
+  ["COQUES_EPAISSES", "THICK_CUPS"], ["COQUES_FINES", "THIN_CUPS"], ["TRIANGLE_SOUPLE", "SOFT_TRIANGLE"], ["MAILLOT_SOUPLE", "SOFT_BIKINI_TOP"],
+  ["HAUT_AMPLE", "LOOSE_TOP"], ["HAUT_AJUSTE", "FITTED_TOP"], ["UNE_PIECE_AJUSTEE", "FITTED_ONE_PIECE"], ["UNE_PIECE_GAINANTE", "SHAPING_ONE_PIECE"],
+  ["INCONNU", "UNKNOWN"], ["GRADE_PTOSE", "PTOSIS_GRADE"], ["AUCUNE", "NONE"], ["ECARTEMENT", "SPACING"], ["ECARTEE", "WIDE"],
+  ["RAPPROCHEE", "CLOSE"], ["VERS_EXTERIEUR", "OUTWARD"], ["VERS_AVANT", "FORWARD"], ["FORME", "SHAPE"], ["EN_OBUS", "CONICAL"],
+  ["HAUTE", "HIGH"], ["AUTRE", "OTHER"], ["ASYMETRIE", "ASYMMETRY"], ["OUI", "YES"], ["NON", "NO"],
+  ["SILLON_SOUS_MAMMAIRE", "INFRAMAMMARY_FOLD"], ["FICHIER_SOURCE", "SOURCE_FILE"], ["nu_relache", "bare_rest"],
+  ["rapport_nu", "report_bare"], ["deform_nu", "deform_bare"], ["sein_G", "breast_L"], ["sein_D", "breast_R"], ["z_bas", "z_low"],
+];
+function sdA3dEnPass(t) {
+  if ("en" !== sdLang) return t;
+  SD_A3D_EN.forEach(function (p) {
+    t = t.replace(new RegExp("\\b" + p[0] + "\\b", "g"), p[1]);
+  });
+  return t
+    .replace(/"_nu"/g, '"_bare"')
+    .replace(/_après\b/g, "_after")
+    .replace(/_avant\b/g, "_before")
+    .replace(/_cible\b/g, "_target")
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .replace(/(\d) %/g, "$1%");
+}
+/* a label of the sheet, in the interface language */
+function sdA3dLabT(T, k) {
+  var v = sdA3dLab(T, k);
+  return v ? sdTr(v) : v;
+}
+var SD_A3D_TOPTXT_EN = {
+  COQUES_EPAISSES: "a bra or top with thick moulded cups",
+  COQUES_FINES: "a bra or top with thin moulded cups",
+  TRIANGLE_SOUPLE: "a bikini top with soft, lined triangles, no cups or underwire",
+  MAILLOT_SOUPLE: "a full-coverage bikini top with soft cups, no padding or underwire",
+  HAUT_AMPLE: "a loose cropped top, no cups or underwire, that does not support the bust",
+  HAUT_AJUSTE: "a fitted jersey cropped top, no cups or underwire, that follows the bust without lifting or flattening it",
+  UNE_PIECE_AJUSTEE: "a one-piece swimsuit with an unstructured front, that follows the bust without lifting or flattening it",
+  UNE_PIECE_GAINANTE: "a competition one-piece swimsuit that compresses the bust",
+  INCONNU: "a top of unknown type",
+};
 function sdA3dText() {
-  var age = Math.round(+e.age || 30),
+  var tr = sdT,
+    age = Math.round(+e.age || 30),
     size = e.chest >= 2.5 ? "PLUS_GRANDE" : e.chest >= 2 ? "B_C" : "PETITE",
     top = sdA3dTop(),
     grade = sdA3dGrade(),
@@ -6302,152 +6346,392 @@ function sdA3dText() {
         return "asym" !== x;
       })
       .map(function (x) {
-        return ((SD_BUST_UI.filter(function (y) { return y[0] === x; })[0] || [])[1]) || x;
+        return sdTr(((SD_BUST_UI.filter(function (y) { return y[0] === x; })[0] || [])[1]) || x);
       }),
-    shapeTxt = (forms.length ? forms.join(", ") : "Auto (âge)") + (tier ? " (la planche écrit : " + { young: sdBustSkin() ? "ronde" : "ronde, ferme", natural: "goutte, légère chute naturelle", moderate: e.chest >= 3 ? "tombante" : "un peu basse", marked: e.chest >= 3 ? "tombante" : "un peu basse" }[tier] + ")" : ""),
-    lat = spread === "VERS_EXTERIEUR" ? ", et vers l'extérieur" : spread === "VERS_AVANT" ? ", au plus 15° vers l'extérieur" : "",
-    orient = none ? (spread === "VERS_AVANT" || spread === "VERS_EXTERIEUR" ? "mamelon orienté vers l'avant" + lat : "orientation de la forme de base gardée") : ("I" === grade ? "mamelon orienté vers l'avant, légèrement vers le bas" : "mamelon orienté vers l'avant et le bas") + lat,
+    shapeTxt =
+      (forms.length ? forms.join(", ") : tr("Auto (âge)", "Auto (age)")) +
+      (tier
+        ? tr(" (la planche écrit : ", " (the sheet says: ") +
+          {
+            young: sdBustSkin() ? tr("ronde", "round") : tr("ronde, ferme", "round, firm"),
+            natural: tr("goutte, légère chute naturelle", "teardrop, slight natural drop"),
+            moderate: e.chest >= 3 ? tr("tombante", "drooping") : tr("un peu basse", "slightly low"),
+            marked: e.chest >= 3 ? tr("tombante", "drooping") : tr("un peu basse", "slightly low"),
+          }[tier] +
+          ")"
+        : ""),
+    lat = spread === "VERS_EXTERIEUR" ? tr(", et vers l'extérieur", ", and outward") : spread === "VERS_AVANT" ? tr(", au plus 15° vers l'extérieur", ", at most 15° outward") : "",
+    orient = none
+      ? spread === "VERS_AVANT" || spread === "VERS_EXTERIEUR"
+        ? tr("mamelon orienté vers l'avant", "nipple pointing forward") + lat
+        : tr("orientation de la forme de base gardée", "orientation of the base shape kept")
+      : ("I" === grade ? tr("mamelon orienté vers l'avant, légèrement vers le bas", "nipple pointing forward, slightly down") : tr("mamelon orienté vers l'avant et le bas", "nipple pointing forward and down")) + lat,
     supp = methA
-      ? "Le haut soutenait la poitrine (coques) et la poitrine est en bonnet B à C : méthode A, ratios mesurés ci-dessous."
+      ? tr("Le haut soutenait la poitrine (coques) et la poitrine est en bonnet B à C : méthode A, ratios mesurés ci-dessous.", "The top supported the bust (moulded cups) and the bust is a B to C cup: method A, with the ratios measured below.")
       : coques
-        ? "Le haut soutenait la poitrine (coques), mais la méthode A ne vaut que pour les bonnets B à C : méthode B ; la poitrine descend et s'écarte jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée hors bonnets B à C : À VALIDER)."
+        ? tr(
+            "Le haut soutenait la poitrine (coques), mais la méthode A ne vaut que pour les bonnets B à C : méthode B ; la poitrine descend et s'écarte jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée hors bonnets B à C : À VALIDER).",
+            "The top supported the bust (moulded cups), but method A only holds for B to C cups: method B; the bust lowers and spreads to the requested grade and spacing, no further (no published measure outside B to C cups: TO VALIDATE).",
+          )
         : soft
-          ? "Le haut ne soutenait presque pas la poitrine : la forme du mesh sous le haut est déjà presque la forme au repos. Déformation minimale : la poitrine ne descend et ne s'écarte que si la forme de base ne remplit pas encore le grade et l'écartement demandés, jamais au-delà (aucune mesure publiée du passage d'un haut souple ou ample à sans haut : À VALIDER)."
+          ? tr(
+              "Le haut ne soutenait presque pas la poitrine : la forme du mesh sous le haut est déjà presque la forme au repos. Déformation minimale : la poitrine ne descend et ne s'écarte que si la forme de base ne remplit pas encore le grade et l'écartement demandés, jamais au-delà (aucune mesure publiée du passage d'un haut souple ou ample à sans haut : À VALIDER).",
+              "The top barely supported the bust: the shape of the mesh under the top is already close to the resting shape. Minimal deformation: the bust only lowers and spreads if the base shape does not yet meet the requested grade and spacing, never further (no published measure of going from a soft or loose top to no top: TO VALIDATE).",
+            )
           : light
-            ? "Le haut suivait la poitrine sans la remonter ni l'aplatir" + (!manT && e.chest >= 2 ? " (c'est ce que dit la planche)" : "") + " : maintien léger, la forme du mesh est déjà presque la forme au repos. Déformation minimale, jusqu'au grade et à l'écartement demandés, jamais au-delà (aucune mesure publiée : À VALIDER)."
+            ? tr("Le haut suivait la poitrine sans la remonter ni l'aplatir", "The top followed the bust without lifting or flattening it") +
+              (!manT && e.chest >= 2 ? tr(" (c'est ce que dit la planche)", " (this is what the sheet says)") : "") +
+              tr(
+                " : maintien léger, la forme du mesh est déjà presque la forme au repos. Déformation minimale, jusqu'au grade et à l'écartement demandés, jamais au-delà (aucune mesure publiée : À VALIDER).",
+                ": light support, the shape of the mesh is already close to the resting shape. Minimal deformation, to the requested grade and spacing, never further (no published measure: TO VALIDATE).",
+              )
             : "UNE_PIECE_GAINANTE" === top
-              ? "Le maillot gainait la poitrine : elle reprend sa forme au repos, en descendant et en s'écartant jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée : À VALIDER)."
-              : "Type de haut inconnu : avant toute déformation, arrête-toi et demande le type de haut.",
+              ? tr(
+                  "Le maillot gainait la poitrine : elle reprend sa forme au repos, en descendant et en s'écartant jusqu'au grade et à l'écartement demandés, sans plus (aucune mesure publiée : À VALIDER).",
+                  "The swimsuit compressed the bust: it takes back its resting shape, lowering and spreading to the requested grade and spacing, no further (no published measure: TO VALIDATE).",
+                )
+              : tr("Type de haut inconnu : avant toute déformation, arrête-toi et demande le type de haut.", "Unknown type of top: before any deformation, stop and ask for the type of top."),
     gradeTxt = {
-      AUCUNE: "AUCUNE : mamelon au-dessus du sillon sous-mammaire, aucune partie du sein sous le sillon",
-      I: "I : mamelon au niveau du sillon",
-      II: "II : mamelon sous le sillon, sans être le point le plus bas du sein",
-      III: "III : mamelon sous le sillon, au point le plus bas du sein",
-      PSEUDO: "PSEUDO : mamelon au niveau du sillon ou au-dessus, le bas du sein sous le sillon",
+      AUCUNE: tr("AUCUNE : mamelon au-dessus du sillon sous-mammaire, aucune partie du sein sous le sillon", "AUCUNE: nipple above the inframammary fold, no part of the breast below the fold"),
+      I: tr("I : mamelon au niveau du sillon", "I: nipple level with the fold"),
+      II: tr("II : mamelon sous le sillon, sans être le point le plus bas du sein", "II: nipple below the fold, but not the lowest point of the breast"),
+      III: tr("III : mamelon sous le sillon, au point le plus bas du sein", "III: nipple below the fold, at the lowest point of the breast"),
+      PSEUDO: tr("PSEUDO : mamelon au niveau du sillon ou au-dessus, le bas du sein sous le sillon", "PSEUDO: nipple at or above the fold, the lower breast below the fold"),
     }[grade],
     spreadTxt = {
-      NORMAL: "écartement d'au moins 0, ampleur libre mais minimale, À VALIDER",
-      ECARTEE: "écartement d'au moins 0, ampleur libre, À VALIDER",
-      RAPPROCHEE: "aucun écartement : |WBB_après - WBB_avant| ≤ tol",
-      VERS_EXTERIEUR: "écartement d'au moins 0, chaque sein orienté vers l'extérieur",
-      VERS_AVANT: "aucun écartement : |WBB_après - WBB_avant| ≤ tol ; chaque sein orienté vers l'avant, au plus 15° vers l'extérieur (À VALIDER)",
+      NORMAL: tr("écartement d'au moins 0, ampleur libre mais minimale, À VALIDER", "spread of at least 0, amount free but minimal, TO VALIDATE"),
+      ECARTEE: tr("écartement d'au moins 0, ampleur libre, À VALIDER", "spread of at least 0, amount free, TO VALIDATE"),
+      RAPPROCHEE: tr("aucun écartement : |WBB_après - WBB_avant| ≤ tol", "no spread: |WBB_après - WBB_avant| ≤ tol"),
+      VERS_EXTERIEUR: tr("écartement d'au moins 0, chaque sein orienté vers l'extérieur", "spread of at least 0, each breast pointing outward"),
+      VERS_AVANT: tr(
+        "aucun écartement : |WBB_après - WBB_avant| ≤ tol ; chaque sein orienté vers l'avant, au plus 15° vers l'extérieur (À VALIDER)",
+        "no spread: |WBB_après - WBB_avant| ≤ tol; each breast pointing forward, at most 15° outward (TO VALIDATE)",
+      ),
     }[spread],
     noSpread = "RAPPROCHEE" === spread || "VERS_AVANT" === spread,
     profTarget = cone
-      ? "P_après ≤ P_avant + tol (forme « En obus » réglée : profil conique permis, pas de cible P/W ni A)"
-      : "P_après / W ≤ " + pw + " ; P_après ≤ P_avant + tol ; A_après ≥ 120°" + ("0,6" === pw ? " (" + (spread === "VERS_AVANT" ? "« Vers l'avant »" : "hauteur réglée") + " : seuil P/W relevé de 0,5 à 0,6, À VALIDER)" : ""),
+      ? tr("P_après ≤ P_avant + tol (forme « En obus » réglée : profil conique permis, pas de cible P/W ni A)", "P_après ≤ P_avant + tol (“Conical” shape set: a conical profile is allowed, no P/W or A target)")
+      : tr("P_après / W ≤ " + pw + " ; P_après ≤ P_avant + tol ; A_après ≥ 120°", "P_après / W ≤ " + pw + "; P_après ≤ P_avant + tol; A_après ≥ 120°") +
+        ("0,6" === pw
+          ? " (" + (spread === "VERS_AVANT" ? tr("« Vers l'avant »", "“Forward”") : tr("hauteur réglée", "height set")) + tr(" : seuil P/W relevé de 0,5 à 0,6, À VALIDER)", ": P/W threshold raised from 0,5 to 0,6, TO VALIDATE)")
+          : ""),
     fiche = [
-      "corpulence " + (sdA3dLab(tZ.fat, "fat") || "?"),
-      "poitrine " + (sdA3dLab(tZ.bust, "chest") || "?"),
-      "forme : " + shapeTxt,
+      tr("corpulence ", "build ") + (sdA3dLabT(tZ.fat, "fat") || "?"),
+      tr("poitrine ", "bust ") + (sdA3dLabT(tZ.bust, "chest") || "?"),
+      tr("forme : ", "shape: ") + shapeTxt,
     ]
-      .concat(sdDropX() ? ["chute : très tombante"] : [], asym ? ["asymétrique"] : [], sdBustSkin() ? ["peau de la poitrine " + sdA3dLab(tZ.bustSkin, "bustSkin").toLowerCase()] : [])
-      .join(" ; "),
+      .concat(
+        sdDropX() ? [tr("chute : très tombante", "drop: very drooping")] : [],
+        asym ? [tr("asymétrique", "asymmetric")] : [],
+        sdBustSkin() ? [tr("peau de la poitrine ", "bust skin ") + sdA3dLabT(tZ.bustSkin, "bustSkin").toLowerCase()] : [],
+      )
+      .join(tr(" ; ", "; ")),
     L = [];
-  L.push("# Prompt agent : poitrine sans haut, personnage 3D", "");
-  L.push("## CONTEXTE", "");
-  L.push("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte actuellement " + SD_A3D_TOPTXT[top] + ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne.", "");
-  L.push("Fiche du personnage (planche de référence) : " + fiche + ".", "");
-  L.push("Règle centrale : volume inchangé. Retirer le haut ne change la poitrine que dans la mesure où il la soutenait. " + supp + (methA ? "" : " La forme sans haut suit le grade, l'écartement et la forme réglés ci-dessous, jamais une forme moyenne. Une poitrine plus volumineuse se place plus bas au repos (Brown et al. 2012 ; Coltman, Steele, McGhee 2018, rapportés par Suh et Park 2022) : la planche le dit déjà par la taille et la forme réglées."), "");
-  L.push("Méthode A : ratios mesurés avec et sans soutien-gorge (Zhong et al., IJERPH 2023, 20(5):3856 : 124 Chinoises de 18 à 25 ans, 20,5 ans en moyenne, IMC moyen 20,3, bonnets B et C, soutiens-gorge 3/4 à coques de 13 et 23 mm sans armature), fixés ; hors de cette population (âge, taille, type de haut), ratios À VALIDER" + (methA && (age < 18 || age > 25) ? " : ce personnage a " + age + " ans, hors de la plage de l'étude, à signaler dans le rapport" : "") + ". Méthode B : forme sans haut définie par un grade de ptose (classification de Regnault modifiée, définitions d'une source secondaire).", "");
-  L.push("## ENTRÉES", "");
+  L.push(tr("# Prompt agent : poitrine sans haut, personnage 3D", "# Agent prompt: bust without a top, 3D character"), "");
+  L.push(tr("## CONTEXTE", "## CONTEXT"), "");
+  L.push(
+    tr("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte actuellement ", "Adult " + ("x" === e.pres ? "androgynous" : "female") + " 3D character (" + age + " years old) for a video game. It currently wears ") +
+      ("en" === sdLang ? SD_A3D_TOPTXT_EN : SD_A3D_TOPTXT)[top] +
+      tr(
+        ". Objectif : version sans haut de la poitrine, au repos, debout, sans aucun soutien, fidèle à la forme de CE personnage, jamais ramenée à une forme moyenne.",
+        ". Goal: a version of the bust without the top, at rest, standing, with no support at all, true to the shape of THIS character, never brought back to an average shape.",
+      ),
+    "",
+  );
+  L.push(tr("Fiche du personnage (planche de référence) : ", "Character sheet (reference sheet): ") + fiche + ".", "");
+  L.push(
+    tr("Règle centrale : volume inchangé. Retirer le haut ne change la poitrine que dans la mesure où il la soutenait. ", "Central rule: volume unchanged. Removing the top changes the bust only as far as it supported it. ") +
+      supp +
+      (methA
+        ? ""
+        : tr(
+            " La forme sans haut suit le grade, l'écartement et la forme réglés ci-dessous, jamais une forme moyenne. Une poitrine plus volumineuse se place plus bas au repos (Brown et al. 2012 ; Coltman, Steele, McGhee 2018, rapportés par Suh et Park 2022) : la planche le dit déjà par la taille et la forme réglées.",
+            " The shape without the top follows the grade, spacing and shape set below, never an average shape. A larger bust sits lower at rest (Brown et al. 2012; Coltman, Steele, McGhee 2018, reported by Suh and Park 2022): the sheet already says so through the size and shape set.",
+          )),
+    "",
+  );
+  L.push(
+    tr(
+      "Méthode A : ratios mesurés avec et sans soutien-gorge (Zhong et al., IJERPH 2023, 20(5):3856 : 124 Chinoises de 18 à 25 ans, 20,5 ans en moyenne, IMC moyen 20,3, bonnets B et C, soutiens-gorge 3/4 à coques de 13 et 23 mm sans armature), fixés ; hors de cette population (âge, taille, type de haut), ratios À VALIDER",
+      "Method A: ratios measured with and without a bra (Zhong et al., IJERPH 2023, 20(5):3856: 124 Chinese women of 18 to 25, 20,5 years old on average, mean BMI 20,3, B and C cups, 3/4 bras with 13 and 23 mm moulded cups, no underwire), fixed; outside that population (age, size, type of top), ratios TO VALIDATE",
+    ) +
+      (methA && (age < 18 || age > 25) ? tr(" : ce personnage a " + age + " ans, hors de la plage de l'étude, à signaler dans le rapport", ": this character is " + age + ", outside the study's range, to be flagged in the report") : "") +
+      tr(
+        ". Méthode B : forme sans haut définie par un grade de ptose (classification de Regnault modifiée, définitions d'une source secondaire).",
+        ". Method B: the shape without the top is defined by a ptosis grade (modified Regnault classification, definitions from a secondary source).",
+      ),
+    "",
+  );
+  L.push(tr("## ENTRÉES", "## INPUTS"), "");
   L.push("- FICHIER_SOURCE =");
-  L.push("- TAILLE_POITRINE = " + size + " (PETITE, B_C ou PLUS_GRANDE ; planche : " + (sdA3dLab(tZ.bust, "chest") || "?") + ")");
-  L.push("- TYPE_DE_HAUT = " + top + " (" + SD_A3D_TOPS.slice(1).map(function (x) { return x[0]; }).join(", ") + " ; " + (manT ? "choisi à la main" : "lu dans la tenue de la planche") + ")");
-  L.push("- GRADE_PTOSE = " + (methA ? "sans objet en méthode A" : grade + " (AUCUNE, I, II, III ou PSEUDO ; " + (manG ? "choisi à la main" : "tiré de la forme de la planche") + ")"));
-  L.push("- ECARTEMENT = " + (methA ? "sans objet en méthode A (r_h)" : spread + " (NORMAL, ECARTEE, RAPPROCHEE, VERS_EXTERIEUR ou VERS_AVANT)"));
-  L.push("- FORME = " + (cone ? "EN_OBUS" : high ? "HAUTE" : "AUTRE") + " (EN_OBUS, HAUTE ou AUTRE)");
-  L.push("- ASYMETRIE = " + (asym ? "OUI" : "NON") + " (OUI ou NON)");
-  L.push("- SILLON_SOUS_MAMMAIRE = AUTO (ou nom du vertex group du sillon, requis en méthode B si le sillon n'est pas lisible sur le mesh)", "");
-  L.push("Champ requis vide ou hors liste : arrête-toi et demande, ne suppose rien. Méthode A si TAILLE_POITRINE = B_C et TYPE_DE_HAUT = COQUES_EPAISSES ou COQUES_FINES ; sinon méthode B. Méthode retenue ici : " + (methA ? "A" : "B") + ".", "");
-  L.push("## CIBLES", "");
-  L.push("Méthode A :", "");
-  L.push("| TYPE_DE_HAUT | r_v (baisse de HU) | r_h (hausse de WBB) | Volume |", "|---|---|---|---|", "| COQUES_EPAISSES | 0,17 | 0,13 | 0 % |", "| COQUES_FINES | 0,26 | 0,10 | 0 % |", "");
-  L.push("HU_cible = HU_avant × (1 - r_v) ; WBB_cible = WBB_avant × (1 + r_h) ; V_cible = V_avant.", "");
-  L.push("Données de Zhong et al. 2023 (debout, statique ; pourcentages = (nue - avec soutien) / avec soutien) :", "");
-  L.push("| Mesure | Nue | Coques fines 13 mm | Coques épaisses 23 mm |", "|---|---|---|---|", "| Hauteur du point saillant depuis le sol | 113,91 cm | 116,07 cm | 115,09 cm |", "| HU, point saillant au-dessus du bas du sein | 5,47 cm | 7,42 cm (-26 % nue) | 6,59 cm (-17 % nue) |", "| WBB, écart entre les points saillants | 18,41 cm | 16,69 cm (+10 % nue) | 16,26 cm (+13 % nue) |", "");
-  L.push("Limites de la méthode A : soutien-gorge et non maillot (coques de maillot assimilées) ; avec soutien, le point saillant est mesuré sur la coque ; moyennes de population, pas valeurs individuelles ; le bas du sein descend aussi d'environ 0,2 cm, fixé ici par simplification.", "");
-  L.push("Méthode B, repères par côté :");
-  L.push("- z_SMS : hauteur du sillon sous-mammaire sur la paroi du thorax, dans la forme de base, au plus près du plan vertical passant par BP. Repère fixe. En AUTO : ligne de courbure concave maximale où le dessous du sein rejoint le thorax ; si elle est ambiguë, arrête-toi et demande le vertex group.");
-  L.push("- z_BP : hauteur du mamelon (point saillant) après déformation ; z_bas : hauteur du point le plus bas du sein après déformation.");
-  L.push("- tol = 0,003 × H, H étant la hauteur du personnage en unités de scène.", "");
-  L.push("| Grade | Condition à atteindre |", "|---|---|", "| AUCUNE | z_BP > z_SMS + tol et z_bas ≥ z_SMS - tol |", "| I | abs(z_BP - z_SMS) ≤ tol et z_bas < z_BP |", "| II | z_bas + tol < z_BP < z_SMS - tol |", "| III | z_BP < z_SMS - tol et z_BP ≤ z_bas + tol (mamelon au point le plus bas ; interprétation à valider visuellement) |", "| PSEUDO | z_BP ≥ z_SMS - tol et z_bas < z_SMS - tol |", "");
+  L.push("- TAILLE_POITRINE = " + size + tr(" (PETITE, B_C ou PLUS_GRANDE ; planche : ", " (PETITE, B_C or PLUS_GRANDE; sheet: ") + (sdA3dLabT(tZ.bust, "chest") || "?") + ")");
+  L.push(
+    "- TYPE_DE_HAUT = " +
+      top +
+      " (" +
+      SD_A3D_TOPS.slice(1)
+        .map(function (x) {
+          return x[0];
+        })
+        .join(", ") +
+      tr(" ; ", "; ") +
+      (manT ? tr("choisi à la main", "chosen by hand") : tr("lu dans la tenue de la planche", "read from the sheet's outfit")) +
+      ")",
+  );
+  L.push("- GRADE_PTOSE = " + (methA ? tr("sans objet en méthode A", "not applicable in method A") : grade + tr(" (AUCUNE, I, II, III ou PSEUDO ; ", " (AUCUNE, I, II, III or PSEUDO; ") + (manG ? tr("choisi à la main", "chosen by hand") : tr("tiré de la forme de la planche", "taken from the sheet's shape")) + ")"));
+  L.push("- ECARTEMENT = " + (methA ? tr("sans objet en méthode A (r_h)", "not applicable in method A (r_h)") : spread + tr(" (NORMAL, ECARTEE, RAPPROCHEE, VERS_EXTERIEUR ou VERS_AVANT)", " (NORMAL, ECARTEE, RAPPROCHEE, VERS_EXTERIEUR or VERS_AVANT)")));
+  L.push("- FORME = " + (cone ? "EN_OBUS" : high ? "HAUTE" : "AUTRE") + tr(" (EN_OBUS, HAUTE ou AUTRE)", " (EN_OBUS, HAUTE or AUTRE)"));
+  L.push("- ASYMETRIE = " + (asym ? "OUI" : "NON") + tr(" (OUI ou NON)", " (OUI or NON)"));
+  L.push(
+    tr(
+      "- SILLON_SOUS_MAMMAIRE = AUTO (ou nom du vertex group du sillon, requis en méthode B si le sillon n'est pas lisible sur le mesh)",
+      "- SILLON_SOUS_MAMMAIRE = AUTO (or the name of the fold's vertex group, required in method B if the fold cannot be read on the mesh)",
+    ),
+    "",
+  );
+  L.push(
+    tr(
+      "Champ requis vide ou hors liste : arrête-toi et demande, ne suppose rien. Méthode A si TAILLE_POITRINE = B_C et TYPE_DE_HAUT = COQUES_EPAISSES ou COQUES_FINES ; sinon méthode B. Méthode retenue ici : ",
+      "A required field empty or off the list: stop and ask, assume nothing. Method A if TAILLE_POITRINE = B_C and TYPE_DE_HAUT = COQUES_EPAISSES or COQUES_FINES; otherwise method B. Method used here: ",
+    ) +
+      (methA ? "A" : "B") +
+      ".",
+    "",
+  );
+  L.push(tr("## CIBLES", "## TARGETS"), "");
+  L.push(tr("Méthode A :", "Method A:"), "");
+  L.push(
+    tr("| TYPE_DE_HAUT | r_v (baisse de HU) | r_h (hausse de WBB) | Volume |", "| TYPE_DE_HAUT | r_v (drop of HU) | r_h (rise of WBB) | Volume |"),
+    "|---|---|---|---|",
+    "| COQUES_EPAISSES | 0,17 | 0,13 | 0 % |",
+    "| COQUES_FINES | 0,26 | 0,10 | 0 % |",
+    "",
+  );
+  L.push(tr("HU_cible = HU_avant × (1 - r_v) ; WBB_cible = WBB_avant × (1 + r_h) ; V_cible = V_avant.", "HU_cible = HU_avant × (1 - r_v); WBB_cible = WBB_avant × (1 + r_h); V_cible = V_avant."), "");
+  L.push(tr("Données de Zhong et al. 2023 (debout, statique ; pourcentages = (nue - avec soutien) / avec soutien) :", "Data from Zhong et al. 2023 (standing, static; percentages = (bare - with support) / with support):"), "");
+  L.push(
+    tr("| Mesure | Nue | Coques fines 13 mm | Coques épaisses 23 mm |", "| Measure | Bare | Thin cups 13 mm | Thick cups 23 mm |"),
+    "|---|---|---|---|",
+    tr("| Hauteur du point saillant depuis le sol | 113,91 cm | 116,07 cm | 115,09 cm |", "| Height of the bust point from the floor | 113,91 cm | 116,07 cm | 115,09 cm |"),
+    tr("| HU, point saillant au-dessus du bas du sein | 5,47 cm | 7,42 cm (-26 % nue) | 6,59 cm (-17 % nue) |", "| HU, bust point above the bottom of the breast | 5,47 cm | 7,42 cm (-26 % bare) | 6,59 cm (-17 % bare) |"),
+    tr("| WBB, écart entre les points saillants | 18,41 cm | 16,69 cm (+10 % nue) | 16,26 cm (+13 % nue) |", "| WBB, distance between the bust points | 18,41 cm | 16,69 cm (+10 % bare) | 16,26 cm (+13 % bare) |"),
+    "",
+  );
+  L.push(
+    tr(
+      "Limites de la méthode A : soutien-gorge et non maillot (coques de maillot assimilées) ; avec soutien, le point saillant est mesuré sur la coque ; moyennes de population, pas valeurs individuelles ; le bas du sein descend aussi d'environ 0,2 cm, fixé ici par simplification.",
+      "Limits of method A: a bra, not a swimsuit (swimsuit cups treated as the same); with support, the bust point is measured on the cup; population means, not individual values; the bottom of the breast also drops by about 0,2 cm, held fixed here for simplicity.",
+    ),
+    "",
+  );
+  L.push(tr("Méthode B, repères par côté :", "Method B, landmarks per side:"));
+  L.push(
+    tr(
+      "- z_SMS : hauteur du sillon sous-mammaire sur la paroi du thorax, dans la forme de base, au plus près du plan vertical passant par BP. Repère fixe. En AUTO : ligne de courbure concave maximale où le dessous du sein rejoint le thorax ; si elle est ambiguë, arrête-toi et demande le vertex group.",
+      "- z_SMS: height of the inframammary fold on the chest wall, in the base shape, as close as possible to the vertical plane through BP. A fixed landmark. With AUTO: the line of maximum concave curvature where the underside of the breast meets the chest; if it is ambiguous, stop and ask for the vertex group.",
+    ),
+  );
+  L.push(tr("- z_BP : hauteur du mamelon (point saillant) après déformation ; z_bas : hauteur du point le plus bas du sein après déformation.", "- z_BP: height of the nipple (bust point) after deformation; z_bas: height of the lowest point of the breast after deformation."));
+  L.push(tr("- tol = 0,003 × H, H étant la hauteur du personnage en unités de scène.", "- tol = 0,003 × H, H being the character's height in scene units."), "");
+  L.push(
+    tr("| Grade | Condition à atteindre |", "| Grade | Condition to reach |"),
+    "|---|---|",
+    tr("| AUCUNE | z_BP > z_SMS + tol et z_bas ≥ z_SMS - tol |", "| AUCUNE | z_BP > z_SMS + tol and z_bas ≥ z_SMS - tol |"),
+    tr("| I | abs(z_BP - z_SMS) ≤ tol et z_bas < z_BP |", "| I | abs(z_BP - z_SMS) ≤ tol and z_bas < z_BP |"),
+    "| II | z_bas + tol < z_BP < z_SMS - tol |",
+    tr("| III | z_BP < z_SMS - tol et z_BP ≤ z_bas + tol (mamelon au point le plus bas ; interprétation à valider visuellement) |", "| III | z_BP < z_SMS - tol and z_BP ≤ z_bas + tol (nipple at the lowest point; interpretation to validate visually) |"),
+    tr("| PSEUDO | z_BP ≥ z_SMS - tol et z_bas < z_SMS - tol |", "| PSEUDO | z_BP ≥ z_SMS - tol and z_bas < z_SMS - tol |"),
+    "",
+  );
   methA ||
     (L.push(
-      "Grade demandé (méthode B) : " + gradeTxt + ". " +
-        (manG ? "Il a été choisi à la main pour ce personnage." : "Il vient des réglages de CE personnage (forme de la poitrine sur la planche) ; la correspondance forme / grade est un choix de conception, À VALIDER : aucun grade par défaut n'est sourcé pour un volume donné.") +
-        " Si la forme de base remplit déjà cette condition, aucune descente. Si elle est déjà plus basse que le grade demandé (mesh affaissé sous le haut), ne la remonte pas : arrête-toi et demande.",
+      tr("Grade demandé (méthode B) : ", "Requested grade (method B): ") +
+        gradeTxt +
+        ". " +
+        (manG
+          ? tr("Il a été choisi à la main pour ce personnage.", "It was chosen by hand for this character.")
+          : tr(
+              "Il vient des réglages de CE personnage (forme de la poitrine sur la planche) ; la correspondance forme / grade est un choix de conception, À VALIDER : aucun grade par défaut n'est sourcé pour un volume donné.",
+              "It comes from the settings of THIS character (the bust shape on the sheet); the shape-to-grade mapping is a design choice, TO VALIDATE: no default grade is sourced for a given volume.",
+            )) +
+        tr(
+          " Si la forme de base remplit déjà cette condition, aucune descente. Si elle est déjà plus basse que le grade demandé (mesh affaissé sous le haut), ne la remonte pas : arrête-toi et demande.",
+          " If the base shape already meets this condition, no lowering. If it is already lower than the requested grade (a mesh sagging under the top), do not lift it: stop and ask.",
+        ),
       "",
     ),
     L.push(
-      "Forme en méthode B : volume de chaque sein à ±2 % ; écartement " + spread + " : " + spreadTxt + " ; déformation minimale qui atteint le grade ; " +
-        (none ? "le haut du sein garde son plein : au-dessus de BP, le profil ne recule pas de plus de tol ; aucune partie du sein sous le sillon" : "le haut du sein se vide et le bas se remplit ; contact sein / thorax sous le sillon permis") +
-        " ; " + orient + " ; interpénétration interdite.",
+      tr("Forme en méthode B : volume de chaque sein à ±2 % ; écartement ", "Shape in method B: volume of each breast within ±2 %; spread ") +
+        spread +
+        tr(" : ", ": ") +
+        spreadTxt +
+        tr(" ; déformation minimale qui atteint le grade ; ", "; the minimal deformation that reaches the grade; ") +
+        (none
+          ? tr("le haut du sein garde son plein : au-dessus de BP, le profil ne recule pas de plus de tol ; aucune partie du sein sous le sillon", "the upper breast keeps its fullness: above BP, the profile does not recede by more than tol; no part of the breast below the fold")
+          : tr("le haut du sein se vide et le bas se remplit ; contact sein / thorax sous le sillon permis", "the upper breast empties and the lower breast fills; breast-to-chest contact below the fold allowed")) +
+        tr(" ; ", "; ") +
+        orient +
+        tr(" ; interpénétration interdite.", "; no interpenetration."),
       "",
     ));
-  L.push("Profil (deux méthodes), par côté :");
-  L.push("- Plan de paroi : plan ajusté par moindres carrés sur les vertices de poids 0 du bord de la zone, dans la forme de base. Fixe.");
-  L.push("- P : distance maximale entre ce plan et la surface du sein, le long de sa normale.");
-  L.push("- W : distance horizontale entre les points médial et latéral du bord de la zone, à la hauteur de BP dans la forme de base. Fixe.");
-  L.push("- A : sur la coupe sagittale passant par BP, angle entre les segments reliant BP aux points du profil situés 0,15 × W plus haut et plus bas. Si le point bas n'appartient plus au sein (grade III), prends le point le plus bas du sein sur cette coupe.", "");
-  L.push("Cibles : " + profTarget + "." + (cone ? "" : " Forme de base déjà hors cibles (cône) : en méthode B, continue, l'étape 7f corrige ; en méthode A, arrête-toi et demande s'il faut passer en B."), "");
-  L.push("Repère du seuil P/W : ordre de grandeur de population, pas une règle individuelle (projection de 4,0 ± 1,3 cm pour environ 540 cc chez 100 jeunes Malaisiennes, Shahlini 2014 ; base d'environ 13 cm dans une étude 3D Vectra ; aucune des deux cohortes n'a de poitrine très volumineuse). " + (cone ? "Ici, la forme « En obus » réglée sur la planche passe avant ce repère." : "0,6" === pw ? "Ici, la forme réglée sur la planche, plus projetée, le relève." : "Une forme plus projetée réglée sur la planche le relèverait."), "");
-  L.push("Seuils ±0,01, ±2 %, tol" + (cone ? "" : ", " + pw + ", 120°") + (spread === "VERS_AVANT" && !methA ? ", 15°" : "") + " : choix de conception.", "");
+  L.push(tr("Profil (deux méthodes), par côté :", "Profile (both methods), per side:"));
+  L.push(tr("- Plan de paroi : plan ajusté par moindres carrés sur les vertices de poids 0 du bord de la zone, dans la forme de base. Fixe.", "- Wall plane: a least-squares plane fitted to the weight-0 vertices on the edge of the area, in the base shape. Fixed."));
+  L.push(tr("- P : distance maximale entre ce plan et la surface du sein, le long de sa normale.", "- P: the maximum distance between this plane and the breast surface, along its normal."));
+  L.push(tr("- W : distance horizontale entre les points médial et latéral du bord de la zone, à la hauteur de BP dans la forme de base. Fixe.", "- W: the horizontal distance between the medial and lateral points of the edge of the area, at the height of BP in the base shape. Fixed."));
+  L.push(
+    tr(
+      "- A : sur la coupe sagittale passant par BP, angle entre les segments reliant BP aux points du profil situés 0,15 × W plus haut et plus bas. Si le point bas n'appartient plus au sein (grade III), prends le point le plus bas du sein sur cette coupe.",
+      "- A: on the sagittal section through BP, the angle between the segments joining BP to the profile points 0,15 × W higher and lower. If the lower point no longer belongs to the breast (grade III), take the lowest point of the breast on that section.",
+    ),
+    "",
+  );
+  L.push(
+    tr("Cibles : ", "Targets: ") +
+      profTarget +
+      "." +
+      (cone
+        ? ""
+        : tr(
+            " Forme de base déjà hors cibles (cône) : en méthode B, continue, l'étape 7f corrige ; en méthode A, arrête-toi et demande s'il faut passer en B.",
+            " A base shape already off target (a cone): in method B, go on, step 7f corrects it; in method A, stop and ask whether to switch to B.",
+          )),
+    "",
+  );
+  L.push(
+    tr(
+      "Repère du seuil P/W : ordre de grandeur de population, pas une règle individuelle (projection de 4,0 ± 1,3 cm pour environ 540 cc chez 100 jeunes Malaisiennes, Shahlini 2014 ; base d'environ 13 cm dans une étude 3D Vectra ; aucune des deux cohortes n'a de poitrine très volumineuse). ",
+      "Reference for the P/W threshold: a population order of magnitude, not an individual rule (a projection of 4,0 ± 1,3 cm for about 540 cc in 100 young Malaysian women, Shahlini 2014; a base of about 13 cm in a 3D Vectra study; neither cohort has very large busts). ",
+    ) +
+      (cone
+        ? tr("Ici, la forme « En obus » réglée sur la planche passe avant ce repère.", "Here, the “Conical” shape set on the sheet comes before this reference.")
+        : "0,6" === pw
+          ? tr("Ici, la forme réglée sur la planche, plus projetée, le relève.", "Here, the shape set on the sheet, more projected, raises it.")
+          : tr("Une forme plus projetée réglée sur la planche le relèverait.", "A more projected shape set on the sheet would raise it.")),
+    "",
+  );
+  L.push(tr("Seuils ±0,01, ±2 %, tol", "Thresholds ±0,01, ±2 %, tol") + (cone ? "" : ", " + pw + ", 120°") + (spread === "VERS_AVANT" && !methA ? ", 15°" : "") + tr(" : choix de conception.", ": design choices."), "");
   L.push("## DEFINITION OF DONE", "");
-  L.push("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK ; FICHIER_SOURCE intact ; rapport livré.", "");
-  L.push("## CONTRAINTES", "");
-  L.push("1. Blender avec Python (bpy, bmesh, mathutils). Blender absent ou import raté : arrête-toi et signale.");
-  L.push("2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\" ; forme de base intacte.");
-  L.push("3. Topologie (vertices, arêtes, faces), UV, vertex groups, poids de skinning et shape keys existants inchangés.");
-  L.push("4. Rien au-delà des cibles : ni volume, ni taille de bonnet, ni esthétique.");
-  L.push("5. Aucune hypothèse silencieuse : vérifie axe avant, axe vertical, unité, objet corps, côtés, sillon. Ambiguïté : demande.");
-  L.push("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.");
-  L.push("7. État de mesure identique avant et après : armature en Rest Position, Subdivision et lissages désactivés, shape keys existantes à leur valeur. Demi-mesh avec Mirror : édite la moitié réelle, mesure sur le mesh évalué.");
-  L.push("8. Paramètres libres (zone, décroissance, écartement en B, itérations) : listés dans le rapport, marqués À VALIDER.", "");
-  L.push("## ÉTAPES", "");
-  L.push("1. Inventaire : objets, corps, maillot, modificateurs, shape keys, armature. Masque le maillot (hide_viewport, hide_render), ne le supprime pas.");
-  L.push("2. Complétude : sous le haut, mesh du corps continu et fermé, sans trou ni faces supprimées ; longueur moyenne d'arête dans la zone ≤ 2 × celle du reste du torse. Géométrie manquante : ARRÊT, captures, aucune reconstruction.");
-  L.push("3. Forme héritée : shape key, Shrinkwrap ou modificateur qui plaque le corps sur le maillot ? Signale-le ; s'il écraserait \"nu_relache\" : ARRÊT et demande. Mesure l'écart corps / face interne du maillot (BVHTree.find_nearest) : min, médiane, max, traversées. Ne corrige rien.");
-  L.push("4. Repère : axes vertical, avant et latéral en rest pose (armature, sinon normale moyenne du torse) ; H ; unité.");
-  L.push("5. Zone : groupes de poids poitrine du rig s'ils existent, sinon \"sein_G\" et \"sein_D\" jusqu'au sillon, au bord du sternum et à la ligne axillaire antérieure ; poids 1 au centre, décroissance douce jusqu'à 0 au bord (fixe). En B, inclure à poids 0 la peau du thorax sous le sillon. Capture de la carte de poids.");
-  L.push("6. Mesures AVANT, par côté :");
-  L.push("   - BP : vertex le plus en avant parmi ceux de poids > 0,5.");
-  L.push("   - UBP (A) : vertex le plus bas du contour inférieur, au sillon, dans le plan vertical le plus proche de BP ; HU = distance verticale BP - UBP.");
-  L.push("   - WBB : distance latérale entre BP gauche et droit.");
-  L.push("   - z_SMS (B) ; grade de la forme de base, reporté.");
-  L.push("   - V : duplique les faces de poids > 0 dans un bmesh, bmesh.ops.holes_fill, bm.calc_volume().");
-  L.push("   - Plan de paroi, P, W, A" + (cone ? "." : " ; règle de la forme de base hors cibles."));
-  L.push("7. Déformation, uniquement dans \"nu_relache\" :");
-  L.push("   - A : a. descente pondérée jusqu'à HU_cible (UBP reste au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.");
-  methA || L.push("   - B : a. descente de la masse, croissante vers le bas, jusqu'à la condition du grade " + grade + " et pas au-delà ; aucune si la forme de base la remplit déjà" + (none ? "" : " ; le bas peut passer sous le sillon et toucher le thorax sans le traverser") + " ; b. écartement selon ECARTEMENT = " + spread + " ; c. " + orient + ".");
-  L.push("   - Puis : d. volume ramené à ±2 % par gonflement le long des normales ; e. lissage limité à la zone, re-mesure, itération" + (cone ? "." : " ; f. si P_après / W > " + pw + " ou A_après < 120°, recule le sommet vers le plan de paroi, redistribue ce volume " + (methA ? "vers le bas et l'extérieur, reprends d et e." : (none ? "vers la base, sans faire descendre le mamelon ni vider le haut" : "vers le bas" + (noSpread ? "" : " et l'extérieur")) + ", reprends d et e ; en B, le grade reste vrai.")));
-  L.push("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6.");
-  L.push("9. Vérifications, \"nu_relache\" à 1,0 :");
-  L.push("   - V1 : " + (methA ? "HU_après / HU_avant = 1 - r_v à ±0,01." : "condition du grade " + grade + " vraie par sein (reporte z_SMS, z_BP, z_bas, tol)."));
-  L.push("   - V2 : " + (methA ? "WBB_après / WBB_avant = 1 + r_h à ±0,01." : noSpread ? "|WBB_après - WBB_avant| ≤ tol." : "WBB_après ≥ WBB_avant."));
-  L.push("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par sein.");
-  L.push("   - V4 : nombres de vertices, arêtes, faces et UV identiques à la source.");
-  L.push("   - V5 : déplacement des vertices de poids 0 ≤ 1e-6 unité de scène.");
-  L.push("   - V6 : aucune auto-intersection dans la zone, y compris sein / thorax (BVHTree.overlap, hors faces partageant un vertex) ; aucune normale inversée ; aucune face d'aire multipliée par plus de 3.");
-  L.push("   - V7 : symétrie. " + (methA ? "Écart des ratios gauche / droite ≤ 0,01. " : "Même grade des deux côtés. ") + (asym ? "ASYMETRIE = OUI : garde l'asymétrie d'origine, ne la corrige pas, mesure-la, signale-la." : "Asymétrie d'origine : garde-la, mesure-la, signale-la."));
-  L.push("   - V8 : si armature : captures en rest pose, bras levés, buste penché, sans artefact ; sinon INVÉRIFIABLE avec la raison.");
-  L.push("   - V9 : rendus avant/après de face, profil, trois-quarts, même caméra et même éclairage ; sur le profil, point le plus bas et sillon lisibles.");
-  L.push("   - V10 : profil par sein : " + profTarget + ".");
-  L.push("   Échec : corrige et recommence ; après 3 échecs sur un critère, arrête-toi et rapporte les valeurs.", "");
-  L.push("## SORTIE", "");
-  L.push("1. Fichier .blend suffixé \"_nu\".");
-  L.push("2. Script deform_nu.py, headless : `blender -b FICHIER_SOURCE -P deform_nu.py`");
-  L.push("3. rapport_nu.md : méthode et raison ; " + (methA ? "" : "grade de la forme de base et grade demandé ; ") + "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à V10 OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE.");
-  L.push("4. Captures PNG avant/après et carte de poids.", "");
-  L.push("## INTERDITS", "");
-  L.push((methA
-    ? "S'écarter des ratios r_v et r_h ; "
-    : none
-      ? "Faire descendre le mamelon sous le sillon, faire passer le sein sous le sillon, vider le haut du sein ou l'écarter au-delà d'ECARTEMENT ; "
-      : "Garder une forme soutenue (haut rond et plein, mamelon haut) en grade " + grade + " ; écarter au-delà d'ECARTEMENT ; ") +
-    (cone ? "" : "livrer un profil en cône ou en obus ; ") +
-    "ramener la poitrine à une forme moyenne ; inventer un grade ou des ratios ; annoncer « terminé » sans rapport.");
-  return L.join("\n");
+  L.push(tr("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK ; FICHIER_SOURCE intact ; rapport livré.", "Shape key \"nu_relache\" on the body; at 1,0, V1 to V10 OK; FICHIER_SOURCE untouched; report delivered."), "");
+  L.push(tr("## CONTRAINTES", "## CONSTRAINTS"), "");
+  L.push(tr("1. Blender avec Python (bpy, bmesh, mathutils). Blender absent ou import raté : arrête-toi et signale.", "1. Blender with Python (bpy, bmesh, mathutils). Blender missing or the import failing: stop and report."));
+  L.push(
+    tr(
+      "2. Ne jamais écraser FICHIER_SOURCE ; sauvegarde suffixée \"_nu\" (.blend) dans le même dossier. Toute déformation dans \"nu_relache\" ; forme de base intacte.",
+      "2. Never overwrite FICHIER_SOURCE; save with the suffix \"_nu\" (.blend) in the same folder. Every deformation in \"nu_relache\"; base shape untouched.",
+    ),
+  );
+  L.push(tr("3. Topologie (vertices, arêtes, faces), UV, vertex groups, poids de skinning et shape keys existants inchangés.", "3. Topology (vertices, edges, faces), UVs, vertex groups, skinning weights and existing shape keys unchanged."));
+  L.push(tr("4. Rien au-delà des cibles : ni volume, ni taille de bonnet, ni esthétique.", "4. Nothing beyond the targets: no volume, cup size or aesthetic change."));
+  L.push(tr("5. Aucune hypothèse silencieuse : vérifie axe avant, axe vertical, unité, objet corps, côtés, sillon. Ambiguïté : demande.", "5. No silent assumption: check the forward axis, vertical axis, unit, body object, sides, fold. Ambiguity: ask."));
+  L.push(tr("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.", "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig, other areas. Report problems without fixing them."));
+  L.push(
+    tr(
+      "7. État de mesure identique avant et après : armature en Rest Position, Subdivision et lissages désactivés, shape keys existantes à leur valeur. Demi-mesh avec Mirror : édite la moitié réelle, mesure sur le mesh évalué.",
+      "7. The same measuring state before and after: armature in Rest Position, Subdivision and smoothing disabled, existing shape keys at their value. A half mesh with Mirror: edit the real half, measure on the evaluated mesh.",
+    ),
+  );
+  L.push(tr("8. Paramètres libres (zone, décroissance, écartement en B, itérations) : listés dans le rapport, marqués À VALIDER.", "8. Free parameters (area, falloff, spread in B, iterations): listed in the report, marked TO VALIDATE."), "");
+  L.push(tr("## ÉTAPES", "## STEPS"), "");
+  L.push(tr("1. Inventaire : objets, corps, maillot, modificateurs, shape keys, armature. Masque le maillot (hide_viewport, hide_render), ne le supprime pas.", "1. Inventory: objects, body, swimsuit, modifiers, shape keys, armature. Hide the swimsuit (hide_viewport, hide_render), do not delete it."));
+  L.push(
+    tr(
+      "2. Complétude : sous le haut, mesh du corps continu et fermé, sans trou ni faces supprimées ; longueur moyenne d'arête dans la zone ≤ 2 × celle du reste du torse. Géométrie manquante : ARRÊT, captures, aucune reconstruction.",
+      "2. Completeness: under the top, the body mesh continuous and closed, with no hole or deleted faces; mean edge length in the area ≤ 2 × that of the rest of the torso. Missing geometry: STOP, screenshots, no reconstruction.",
+    ),
+  );
+  L.push(
+    tr(
+      "3. Forme héritée : shape key, Shrinkwrap ou modificateur qui plaque le corps sur le maillot ? Signale-le ; s'il écraserait \"nu_relache\" : ARRÊT et demande. Mesure l'écart corps / face interne du maillot (BVHTree.find_nearest) : min, médiane, max, traversées. Ne corrige rien.",
+      "3. Inherited shape: a shape key, Shrinkwrap or modifier that presses the body onto the swimsuit? Report it; if it would override \"nu_relache\": STOP and ask. Measure the gap between the body and the inner face of the swimsuit (BVHTree.find_nearest): min, median, max, crossings. Fix nothing.",
+    ),
+  );
+  L.push(tr("4. Repère : axes vertical, avant et latéral en rest pose (armature, sinon normale moyenne du torse) ; H ; unité.", "4. Frame: vertical, forward and lateral axes in rest pose (armature, otherwise the mean normal of the torso); H; unit."));
+  L.push(
+    tr(
+      "5. Zone : groupes de poids poitrine du rig s'ils existent, sinon \"sein_G\" et \"sein_D\" jusqu'au sillon, au bord du sternum et à la ligne axillaire antérieure ; poids 1 au centre, décroissance douce jusqu'à 0 au bord (fixe). En B, inclure à poids 0 la peau du thorax sous le sillon. Capture de la carte de poids.",
+      "5. Area: the rig's breast weight groups if they exist, otherwise \"sein_G\" and \"sein_D\" up to the fold, the edge of the sternum and the anterior axillary line; weight 1 at the centre, a soft falloff to 0 at the edge (fixed). In B, include the chest skin below the fold at weight 0. A screenshot of the weight map.",
+    ),
+  );
+  L.push(tr("6. Mesures AVANT, par côté :", "6. Measures BEFORE, per side:"));
+  L.push(tr("   - BP : vertex le plus en avant parmi ceux de poids > 0,5.", "   - BP: the most forward vertex among those of weight > 0,5."));
+  L.push(tr("   - UBP (A) : vertex le plus bas du contour inférieur, au sillon, dans le plan vertical le plus proche de BP ; HU = distance verticale BP - UBP.", "   - UBP (A): the lowest vertex of the lower outline, at the fold, in the vertical plane closest to BP; HU = vertical distance BP - UBP."));
+  L.push(tr("   - WBB : distance latérale entre BP gauche et droit.", "   - WBB: the lateral distance between the left and right BP."));
+  L.push(tr("   - z_SMS (B) ; grade de la forme de base, reporté.", "   - z_SMS (B); grade of the base shape, reported."));
+  L.push(tr("   - V : duplique les faces de poids > 0 dans un bmesh, bmesh.ops.holes_fill, bm.calc_volume().", "   - V: duplicate the faces of weight > 0 into a bmesh, bmesh.ops.holes_fill, bm.calc_volume()."));
+  L.push(tr("   - Plan de paroi, P, W, A", "   - Wall plane, P, W, A") + (cone ? "." : tr(" ; règle de la forme de base hors cibles.", "; the rule for a base shape off target.")));
+  L.push(tr("7. Déformation, uniquement dans \"nu_relache\" :", "7. Deformation, only in \"nu_relache\":"));
+  L.push(tr("   - A : a. descente pondérée jusqu'à HU_cible (UBP reste au bord, la baisse porte sur BP) ; b. écartement latéral de (WBB_avant × r_h) / 2 au niveau de BP.", "   - A: a. a weighted lowering to HU_cible (UBP stays at the edge, the drop is on BP); b. a lateral spread of (WBB_avant × r_h) / 2 at the level of BP."));
+  methA ||
+    L.push(
+      tr("   - B : a. descente de la masse, croissante vers le bas, jusqu'à la condition du grade ", "   - B: a. lowering of the mass, increasing downward, to the condition of grade ") +
+        grade +
+        tr(" et pas au-delà ; aucune si la forme de base la remplit déjà", " and no further; none if the base shape already meets it") +
+        (none ? "" : tr(" ; le bas peut passer sous le sillon et toucher le thorax sans le traverser", "; the lower breast may pass below the fold and touch the chest without going through it")) +
+        tr(" ; b. écartement selon ECARTEMENT = ", "; b. spread as ECARTEMENT = ") +
+        spread +
+        tr(" ; c. ", "; c. ") +
+        orient +
+        ".",
+    );
+  L.push(
+    tr("   - Puis : d. volume ramené à ±2 % par gonflement le long des normales ; e. lissage limité à la zone, re-mesure, itération", "   - Then: d. volume brought back within ±2 % by inflating along the normals; e. smoothing limited to the area, re-measure, iterate") +
+      (cone
+        ? "."
+        : tr(" ; f. si P_après / W > ", "; f. if P_après / W > ") +
+          pw +
+          tr(" ou A_après < 120°, recule le sommet vers le plan de paroi, redistribue ce volume ", " or A_après < 120°, move the apex back toward the wall plane and redistribute that volume ") +
+          (methA
+            ? tr("vers le bas et l'extérieur, reprends d et e.", "downward and outward, repeat d and e.")
+            : (none ? tr("vers la base, sans faire descendre le mamelon ni vider le haut", "toward the base, without lowering the nipple or emptying the upper breast") : tr("vers le bas", "downward") + (noSpread ? "" : tr(" et l'extérieur", " and outward"))) +
+              tr(", reprends d et e ; en B, le grade reste vrai.", ", repeat d and e; in B, the grade stays true."))),
+  );
+  L.push(tr("8. Mesures APRÈS : BP, UBP et point le plus bas re-détectés ; z_SMS de l'étape 6.", "8. Measures AFTER: BP, UBP and the lowest point detected again; z_SMS from step 6."));
+  L.push(tr("9. Vérifications, \"nu_relache\" à 1,0 :", "9. Checks, \"nu_relache\" at 1,0:"));
+  L.push(tr("   - V1 : ", "   - V1: ") + (methA ? tr("HU_après / HU_avant = 1 - r_v à ±0,01.", "HU_après / HU_avant = 1 - r_v within ±0,01.") : tr("condition du grade " + grade + " vraie par sein (reporte z_SMS, z_BP, z_bas, tol).", "condition of grade " + grade + " true for each breast (report z_SMS, z_BP, z_bas, tol).")));
+  L.push(tr("   - V2 : ", "   - V2: ") + (methA ? tr("WBB_après / WBB_avant = 1 + r_h à ±0,01.", "WBB_après / WBB_avant = 1 + r_h within ±0,01.") : noSpread ? "|WBB_après - WBB_avant| ≤ tol." : "WBB_après ≥ WBB_avant."));
+  L.push(tr("   - V3 : |V_après - V_avant| / V_avant ≤ 0,02 par sein.", "   - V3: |V_après - V_avant| / V_avant ≤ 0,02 for each breast."));
+  L.push(tr("   - V4 : nombres de vertices, arêtes, faces et UV identiques à la source.", "   - V4: the numbers of vertices, edges, faces and UVs identical to the source."));
+  L.push(tr("   - V5 : déplacement des vertices de poids 0 ≤ 1e-6 unité de scène.", "   - V5: displacement of the weight-0 vertices ≤ 1e-6 scene unit."));
+  L.push(
+    tr(
+      "   - V6 : aucune auto-intersection dans la zone, y compris sein / thorax (BVHTree.overlap, hors faces partageant un vertex) ; aucune normale inversée ; aucune face d'aire multipliée par plus de 3.",
+      "   - V6: no self-intersection in the area, breast against chest included (BVHTree.overlap, excluding faces sharing a vertex); no flipped normal; no face whose area is multiplied by more than 3.",
+    ),
+  );
+  L.push(
+    tr("   - V7 : symétrie. ", "   - V7: symmetry. ") +
+      (methA ? tr("Écart des ratios gauche / droite ≤ 0,01. ", "Gap between the left and right ratios ≤ 0,01. ") : tr("Même grade des deux côtés. ", "The same grade on both sides. ")) +
+      (asym
+        ? tr("ASYMETRIE = OUI : garde l'asymétrie d'origine, ne la corrige pas, mesure-la, signale-la.", "ASYMETRIE = OUI: keep the original asymmetry, do not correct it, measure it, report it.")
+        : tr("Asymétrie d'origine : garde-la, mesure-la, signale-la.", "Original asymmetry: keep it, measure it, report it.")),
+  );
+  L.push(tr("   - V8 : si armature : captures en rest pose, bras levés, buste penché, sans artefact ; sinon INVÉRIFIABLE avec la raison.", "   - V8: if there is an armature: screenshots in rest pose, arms raised, torso bent, with no artefact; otherwise UNVERIFIABLE, with the reason."));
+  L.push(tr("   - V9 : rendus avant/après de face, profil, trois-quarts, même caméra et même éclairage ; sur le profil, point le plus bas et sillon lisibles.", "   - V9: before/after renders from the front, in profile and three-quarter, same camera and lighting; on the profile, the lowest point and the fold readable."));
+  L.push(tr("   - V10 : profil par sein : ", "   - V10: profile of each breast: ") + profTarget + ".");
+  L.push(tr("   Échec : corrige et recommence ; après 3 échecs sur un critère, arrête-toi et rapporte les valeurs.", "   Failure: fix and start again; after 3 failures on one criterion, stop and report the values."), "");
+  L.push(tr("## SORTIE", "## OUTPUT"), "");
+  L.push(tr("1. Fichier .blend suffixé \"_nu\".", "1. A .blend file with the suffix \"_nu\"."));
+  L.push(tr("2. Script deform_nu.py, headless : `blender -b FICHIER_SOURCE -P deform_nu.py`", "2. Script deform_nu.py, headless: `blender -b FICHIER_SOURCE -P deform_nu.py`"));
+  L.push(
+    tr("3. rapport_nu.md : méthode et raison ; ", "3. rapport_nu.md: method and reason; ") +
+      (methA ? "" : tr("grade de la forme de base et grade demandé ; ", "grade of the base shape and requested grade; ")) +
+      tr(
+        "par côté, toutes les mesures avant/après avec cibles et ΔV % ; paramètres libres À VALIDER ; V1 à V10 OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône d'origine, asymétrie, topologie insuffisante, modificateurs gênants) ; liste INVÉRIFIABLE.",
+        "per side, every before/after measure with its target and ΔV%; free parameters TO VALIDATE; V1 to V10 OK or FAILED with values; anomalies (missing geometry, inherited shape, original cone, asymmetry, insufficient topology, interfering modifiers); UNVERIFIABLE list.",
+      ),
+  );
+  L.push(tr("4. Captures PNG avant/après et carte de poids.", "4. Before/after PNG screenshots and the weight map."), "");
+  L.push(tr("## INTERDITS", "## FORBIDDEN"), "");
+  L.push(
+    (methA
+      ? tr("S'écarter des ratios r_v et r_h ; ", "Departing from the r_v and r_h ratios; ")
+      : none
+        ? tr("Faire descendre le mamelon sous le sillon, faire passer le sein sous le sillon, vider le haut du sein ou l'écarter au-delà d'ECARTEMENT ; ", "Lowering the nipple below the fold, letting the breast pass below the fold, emptying the upper breast or spreading it beyond ECARTEMENT; ")
+        : tr("Garder une forme soutenue (haut rond et plein, mamelon haut) en grade ", "Keeping a supported shape (a round, full upper breast, a high nipple) at grade ") + grade + tr(" ; écarter au-delà d'ECARTEMENT ; ", "; spreading beyond ECARTEMENT; ")) +
+      (cone ? "" : tr("livrer un profil en cône ou en obus ; ", "delivering a cone or bullet profile; ")) +
+      tr("ramener la poitrine à une forme moyenne ; inventer un grade ou des ratios ; annoncer « terminé » sans rapport.", "bringing the bust back to an average shape; inventing a grade or ratios; announcing “done” without a report."),
+  );
+  return sdA3dEnPass(L.join("\n"));
 }
 function sdA3dCopy(ev) {
   /* v158 second review: the message in its own span (never rendered with children by React), the button label left to React (language) */
