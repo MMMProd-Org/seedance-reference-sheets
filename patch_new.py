@@ -4384,8 +4384,9 @@ rep('''jamais dessinés ni saillants. Masqué en corpulence Forte, qui décrit d
 rep('''        { t: "sdsec", id: "poitrine",''', '''        { t: "chips", k: "fingers", l: "Doigts", hint: "Remplace les doigts tirés au hasard. Auto : au hasard ; en corpulence Forte, des doigts longs et fins deviennent charnus.", show: function () { return "person" === e.mode && !sdChild(e); } },
         { t: "sdsec", id: "poitrine",''')
 # P155 (v158, user: "une section de la planche spéciale pour ça", "cache à un endroit un bouton spécial"): "Agent 3D", a closed panel at
-# the end of "Poitrine" (sdAgent3d), its choices in the state (a3dTop, a3dGrade; a3dNip and a3dAre, the nipples and areolas; Auto by default)
-rep('''    knees: "auto",\n''', '''    knees: "auto",\n    a3dTop: "auto",\n    a3dGrade: "auto",\n    a3dNip: "auto",\n    a3dAre: "auto",\n''')
+# the end of "Poitrine" (sdAgent3d), its choices in the state (a3dTop, a3dGrade; a3dNip, a3dAre, a3dRel and a3dTub, the nipples and areolas;
+# Auto by default)
+rep('''    knees: "auto",\n''', '''    knees: "auto",\n    a3dTop: "auto",\n    a3dGrade: "auto",\n    a3dNip: "auto",\n    a3dAre: "auto",\n    a3dRel: "auto",\n    a3dTub: "auto",\n''')
 rep('''        { t: "sdsec", id: "taille",''', '''        { t: "sdagent3d", show: function () { return sdA3dOn(e); } },
         { t: "sdsec", id: "taille",''')
 rep('''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);''', '''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);
