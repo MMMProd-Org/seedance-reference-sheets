@@ -1033,6 +1033,12 @@ with sync_playwright() as p:
     text = agent.evaluate(A3D)
     assert "6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig" in text and "- MAMELON =" not in text, text[-600:]
     assert "V1 à V10 OK" in text and "V11" not in text
+    # every choice of the panel has its tooltip; the grades say where the nipple sits against the fold under the breast
+    assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3d [data-a3d]')].every((b) => b.title)")
+    assert agent.get_by_role("button", name="II", exact=True).get_attribute("title") == (
+        "Moderate sag: the nipple below the fold, but not the lowest point of the breast.")
+    assert "Zhong 2023" in agent.get_by_role("button", name="Thick cups", exact=True).get_attribute("title")
+    assert agent.get_by_text("Ptosis grade (how far the bust sags)", exact=True).count() == 1
     projecting = agent.get_by_role("button", name="Projecting", exact=True)
     assert projecting.get_attribute("title") == "About 9 mm high above the areola."
     projecting.click()
