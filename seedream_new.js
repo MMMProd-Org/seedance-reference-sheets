@@ -3454,6 +3454,17 @@ function sdGlSide() {
    v156 review: a flaw ticked from the other list (a man saved by v155 with "Carrés", a character whose presentation changed) is still
    said, as before, and shown after the list (sdOpts) so it can be unticked. */
 /* a sagging glute is never high */
+/* port review: "Gros" and "Très gros" (v119) describe a round glute that projects in profile; with "Plats" or "Bas" set in "Fessiers :
+   galbe", which its hint says is independent of the volume, the size stays and the profile words go (they contradicted "flat in profile"
+   and "never round"), both engines */
+function sdGlVol(x) {
+  return ["flat", "low"].indexOf(e.glutesShape) >= 0
+    ? String(x)
+        .replace("very large, round glutes", "very large glutes")
+        .replace(", projecting far behind the line of the lower back", "")
+        .replace("in the side views the back of the glutes sits about a hand's width behind the line of the shoulder blades, a deep shelf below the lower back, and ", "")
+    : x;
+}
 function sdGlShape(x) {
   return sdGlDefOn("sag") ? String(x).replace(/\b(very )?high and /, "") : x;
 }
@@ -4439,8 +4450,8 @@ function sdBackHair() {
         ", the thinning or bald crown seen from behind"
     : b;
 }
-function sdBackHair0() {
-  var past = sdHairPast();
+function sdBackHair0(before118) {
+  var past = !before118 && sdHairPast();
   return "bald" === e.hairStyleSel || "shaved" === e.hairLen
     ? ""
     : ["ponytail", "bun", "braid"].indexOf(e.hairStyleSel) >= 0
@@ -4463,7 +4474,6 @@ function sdLooks() {
   var b = "f" === e.pres ? "Beautiful" : "m" === e.pres ? "Handsome" : "Good-looking";
   if (0 === e.looks && "m" === e.pres)
     /* v128: shorter (the head stayed over 600 words with a character): no "thick natural eyebrows" (the eyebrows are the face's), no
-       "neither feminized nor exaggerated" ("clearly male" says it), the skin only when the skin slider leaves it healthy. v128 review:
        "neither feminized nor exaggerated" ("clearly male" says it), the skin only when the skin slider leaves it healthy. v128 review:
        "a lean face" only for a slim or average build, as for a woman. The defined jaw only while the jaw is on Auto (PR #55 review) */
     return "Strikingly handsome in a clearly male way, like a top male model in an unretouched agency polaroid: harmonious proportions close to the average of real faces" + (sdCanonSlim() ? ", a lean face" : "") + ("auto" === e.jaw ? ", a clearly defined jaw" : "") + (e.imperf <= 2 ? ", healthy skin with warm, even color" : "") + ", with the slight asymmetry of a real face; an original person who resembles no celebrity.";
@@ -4490,17 +4500,19 @@ function sdLean() {
 function sdSlim() {
   return +e.fat <= 1;
 }
-/* New and saved face signatures must ignore the same clothing-only instructions, and the v118 framing lines (the face kept
-   inside the panel; with a photo, the back view's hair as the photo has it), which change no face: a head copied before v118
-   is still the same face */
+/* New and saved face signatures must ignore the same clothing-only instructions, and the v118 framing line (the face kept
+   inside the panel), which changes no face: a head copied before v118 is still the same face */
 function sdSigWithoutOutfit(sig) {
-  return sig
+  /* port review: a copy made before the port has the back view of sdBackHair0(true) (long hair and a photo's hair included) and its random
+     traits before v131 (sdFaceFix) and v133 (sdOrdFix) resolved the contradictory pairs: both sides are brought to that back view and
+     through both fixes, which change no setting (each is idempotent, so a current signature is unchanged by them) */
+  var bh = sdBackHair(),
+    b0 = sdBackHair0(!0);
+  /* from "Marquée" up the hair loss is in the back view (v129): a setting, kept */
+  bh && bh !== b0 && sdHairLossLv() < 3 && (sig = sig.split(bh).join(b0));
+  return sdOrdFix(sdFaceFix(sig))
     .split("\n" + SD_FACE_IN)
     .join("")
-    .replace(
-      "showing the hair from behind as the photo has it: the same length and style, worn down, tied or braided exactly as in the photo" + SD_HAIR_PAST,
-      "showing how the hair falls at the back, its length and parting, worn down with no tie or clip",
-    )
     .replace(/^Clothing and accessories of this outfit,[^\n]*(?:\n|$)/gm, "")
     .replace(/^Its clothing is not used: the person wears only the clothing described below\.(?:\n|$)/gm, "")
     .replace(/^(No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one the marks above describe), except any logo or print this outfit description names\.$/gm, "$1.")
@@ -4535,7 +4547,16 @@ function sdLeanText() {
 /* GPT: a new beauty level or corpulence is a new face, not an update of the last head sheet (the update kept a fat face).
    Both belong to the person: an animal head copy records them too, but they say nothing about the animal */
 function sdFaceReset() {
-  return "person" === e.mode && null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +e.headFat !== +e.fat);
+  /* port review: v156 "Graisse : visage" is the face's own fat, so a change of it is a new face too; it rides in headFat after the
+     corpulence ("2/3"), a copy without it reads as 0 */
+  var a = String(e.headFat).split("/"),
+    b = String(sdHeadFatNow()).split("/");
+  return "person" === e.mode && null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +a[0] !== +b[0] || +(a[1] || 0) !== +(b[1] || 0));
+}
+/* what a GPT head copy records as its fat: the corpulence, then the face fat when it is set */
+function sdHeadFatNow() {
+  var v = sdFaceFatLv();
+  return v ? e.fat + "/" + v : e.fat;
 }
 function sdLooksText(lv) {
   var p = sdPos(),
@@ -7600,7 +7621,7 @@ function sdBody() {
     (sil = ["average shoulders, waist and hips, the shoulders as wide as the hips"]);
   "m" === e.pres && sil.push("male bone structure and fat distribution, with no feminine curves");
   var gl =
-      t1("glutes", e.glutes) +
+      sdGlVol(t1("glutes", e.glutes)) +
       /* v122: a drooping glute is never high */
       sdGlShape((!hl
         ? { flat: ", flat in profile", round: ", round in profile", high: ", high and round", shelf: ", very high and round", low: ", low and soft, never round or lifted" }
@@ -7743,7 +7764,7 @@ function sdBody() {
     /* v120: the top of the hip scale is a long text in the body; a summary line names it in three words, as the glutes below */
     "m" === e.pres ? "" : 4 === e.hips ? "extremely wide hips" : 4 === e.fat ? t1("hips", e.hips).replace(/, (clearly|much) wider than the waist/, "") : t1("hips", e.hips),
     "m" === e.pres ? "" : ["a flat chest", "a small bust", "a medium bust", "a fairly full bust", "a large bust", "a very large bust out of proportion with her frame"][sdCi(e.chest)] || "",
-    ["very small glutes", "small glutes", "average-sized glutes", "very large, round glutes, much bigger than average", "extremely large glutes, out of proportion with " + (sdFatWaist() ? "the waist" : "a slim waist")][e.glutes] || "",
+    sdGlVol(["very small glutes", "small glutes", "average-sized glutes", "very large, round glutes, much bigger than average", "extremely large glutes, out of proportion with " + (sdFatWaist() ? "the waist" : "a slim waist")][e.glutes] || ""),
     sdThighCurve() ? "full upper thighs" : ["very slim thighs", "slim thighs", "average thighs", "full thighs", "very thick thighs"][e.thighs] || "",
   ].filter(Boolean),
     ks = "Key proportions: " + kp.join(", ") + ".\n";

@@ -174,9 +174,12 @@ with sync_playwright() as p:
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
-        # the list of what is kept (a clothing change also gets a fit paragraph, which may name the outfit)
+        # the list of what is kept; anywhere in the prompt too, except for a clothing change, whose fit paragraph (v124) may
+        # name the outfit
         keep_line = next(x for x in retouch.text_content().splitlines() if x.startswith("Keep everything this change does not touch"))
         assert kept in keep_line and dropped not in keep_line, (text, keep_line)
+        if dropped != "the outfit":
+            expect(retouch).not_to_contain_text(dropped)
     change.fill("")
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
 
@@ -350,6 +353,35 @@ with sync_playwright() as p:
         old.get_by_role("slider", name="Beauty").press("ArrowRight")
         expect(variant).to_be_hidden()
         old.close()
+    assert not errors, errors
+
+    # A head copied before the port (v115 to v158) is still the same face: the long-hair back view of v118 and the
+    # contradictory random pairs v131 resolves ("a high, broad forehead" with "a low hairline") change no setting.
+    # A change of "Fat: face" (v156), the face's own fat, makes a new GPT face, as the build does.
+    old = clipboard_page(browser, errors)
+    old.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person',"
+                 " pres: 'f', age: 30, faceSeed: 7, hairLen: 'long'}))")
+    old.reload()
+    old.evaluate(HOLD_CLIPBOARD)
+    old.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    old.wait_for_function("window.writes.length === 1")
+    old.evaluate("() => window.writes[0]()")
+    old.wait_for_function(f"{SAVED}.headSig")
+    sig = old.evaluate(f"{SAVED}.headSig")
+    assert "showing how the hair falls at the back, its length and parting, worn down with no tie or clip" in sig, sig
+    assert "runs on past its bottom edge" not in sig and "a high, broad forehead" in sig and "a rounded hairline" in sig, sig
+    old.evaluate(f"""() => {{ const s = {SAVED}; s.headSig = s.headSig.replace('a rounded hairline', 'a low hairline');
+      localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(s)); }}""")
+    old.reload()
+    open_folds(old)
+    expect(old.get_by_text(re.compile(r"^The face has changed"))).to_be_hidden()
+    variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+    old.locator("label").filter(has_text=re.compile(r"^Man$")).click()
+    expect(variant).to_be_visible()
+    old.get_by_role("tab", name="Face").click()
+    old.get_by_role("slider", name="Fat: face", exact=True).press("ArrowRight")
+    expect(variant).to_be_hidden()
+    old.close()
     assert not errors, errors
 
     # A person's beauty level does not make a new animal of an animal's copied GPT sheet.
@@ -1017,6 +1049,18 @@ with sync_playwright() as p:
         assert ("the only lettering is the one the marks above describe, besides any logo or print on the clothing taken from"
                 " the photo.") in text, text[-300:]
     photo.close()
+
+    # "Large" and "Very large" glutes keep their size but lose their profile words with a "Flat" or "Low" glute shape, which the
+    # shape's hint says is independent of the volume (both engines).
+    profile = re.compile(r"round glutes|projecting far behind|a hand's width behind the line of the shoulder blades|a deep shelf")
+    for model in ("gpt", "seedream"):
+        for size, shape, shown in ((3, "flat", False), (4, "low", False), (3, "round", True), (4, "auto", True)):
+            gl = saved_page(f"model: '{model}', pres: 'f', age: 30, glutes: {size}, glutesShape: '{shape}'")
+            body = next(t for t in prompts(gl) if "standing" in t)
+            assert bool(profile.search(body)) == shown, (model, size, shape, profile.findall(body))
+            assert ("very large" if 3 == size else "extremely large") in body, (model, size, shape)
+            gl.close()
+    assert not errors, errors
 
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)
