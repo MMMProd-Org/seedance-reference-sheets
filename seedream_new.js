@@ -7944,7 +7944,7 @@ function sdObjOne(s, i) {
   if (i > 0)
     s = /\nOBJECT:\n/.test(s)
       ? s.replace(/\nOBJECT:\n(This is a new object: do not reuse any object from earlier images in this conversation\.\n)?/, "\nOBJECT:\n" + same)
-      : s.replace(/\nSOURCE:\n/, "\nSOURCE:\n" + same.replace("\n", " "));
+      : s.replace(/\nSOURCE:\n/, "\nSOURCE:\n" + same.replace(/\n/g, " "));
   if (i > 0) s = sdPhotoAlso(s, "object", "view 1");
   return s;
 }
