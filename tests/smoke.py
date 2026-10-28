@@ -1150,9 +1150,9 @@ with sync_playwright() as p:
     assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
     text = agent.evaluate(A3D)
     context(text, " Nipples and areolas (set by hand): umbilicated nipples, drawn into a dip at the centre of the areola;"
-            " areola size unchanged; domed areolas: in profile, each areola clearly stands out from the curve of the breast as a small"
-            " dome, the nipple on top, a sharp crease at its base; from the front, the areola looks swollen, ringed by the shadow of that"
-            " crease;"
+            " areola size unchanged; puffy areolas: each whole areola forms a small, soft, rounded cone that extends the tip of the breast;"
+            " in profile the tip has two steps, the curve of the breast then the cone of the areola, the nipple on top; at its base a slight"
+            " constriction that blends into the skin, with no sharp edge or ring; the same skin and grain as the breast;"
             " small round bumps (Montgomery tubercles) visible on the areolas.")
     for want in ("\n- AREOLA_RELIEF = DOMED\n", "\n- TUBERCLES = VISIBLE\n", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
                  "tubercles VISIBLE: small round bumps on the areola",
@@ -1178,8 +1178,9 @@ with sync_playwright() as p:
     for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
         assert want in text, (want, text[-800:])
     context(text, " Mamelons et aréoles (réglés à la main) : mamelons inchangés ; taille des aréoles inchangée ;"
-            " aréoles bombées en dôme : de profil, chaque aréole dépasse nettement de la courbe du sein en un petit dôme, le mamelon au"
-            " sommet, un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli ;"
+            " aréoles bombées (puffy areolas) : chaque aréole entière forme un petit cône arrondi et souple qui prolonge la pointe du sein ;"
+            " de profil, la pointe a deux étages, la courbe du sein puis le cône de l'aréole, le mamelon au sommet ; à sa base, un léger"
+            " étranglement qui se fond dans la peau, sans arête ni anneau ; même peau et même grain que le sein ;"
             " petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles.")
     set_lang(agent, "English", "en")
     # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
