@@ -725,7 +725,7 @@ with sync_playwright() as p:
         bare.close()
     assert not errors, errors
 
-    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11), with the settings that shape the
+    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the
     # lines checked here: muscles at "Discrets" except the arms, very marked veins, abs with a centre line at "Discrets";
     # height and proportions stay at their defaults, as they change none of these lines. The zones at "Discrets" share
     # one phrase, the pear bust says nothing athletic, and the hard light brings out the veins, not the muscles. Three
