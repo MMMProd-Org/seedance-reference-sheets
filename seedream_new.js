@@ -6308,11 +6308,13 @@ var SD_A3D_LOOK = {
   rel: {
     PLATE: ["aréoles au ras de la peau du sein, sans marche ni bourrelet au bord", "areolas flush with the breast skin, with no step or ridge at their edge"],
     PLATEAU: ["aréoles surélevées en plateau au-dessus de la peau du sein, sans étranglement à leur base", "areolas raised as a plateau above the breast skin, with no constriction at their base"],
-    /* owner's second render ("c'est déjà mieux mais toujours pas capable de faire un relief d'aréole bombée"): the dome said by what each
-       view shows, the side views first, where it stands out of the breast's outline */
+    /* owner's renders (2026-10-28): the view-by-view dome stayed faint; a clay guide image gave the dome but its clay look and a sharp
+       ring; a realism pass gave real skin but flattened the dome. The owner's example: the whole areola a soft cone extending the tip of
+       the breast, its edge blending into the skin. Said so, with the usual English term, and the breast's own skin (owner: "il réussisse
+       à faire ça quand je clique le bon prompt sans forcément avoir besoin de lui donner des images en plus") */
     HERNIEE: [
-      "aréoles bombées en dôme : de profil, chaque aréole dépasse nettement de la courbe du sein en un petit dôme, le mamelon au sommet, un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli",
-      "domed areolas: in profile, each areola clearly stands out from the curve of the breast as a small dome, the nipple on top, a sharp crease at its base; from the front, the areola looks swollen, ringed by the shadow of that crease",
+      "aréoles bombées (puffy areolas) : chaque aréole entière forme un petit cône arrondi et souple qui prolonge la pointe du sein ; de profil, la pointe a deux étages, la courbe du sein puis le cône de l'aréole, le mamelon au sommet ; à sa base, un léger étranglement qui se fond dans la peau, sans arête ni anneau ; même peau et même grain que le sein",
+      "puffy areolas: each whole areola forms a small, soft, rounded cone that extends the tip of the breast; in profile the tip has two steps, the curve of the breast then the cone of the areola, the nipple on top; at its base a slight constriction that blends into the skin, with no sharp edge or ring; the same skin and grain as the breast",
     ],
   },
   tub: { VISIBLES: ["petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles", "small round bumps (Montgomery tubercles) visible on the areolas"] },
@@ -6662,7 +6664,7 @@ function sdA3dText() {
       profTarget +
       "." +
       (cone ? "" : methA ? tr(" Base en cône : demande s'il faut passer en B.", " A conical base: ask whether to switch to B.") : tr(" Base en cône : 7f corrige.", " A conical base: 7f corrects it.")) +
-      tr(" Seuil P/W : ordre de grandeur de population (Shahlini 2014)", " P/W threshold: a population order of magnitude (Shahlini 2014)") +
+      tr(" Seuil P/W : repère de population (Shahlini 2014)", " P/W threshold: a population benchmark (Shahlini 2014)") +
       (cone
         ? tr(" ; la forme « En obus » réglée passe avant", "; the “Conical” shape set comes first")
         : "0,6" === pw
@@ -6855,8 +6857,8 @@ function sdA3dText() {
     tr("2. rapport_nu.md : méthode ; ", "2. rapport_nu.md: method; ") +
       (B ? tr("z de la base et grade demandé ; ", "z of the base and requested grade; ") : "") +
       tr(
-        "par côté, mesures avant/après, cibles, ΔV % ; paramètres libres ; V1 à " + (nac ? "V11" : "V10") + " OK ou KO avec valeurs ; anomalies (géométrie manquante, forme héritée, cône, asymétrie, topologie insuffisante, modificateurs) ; liste INVÉRIFIABLE.",
-        "per side, before/after measures, targets, ΔV%; free parameters; V1 to " + (nac ? "V11" : "V10") + " OK or FAILED with values; anomalies (missing geometry, inherited shape, cone, asymmetry, insufficient topology, modifiers); UNVERIFIABLE list.",
+        "par côté, mesures avant/après, cibles, ΔV % ; paramètres libres ; V1 à " + (nac ? "V11" : "V10") + " OK ou KO avec valeurs ; anomalies relevées ; liste INVÉRIFIABLE.",
+        "per side, before/after measures, targets, ΔV%; free parameters; V1 to " + (nac ? "V11" : "V10") + " OK or FAILED with values; anomalies found; UNVERIFIABLE list.",
       ),
     tr("3. Captures PNG avant/après et carte de poids.", "3. Before/after PNG screenshots and the weight map."),
     "",
