@@ -4408,7 +4408,8 @@ rep('''    t1("glutes", e.glutes) +
 _g = "Seamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint)"
 assert src.count("Seamless plain mid-grey studio backdrop") == 4, src.count("Seamless plain mid-grey studio backdrop")
 src = src.replace("Seamless plain mid-grey studio backdrop", _g)
-assert "mid-grey" not in src, src[src.index("mid-grey") - 80:src.index("mid-grey") + 40]
+# the four older "Assembler" texts (sdJoinOld) keep "mid-grey": saved sessions are recognized by their exact text
+assert src.count("mid-grey") == 4, src.count("mid-grey")
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
