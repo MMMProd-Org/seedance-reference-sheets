@@ -6559,8 +6559,7 @@ function sdA3dText() {
   /* owner: "Cannot exceed 10000 characters" (the image tool's prompt box). Only the method in use is written, the inputs without their
      lists of values, the published data as short citations next to the targets they support, in shorter wording: every instruction the
      agent executes stays. tests/smoke.py checks the length on the longest settings, in both languages. */
-  L.push(tr("# Prompt agent : poitrine sans haut, personnage 3D", "# Agent prompt: bust without a top, 3D character"), "");
-  L.push(tr("## CONTEXTE", "## CONTEXT"), "");
+  /* owner (2026-10-29): no title and no "CONTEXTE" heading ("titre et contexte ça sert à rien"): the text opens on the context line */
   L.push(
     tr("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte ", "Adult " + ("x" === e.pres ? "androgynous" : "female") + " 3D character (" + age + " years old) for a video game. It currently wears ") +
       ("en" === sdLang ? SD_A3D_TOPTXT_EN : SD_A3D_TOPTXT)[top] +
@@ -7142,8 +7141,7 @@ function sdA3gText() {
       INCONNU: tr("Type de bas inconnu : avant toute déformation, arrête-toi et demande le type de bas.", "Unknown type of bottom: before any deformation, stop and ask for the type of bottom."),
     }[bot],
     L = [];
-  L.push(tr("# Prompt agent : fesses sans bas, personnage 3D", "# Agent prompt: glutes without a bottom, 3D character"), "");
-  L.push(tr("## CONTEXTE", "## CONTEXT"), "");
+  /* owner (2026-10-29): no title and no "CONTEXTE" heading ("titre et contexte ça sert à rien"): the text opens on the context line */
   /* as the bust's (owner: "parle-lui comme si c'était un LLM qui construit des images"): the context line says the goal in plain words, first,
      for an image model given this text as an edit prompt */
   L.push(

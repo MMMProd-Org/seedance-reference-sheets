@@ -1090,13 +1090,16 @@ with sync_playwright() as p:
     agent.get_by_role("tab", name=re.compile(r"^Body")).click()
     a3d = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
     text = agent.evaluate(a3d)
-    assert text.startswith("# Agent prompt: bust without a top, 3D character\n"), text[:120]
+    assert text.startswith("Adult female 3D character (26 years old) for a video game. It currently wears "), text[:120]
+    # owner: "titre et contexte ça sert à rien": no title, no CONTEXT heading, in either agent prompt
+    assert not re.search(r"^# |^## CONTEXT", text, re.M) and "\n## INPUTS\n" in text, text[:200]
     for want in ("## INPUTS", "- TOP_TYPE = SOFT_TRIANGLE (", "- PTOSIS_GRADE = NONE (", "Shape key \"bare_rest\" on the body; at 1.0, V1 to V10 OK"):
         assert want in text, (want, text[:400])
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_HAUT|COQUES_|AUCUNE|nu_relache|À VALIDER)\b", text), re.findall(r"[àâçéèêëîïôùûüœ«»]", text)[:5]
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(a3d)
-    assert text.startswith("# Prompt agent : poitrine sans haut, personnage 3D\n") and "- TYPE_DE_HAUT = TRIANGLE_SOUPLE (" in text, text[:200]
+    assert text.startswith("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte ") and "- TYPE_DE_HAUT = TRIANGLE_SOUPLE (" in text, text[:200]
+    assert not re.search(r"^# |^## CONTEXTE", text, re.M), text[:200]
     set_lang(agent, "English", "en")
     agent.close()
     assert not errors, errors
@@ -1142,11 +1145,11 @@ with sync_playwright() as p:
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
     # an image model given this text redrew the bottom (owner: "il ne faut pas que le prompt change le tanga"): only the top goes
     keep = " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is."
-    assert keep in text.split("\n")[4], text.split("\n")[4]
+    assert keep in text.split("\n")[0], text.split("\n")[0]
 
     # the context line says the choices in plain words, early enough for an image model that reads the start (600 words for Seedream)
     def context(text, want):
-        line = text.split("\n")[4]
+        line = text.split("\n")[0]
         assert line.endswith(want) and len(text[:text.index(want)].split()) < 600, (want, line)
         assert not re.search(r"\b(AUTO|PLAT|MOYENN?E?|SAILLANT|OMBILIQUE|PETITE|GRANDE|PLATE|PLATEAU|HERNIEE|VISIBLES|FLAT|AVERAGE|PROJECTING"
                              r"|UMBILICATED|SMALL|LARGE|FLUSH|DOMED|VISIBLE)\b", line), line
@@ -1235,7 +1238,7 @@ with sync_playwright() as p:
         for label, code in (("Français", "fr"), ("English", "en")):
             set_lang(pg, label, code)
             text = pg.evaluate(A3D)
-            assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+            assert text.startswith(("Personnage 3D ", "Adult ")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
             # a one-piece has no separate bottom to keep; the sentence is in the language picked, never in the other one
             here, other = ("Only the top is removed:", "Seul le haut est retiré :")[:: 1 if code == "en" else -1]
             assert (here in text) != ("UNE_PIECE" in extra) and other not in text, (extra, code)
@@ -1269,14 +1272,15 @@ with sync_playwright() as p:
         assert f"\n- BOTTOM_TYPE = {bottom} (read from the sheet)\n" in text, (extra, model, re.findall(r"BOTTOM_TYPE = .*", text))
         # an image model given this text as an edit prompt keeps the top; a one-piece starts from the bust prompt's result
         keep = "Only the bottom is removed: the top keeps exactly its cut, color and fabric, and everything else stays as it is."
-        assert (keep in text.split("\n")[4]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n")[4])
+        assert (keep in text.split("\n")[0]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n")[0])
         assert (bottom == "ONE_PIECE") == ("Start from the result of the bust prompt" in text), (extra, model)
         pg.close()
     agent = saved_page(glute_state)
     agent.get_by_role("tab", name=re.compile(r"^Body")).click()
     agent.locator("#sd-a3g summary").click()
     text = agent.evaluate(A3G)
-    assert text.startswith("# Agent prompt: glutes without a bottom, 3D character\n"), text[:120]
+    assert text.startswith("Adult female 3D character (26 years old) for a video game. It currently wears a tanga bikini bottom or a thong."), text[:120]
+    assert not re.search(r"^# |^## CONTEXT", text, re.M), text[:200]
     for want in ("Character sheet: build: slim; glutes: average.", "   - b. drop: none (grade 0); outside \"edge_band\", nothing moves.",
                  "Gluteal ptosis grades (Gonzalez, Aesthet Plast Surg 2006, 30(3):320-326; definitions from a secondary source, Blaya 2020:"
                  " TO VALIDATE), decided in this order: 4 = ptotic tissue on M; otherwise 3 = the crease past M by more than tol;", "7. Out of scope: the genital area (neither modelled nor changed)", "V1 to V8 OK or FAILED",
@@ -1289,7 +1293,7 @@ with sync_playwright() as p:
         assert want in text, (want, text[:1200])
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_BAS|GRADE_PTOSE_FESSIERE|FICHIER_SOURCE|nu_fesses|bande_bord|region_fessiere|À VALIDER"
                          r"|TANGA_STRING|CULOTTE_\w+|SHORT_\w+)\b", text), re.findall(r".{20}[àâçéèêëîïôùûüœ«»]", text)[:5]
-    line = text.split("\n")[4]
+    line = text.split("\n")[0]
     assert line.endswith(" Glutes: at their current height and in their current shape, with no sag added; the same size, the same skin and"
                          " grain; the marks left by the bottom's edges erased."), line
     assert "the natural sag its size and muscle tone give it, never lifted." in line, line
@@ -1300,10 +1304,10 @@ with sync_playwright() as p:
     assert agent.evaluate(f"{SAVED}.a3gGrade") == "3"
     text = agent.evaluate(A3G)
     assert "\n- GLUTEAL_PTOSIS_GRADE = 3 (by hand)\n" in text and "   - b. drop, only if the base is below grade 3: " in text, text[-1500:]
-    assert "running past the middle of the back of the thigh" in text.split("\n")[4], text.split("\n")[4]
+    assert "running past the middle of the back of the thigh" in text.split("\n")[0], text.split("\n")[0]
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3G)
-    for want in ("# Prompt agent : fesses sans bas, personnage 3D\n", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
+    for want in ("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte un bas de maillot tanga ou un string.", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
                  "\n- GRADE_PTOSE_FESSIERE = 3 (à la main)\n", "Seul le bas est retiré : le haut garde exactement sa coupe",
                  "shape key \"nu_relache\" reste alors strictement inchangée"):
         assert want in text, (want, text[:1200])
@@ -1324,7 +1328,7 @@ with sync_playwright() as p:
         for label, code in (("Français", "fr"), ("English", "en")):
             set_lang(pg, label, code)
             text = pg.evaluate(A3G)
-            assert text.startswith(("# Prompt agent", "# Agent prompt")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+            assert text.startswith(("Personnage 3D ", "Adult ")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
         pg.close()
     assert not errors, errors
 

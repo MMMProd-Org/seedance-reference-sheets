@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-10-29 · Blender agent and Seedream 5.0 · Person, both "Agent 3D" prompts without a title or a CONTEXT heading
+
+**RULE** (owner, 2026-10-29: « pas besoin de titre ni contexte », « titre et contexte ça sert à rien »). The bust and glutes prompts no longer open with `# Prompt agent : …` and `## CONTEXTE`: the first line is the context line itself, the plain-words goal an image model reads first; the other headings stay.
+
 ## 2026-10-29 · GPT Image 2.5 and Seedream 5.0 · Every sheet: a neutral 18% grey backdrop
 
 **RULE** (owner, 2026-10-29: « si tu peux directement mettre les générations des images sur ce fond neutre gris 18% c mieux », « seedance à tendance à foutre la merde »). Measured on his renders: a blue backdrop (B - R +4 on the bikini sheets, +11 on the bare sheet, +20 after the step 4 pass, +23 on a rebuilt view), darker than 18% (luminance 0.07 to 0.15). Every "mid-grey" backdrop now says `neutral 18% grey` with `(about sRGB 118, 118, 118, with no blue, green or warm tint)`, the gaps `thin neutral grey gaps`, both engines, every subject; 22 of the 31 golden prompts change by these words only (15 words at most). In the view-by-view rebuild of step 4 the same words gave B - R +3 to +4 and a luminance of 0.13 to 0.19. **TO TEST**: a sheet generated from text with them. Whether Seedance itself does better on it: unknown.
