@@ -28,7 +28,7 @@ Then the back view with `in the same portrait format` and an 18% neutral grey ba
 
 **TO TEST**: the front view and a profile (each "real skin" pass so far brought the bust back to an average one); then a view-by-view finish in the app.
 
-**DOES NOT WORK**, refused by the platform (owner, 2026-10-29): the bare front view and left profile, same text, « ça passe pas la génération NSFW activée ». **RULE** (as v86): the prompt or the image is never reworked to get past the filter. Each "real skin" pass so far brought the bust back to an average one (entry of the domed areola).
+**DOES NOT WORK**, refused by the platform (owner, 2026-10-29): the bare front view and left profile, same text, « ça passe pas la génération NSFW activée ». **RULE** (already in the lessons of v76 to v95): the prompt or the image is never reworked to get past the filter. Each "real skin" pass so far brought the bust back to an average one (entry of the domed areola).
 
 ## 2026-10-28 · Seedream 5.0 · Person, body sheet: fat zones at « Légère », and soft thighs never "lean"
 
