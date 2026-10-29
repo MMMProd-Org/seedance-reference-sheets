@@ -26,7 +26,9 @@ Then the back view with `in the same portrait format` and an 18% neutral grey ba
 
 **WORKS** (three renders out of three): the same view centred in a 16:9 frame, its backdrop extended on both sides and the gap lines trimmed, and a text naming one woman and one view, no sheet: the same place (centre within 1 px, crease and heels within 5 px), silhouette overlap 0.94 to 0.96, hips +1 to +2%, knees and shoulders within 1%, thighs +3 to +13%; a neutral backdrop (B - R +3 to +4, luminance 0.13 to 0.19 against 0.105); fine detail +3 to +8%.
 
-**TO TEST**: the front view and a profile (each "real skin" pass so far brought the bust back to an average one); then a view-by-view finish in the app. Each "real skin" pass so far brought the bust back to an average one (entry of the domed areola).
+**TO TEST**: the front view and a profile (each "real skin" pass so far brought the bust back to an average one); then a view-by-view finish in the app.
+
+**DOES NOT WORK**, refused by the platform (owner, 2026-10-29): the bare front view and left profile, same text, « ça passe pas la génération NSFW activée ». **RULE** (as v86): the prompt or the image is never reworked to get past the filter. Each "real skin" pass so far brought the bust back to an average one (entry of the domed areola).
 
 ## 2026-10-28 · Seedream 5.0 · Person, body sheet: fat zones at « Légère », and soft thighs never "lean"
 
