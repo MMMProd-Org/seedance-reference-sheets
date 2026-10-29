@@ -4403,6 +4403,12 @@ rep('''          if ("sdagent3d" === r.t) return sdAgent3d(t, n);''', '''       
 rep('''    t1("glutes", e.glutes) +
     (3 === e.glutes ? " in proportion with the hips" : "") +''', '''    sdGlVol(t1("glutes", e.glutes)) +
     (3 === e.glutes ? " in proportion with the hips" : "") +''')
+# owner (2026-10-29: "si tu peux directement mettre les générations des images sur ce fond neutre gris 18% c mieux"; his renders had a
+# blue backdrop, B - R +4 to +23, that grew with each edit): the base app's own backdrop texts (GPT), as seedream_new.js says them
+_g = "Seamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint)"
+assert src.count("Seamless plain mid-grey studio backdrop") == 4, src.count("Seamless plain mid-grey studio backdrop")
+src = src.replace("Seamless plain mid-grey studio backdrop", _g)
+assert "mid-grey" not in src, src[src.index("mid-grey") - 80:src.index("mid-grey") + 40]
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

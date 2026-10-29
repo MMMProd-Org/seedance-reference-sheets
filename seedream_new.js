@@ -266,7 +266,7 @@ function sdHouseGrey() {
 }
 function sdHouseBg() {
   return sdHouseGrey()
-    ? "Isolated presentation: the house alone, standing on a flat, plain mid-grey floor in front of a seamless plain mid-grey backdrop, like a building standing in a large studio; no garden, trees, fences, street, sky, background landscape or neighbouring buildings. Only the house itself and what is attached to it (foundations, steps, porch, terrace) are shown, and it casts soft, realistic contact shadows on the grey floor.\n"
+    ? "Isolated presentation: the house alone, standing on a flat, plain neutral 18% grey floor in front of a seamless plain neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint), like a building standing in a large studio; no garden, trees, fences, street, sky, background landscape or neighbouring buildings. Only the house itself and what is attached to it (foundations, steps, porch, terrace) are shown, and it casts soft, realistic contact shadows on the grey floor.\n"
     : "";
 }
 function sdHouseGreyLight() {
@@ -1757,11 +1757,11 @@ function sdChildHead(gpt) {
       "A natural, ordinary child's face with the soft features of that age and the slight asymmetry of a real face, no makeup.\n";
   if (!gpt)
     return (
-      sdChildLead() + ", 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin mid-grey gaps: an identity reference sheet of one " + sdChildFic() + "child character for a family film, the same child in all four panels.\n" +
+      sdChildLead() + ", 16:9 landscape, four equal 16:9 panels in a 2 by 2 grid separated by thin neutral grey gaps: an identity reference sheet of one " + sdChildFic() + "child character for a family film, the same child in all four panels.\n" +
       "Top left: front view, looking straight into the lens. Top right: three-quarter view, " + p + " face turned toward the left edge of the frame. Bottom left: exact profile facing the left edge of the frame, showing the left side of " + p + " face. Bottom right: back view, the back of " + p + " head seen straight from behind, no face visible" + sdBackHair() + ".\n" + sdChildCrop(0) +
       id + "\n" +
       "Calm, natural expression, mouth closed.\n\n" +
-      "Plain seamless mid-grey backdrop. Soft, even studio light, the same in all four panels. 85mm lens at eye level, the whole head in sharp focus.\n\n" +
+      "Plain seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). Soft, even studio light, the same in all four panels. 85mm lens at eye level, the whole head in sharp focus.\n\n" +
       sdChildRender(0) + " No text, labels or watermark."
     );
   return (
@@ -1780,7 +1780,7 @@ function sdChildHead(gpt) {
     sdChildCrop(1) +
     "Top left: front view, facing the camera, eyes looking into the lens.\nTop right: three-quarter view, head turned 45 degrees toward the subject's left.\nBottom left: exact profile of the subject's left side, the face pointing toward the left edge of the panel.\nBottom right: back view, the back of the head seen straight from behind, no face visible" + sdBackHair() + ".\n\n" +
     "EXPRESSION:\nCalm and natural, mouth closed.\n\n" +
-    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop, identical in all panels. Soft, even studio lighting, neutral daylight white balance, the same light in every panel. 85mm lens at the child's eye level, the same distance in every panel, the whole head sharp.\n\n" +
+    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint), identical in all panels. Soft, even studio lighting, neutral daylight white balance, the same light in every panel. 85mm lens at the child's eye level, the same distance in every panel, the whole head sharp.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + "\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
   );
@@ -2048,7 +2048,7 @@ function sdChildBodyHl(gpt, body, out, st) {
       "\n" +
       body + " " + skin + "\n\n" + out + (st ? " Current state: " + st + "." : "") + "\n\n" +
       "Neutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_CS + ".\n\n" +
-      "Seamless mid-grey backdrop. Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
+      "Seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
     );
   return (
     "Create " + t9().noun + " to be used as a costume and character reference for AI video: four studio views of the body of the same " + sdChildFic() + "child character, framed from the neck down, side by side in one image.\n\n" +
@@ -2056,7 +2056,7 @@ function sdChildBodyHl(gpt, body, out, st) {
     "OUTFIT:\n" + out + (st ? "\nCurrent state: " + st + "." : "") + "\n\n" +
     "LAYOUT:\nA 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop. From left to right: front view, exact left side view, back view, exact right side view; the two side views face opposite directions. " + crop + "\n\n" +
     "POSE:\nNeutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_C + ". " + nX + "\n\n" +
-    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
+    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint) and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + " Realistic hands with five fingers each.\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
   );
@@ -2077,7 +2077,7 @@ function sdChildBody(gpt) {
       (sdChildPh(e) ? "Hair exactly as in image 1, the same in every panel.\n\n" : "Hair exactly as in image 1: " + ne() + ", the same in every panel.\n\n") +
       body + "\n\n" + out + (st ? " Current state: " + st + "." : "") + "\n\n" +
       "Neutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_CS + ".\n\n" +
-      "Seamless mid-grey backdrop. Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
+      "Seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). Soft, even studio light. Long lens at the child's chest height. " + sdChildRender(0) + " Five fingers per hand. No text or watermark."
     );
   return (
     "Create " + t9().noun + " to be used as a costume and character reference for AI video: four full-body studio views of the same " + sdChildFic() + "child character, side by side in one image.\n\n" +
@@ -2087,7 +2087,7 @@ function sdChildBody(gpt) {
     "OUTFIT:\n" + out + (st ? "\nCurrent state: " + st + "." : "") + "\n\n" +
     "LAYOUT:\nA 16:9 landscape image split into four equal vertical panels of the same size, separated by narrow gaps of the same grey as the backdrop. From left to right: front view, exact left side view, back view, exact right side view; the two side views face opposite directions. Whole figure in every panel, from the top of the hair to the feet, at the same scale and on the same floor line, with some grey space above the head and below the feet.\n\n" +
     "POSE:\nNeutral, relaxed standing pose, feet slightly apart, " + SD_ARMS_OUT_C + ". " + nX + "\n\n" +
-    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
+    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint) and floor, identical in all panels. Soft, even studio light, neutral white balance, a soft contact shadow under the feet, the same light in every panel. Long lens at the child's chest height, the same distance in every panel, deep focus.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + " Realistic hands with five fingers each.\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
   );
@@ -2184,11 +2184,11 @@ function sdBabySheet(gpt) {
     bot = "Bottom row, the whole baby sitting upright on the grey floor, left to right: front view; exact left side view, facing the left edge of the frame; back view. Same scale and floor line in these three panels, with some grey space around the baby.";
   if (!gpt)
     return (
-      sdChildLead() + ", 16:9 landscape, six equal panels in a 3 by 2 grid separated by thin mid-grey gaps: an identity and body reference sheet of one fictional baby character for a family film, the same baby in all six panels.\n" +
+      sdChildLead() + ", 16:9 landscape, six equal panels in a 3 by 2 grid separated by thin neutral grey gaps: an identity and body reference sheet of one fictional baby character for a family film, the same baby in all six panels.\n" +
       top + "\n" + bot + "\n\n" +
       id + "\n" + out + "\n\n" +
       "Calm, content expression, mouth closed. Sitting steadily, hands resting on the legs.\n\n" +
-      "Plain seamless mid-grey backdrop and floor. Soft, even studio light, the same in all six panels. 85mm lens at the baby's eye level for the close-ups, long lens at the baby's chest height for the sitting views. " +
+      "Plain seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint) and floor. Soft, even studio light, the same in all six panels. 85mm lens at the baby's eye level for the close-ups, long lens at the baby's chest height for the sitting views. " +
       sdChildRender(0) + " No text, labels or watermark."
     );
   return (
@@ -2198,7 +2198,7 @@ function sdBabySheet(gpt) {
     "OUTFIT:\n" + out + "\n\n" +
     "LAYOUT:\nA 16:9 landscape image split into six equal panels in a 3 by 2 grid, separated by narrow gaps of the same grey as the backdrop.\n" + top + "\n" + bot + "\n\n" +
     "EXPRESSION AND POSE:\nCalm and content, mouth closed. Sitting steadily, hands resting on the legs.\n\n" +
-    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain mid-grey studio backdrop and floor, identical in all panels. Soft, even studio light, neutral daylight white balance, a soft contact shadow under the baby, the same light in every panel. 85mm lens at the baby's eye level for the close-ups, long lens at the baby's chest height for the sitting views, the same distance within each row.\n\n" +
+    "LIGHT, BACKGROUND, CAMERA:\nSeamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint) and floor, identical in all panels. Soft, even studio light, neutral daylight white balance, a soft contact shadow under the baby, the same light in every panel. 85mm lens at the baby's eye level for the close-ups, long lens at the baby's chest height for the sitting views, the same distance within each row.\n\n" +
     "RENDERING:\n" + sdChildRender(1) + " Realistic hands with five fingers each.\nNo text, labels, numbers, watermarks or logos anywhere in the image.\n\n" +
     SD_CHILD_LIMIT
   );
@@ -2473,7 +2473,7 @@ function sdJoinNanoText(who, p) {
     (sdPick(SD_FHAIR, "fHair") && "m" !== e.pres && "smooth" === e.fHair ? "the skin texture with its pores, fine lines" : "the skin texture with its pores, fine lines, " + (sdBodyHair() ? "body hair" : "faint body hair")) + ", redness and uneven tone; " + ("m" === e.pres ? "" : "cellulite, dimpling, ") + "stretch marks, soft folds, rolls and creases; moles, marks, scars and veins; " +
     "the exact shape of the " + ch + ", belly, hips, glutes and thighs, including any sag, dip, flatness or asymmetry; the face exactly as in image 2, with its pores, lines and asymmetry, no makeup added. " +
     "Same light, white balance and fine film grain as image 1; nothing airbrushed, plastic, glossy or doll-like. Where a detail is unclear, keep it as it is rather than cleaning it up. " +
-    "Framing, the same in every panel: the whole figure, top of the hair to the soles, with a band of plain grey backdrop above the hair and below the feet, nothing cut by the panel edges. Four panels laid out as in image 1, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
+    "Framing, the same in every panel: the whole figure, top of the hair to the soles, with a band of plain grey backdrop above the hair and below the feet, nothing cut by the panel edges. Four panels laid out as in image 1, same scale and floor line in every panel, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark."
   );
 }
 /* v134 review: with "Lunettes de vue" the joins take the glasses from the head sheet too */
@@ -2503,7 +2503,7 @@ function sdPresetJoin(nano) {
    that band without moving or resizing the bodies. To check on the user's next sheets, measured the same way. */
 function sdJoinText(who, p) {
   return "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, cut at the collarbones, with an empty grey band above each body; image 2 is " + p +
-    " head. Keep the four views and their order from image 1 (front, left side, back, right side) and draw the matching head and neck from image 2 in the empty grey band above each body: the front face above the front view, an exact profile above each side view, facing the same way as that body, the back of the head above the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing, its scale and its three-quarter view. The bodies of image 1 stay exactly where they are, at the same size: never move, shrink or enlarge them. The neck joins each body at the collarbones and the head fits inside the band, the top of the hair a little below the top edge, sized to the shoulders of image 1, never to image 2. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. The four panels keep their widths from image 1, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark.";
+    " head. Keep the four views and their order from image 1 (front, left side, back, right side) and draw the matching head and neck from image 2 in the empty grey band above each body: the front face above the front view, an exact profile above each side view, facing the same way as that body, the back of the head above the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing, its scale and its three-quarter view. The bodies of image 1 stay exactly where they are, at the same size: never move, shrink or enlarge them. The neck joins each body at the collarbones and the head fits inside the band, the top of the hair a little below the top edge, sized to the shoulders of image 1, never to image 2. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. The four panels keep their widths from image 1, same scale and floor line in every panel, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark.";
 }
 /* v151: the v126 to v150 text said "Four panels of equal width", which the sheets with the arms held out no longer have (sdPanelCuts):
    kept to recognize it in saved sessions (sdJoinMigrate) */
@@ -2514,12 +2514,12 @@ function sdJoinText150(who, p) {
 function sdJoinOld(who, p, v) {
   return "Combine these two reference sheets into one full-body reference sheet of this " + who + ": image 1 is " + p + " body, image 2 is " + p +
     (2 === v
-      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view; on the left side view, the left profile from image 2; on the right side view, the right side of the face as shown in the three-quarter view of image 2, turned to an exact profile facing the right edge, never a mirror image of the left profile; the back of the head on the back view. Keep the body, outfit, proportions, skin texture and light of image 1 exactly, and the face and hair of image 2 exactly. Skin tone: image 2's tone over the whole body, so the neck shows no seam. Whole figure in every panel, hair to feet, same scale and floor line, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
+      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view; on the left side view, the left profile from image 2; on the right side view, the right side of the face as shown in the three-quarter view of image 2, turned to an exact profile facing the right edge, never a mirror image of the left profile; the back of the head on the back view. Keep the body, outfit, proportions, skin texture and light of image 1 exactly, and the face and hair of image 2 exactly. Skin tone: image 2's tone over the whole body, so the neck shows no seam. Whole figure in every panel, hair to feet, same scale and floor line, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark."
       : 3 === v
-      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck. Framing, the same in every panel: the whole figure, top of the hair to the soles, fills about 85% of the panel height, centred, with an equal band of plain grey backdrop above the hair and below the feet; nothing is cut by the panel edges. Head size: the head, top of the hair to the chin, is one eighth of the figure's height (the figure is 8 heads tall), sized to the neck and shoulders of image 1, not to image 2. Four panels of equal width, same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
+      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout, its framing and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck. Framing, the same in every panel: the whole figure, top of the hair to the soles, fills about 85% of the panel height, centred, with an equal band of plain grey backdrop above the hair and below the feet; nothing is cut by the panel edges. Head size: the head, top of the hair to the chin, is one eighth of the figure's height (the figure is 8 heads tall), sized to the neck and shoulders of image 1, not to image 2. Four panels of equal width, same scale and floor line in every panel, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark."
       : 0 === v
-      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, a profile on each side view facing the same way as that body, the back of the head on the back view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Whole figure in every panel, hair to feet, same scale and floor line, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark."
-      : " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck: the head is drawn at natural adult size for that body, not at its size in image 2, and the whole figure, top of the head to the soles, is about 8 heads tall. Whole figure in every panel, hair to feet, with plain backdrop above the hair and below the feet: nothing touches or is cut by the panel edges. Same scale and floor line in every panel, plain mid-grey backdrop, thin grey gaps between the panels. No text or watermark.");
+      ? " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, a profile on each side view facing the same way as that body, the back of the head on the back view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Whole figure in every panel, hair to feet, same scale and floor line, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark."
+      : " head. Keep the four views and their order from image 1 (front, left side, back, right side) and put the matching head from image 2 on each body: the front face on the front view, an exact profile on each side view, facing the same way as that body, the back of the head on the back view. From image 2 take only the face, hair and skin tone: ignore its layout and its three-quarter view. Keep the body, outfit, proportions, skin and light of image 1 exactly, and the face, hair and skin tone of image 2 exactly. Image 1 is cut at the collarbones, so scale each whole body down evenly to make room for the head and neck: the head is drawn at natural adult size for that body, not at its size in image 2, and the whole figure, top of the head to the soles, is about 8 heads tall. Whole figure in every panel, hair to feet, with plain backdrop above the hair and below the feet: nothing touches or is cut by the panel edges. Same scale and floor line in every panel, plain neutral 18% grey backdrop, thin grey gaps between the panels. No text or watermark.");
 }
 /* saved sessions keep the "Assembler" text of the version that wrote it in sdIter: an unedited older text is rewritten on load (exact match), an edited one is kept */
 function sdJoinMigrate(t) {
@@ -4711,12 +4711,12 @@ function sdHead() {
         : "",
     s =
       (e.looks >= 2
-        ? "Standardized clinical photograph from a general dermatology patient record, 16:9 landscape, four equal vertical panels separated by thin mid-grey gaps: the same everyday " +
+        ? "Standardized clinical photograph from a general dermatology patient record, 16:9 landscape, four equal vertical panels separated by thin neutral grey gaps: the same everyday " +
           sdWho() +
           " in all four panels, photographed as " +
           ("f" === e.pres ? "she is" : "m" === e.pres ? "he is" : "they are") +
           "."
-        : "Unretouched studio photograph, 16:9 landscape, four equal vertical panels separated by thin mid-grey gaps: an identity reference sheet of one " +
+        : "Unretouched studio photograph, 16:9 landscape, four equal vertical panels separated by thin neutral grey gaps: an identity reference sheet of one " +
           /* v129 (user, a "Canon" + "Méchant" sheet far from canon beauty): the guide for Seedream says it weights the start of the prompt most
              heavily and asks for the subject's defining attributes in the first clause (Runware, Seedream 4.5 prompting guide); with "Canon"
              the beauty was said only after the face structure */
@@ -4770,8 +4770,8 @@ function sdHead() {
   s += sdNeck() + "\n\nNeutral, relaxed expression, lips closed, no smile.\n\n";
   s +=
     e.looks >= 2
-      ? "Plain mid-grey backdrop. Standard clinical lighting: two diffused lights at 45 degrees on either side of the camera, even and neutral, with no shaping shadows; the same light in all four panels. 50mm lens at eye level, the whole head in sharp focus.\n\n"
-      : "Plain seamless mid-grey backdrop. One large soft key light from camera left, slightly above eye level, with a weak fill on the right, so the far cheek and the side of the nose keep gentle shadow and the skin texture reads; the same fixed light in all four panels. 85mm lens at eye level, the whole head in sharp focus.\n\n";
+      ? "Plain neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). Standard clinical lighting: two diffused lights at 45 degrees on either side of the camera, even and neutral, with no shaping shadows; the same light in all four panels. 50mm lens at eye level, the whole head in sharp focus.\n\n"
+      : "Plain seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). One large soft key light from camera left, slightly above eye level, with a weak fill on the right, so the far cheek and the side of the nose keep gentle shadow and the skin texture reads; the same fixed light in all four panels. 85mm lens at eye level, the whole head in sharp focus.\n\n";
   s +=
     sdSkinHead() +
     (e.looks >= 2
@@ -8532,7 +8532,7 @@ function sdBody() {
     return "none" !== rP(k);
   });
   s +=
-    "Seamless mid-grey backdrop. " +
+    "Seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). " +
     (n0()
       ? "Key light from above and to the side, weak fill: " +
         (sdNoBulk() &&
@@ -9629,8 +9629,8 @@ function sdGptPost(t, m) {
                 "Create a standardized clinical photograph, as filed in a general dermatology patient record, to be used as an identity reference for AI video: four close-up views of the same original fictional everyday person, photographed as they are",
               )
               .replace(
-                "Seamless plain mid-grey studio backdrop, identical in all panels. Soft, even studio lighting from a large softbox slightly above the camera",
-                "Plain mid-grey backdrop, identical in all panels. Standard clinical lighting: two diffused lights at 45 degrees on either side of the camera, even and neutral, with no shaping shadows",
+                "Seamless plain neutral 18% grey studio backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint), identical in all panels. Soft, even studio lighting from a large softbox slightly above the camera",
+                "Plain neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint), identical in all panels. Standard clinical lighting: two diffused lights at 45 degrees on either side of the camera, even and neutral, with no shaping shadows",
               )
               .replace(
                 "Real photograph with natural skin, hair and fabric texture, natural color, fine film grain, no retouching. Honest, unretouched photography of a real-looking person, not a beauty or fashion shoot.",
@@ -10156,7 +10156,7 @@ function sdPresetFinish() {
         t7("skin") +
         ", true to life, not redder, more orange, more tanned or more saturated than that" +
         (st ? ", apart from the current state kept below" : "") +
-        "; the backdrop stays a plain neutral grey.\n" +
+        "; the backdrop stays a plain neutral 18% grey (about sRGB 118, 118, 118, with no blue, green or warm tint).\n" +
         "Skin: " +
         x.join("; ") +
         "." +
