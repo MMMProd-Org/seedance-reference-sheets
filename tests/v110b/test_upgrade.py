@@ -263,7 +263,7 @@ class Upgrade(unittest.TestCase):
             self.load(model=model, mode="object", objCat="house", objBg="grey", objFantasy="a floating stone roof", objTime="day")
             texts = self.prompts()
             self.assertEqual(len(texts), 3)
-            self.assertIn("flat, plain mid-grey floor", texts[0])
+            self.assertIn("flat, plain neutral 18% grey floor", texts[0])
             self.assertIn("a floating stone roof", texts[0])
             self.load(model=model, mode="object", objCat="house", objBg="grey", objFantasy="a floating stone roof", photo=True, photoOnly=True)
             self.assertNotIn("floating stone roof", "\n".join(self.prompts()))
@@ -1102,7 +1102,7 @@ Real photograph with natural skin, hair and fabric texture, natural color, fine 
                         if extra.get("objCat") == "house":
                             grey = page.get_by_role("radio", name="Neutral grey floor and backdrop" if language == "en" else "Sol et fond gris neutre", exact=True)
                             grey.click()
-                            self.assertIn("flat, plain mid-grey floor", "\n".join(self.prompts()))
+                            self.assertIn("flat, plain neutral 18% grey floor", "\n".join(self.prompts()))
             page = self.load(uiLang=language, photo=True, bodyRef=True, photoClothes=True)
             expect(page.get_by_role("switch", name="Use the clothes in the photo" if language == "en" else "Utiliser les habits de la photo", exact=True)).to_have_count(0)
             self.assertTrue(self.state()["photoClothes"])
