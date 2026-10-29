@@ -1,5 +1,41 @@
 # Prompt log archive
 
+## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · the test's three changes in the app (v1.1.2)
+
+**WORKS**, by the user's test of the prompt in the entry below, with its three changes: « c bon ça marche avant » (the render was not described). Now in the app, on Seedream only, in a person's body prompt:
+
+A lean body, below: musculature at "Athlétique" or less, and biceps and trapezius at neither "Développés" nor "Massifs".
+
+1. When the Muscles line has at least as many zones at "Discrets" as at "Présents" or "Marqués" (zones: shoulders, back, arms, legs, a man's chest, the abs when their style is Auto), its zones at "Discrets" no longer get one phrase each: one phrase opens the line, "barely visible muscles, no muscle bulk". Zones at "Présents" or "Marqués" keep their own. With fewer zones at "Discrets", the line is unchanged: one zone at "Discrets" among zones at "Présents" would otherwise read "barely visible muscles" next to defined muscles. On a body that is not lean, the phrase stops at "barely visible muscles", so as not to contradict the build.
+2. Pear bust: ", as often on lean athletic women" is gone.
+3. Light: on a lean body with at least one zone in the phrase of item 1, none at "Marqués", and veins at "Visibles" or "Très marquées", the hard light now reads "crisp shadows that bring out the veins; the muscles stay smooth". Otherwise unchanged: "crisp shadows on the muscles", and "and veins" when they show.
+
+The user tested only the settings of the entry below, with a single vertical groove for the abs, set to "Discrets". Other settings follow the same rules but are **TO TEST**: a zone at "Marqués" among zones at "Discrets", as many zones at "Discrets" as at "Présents" (they share the phrase), a man, a heavier build, abs with segments on Auto (their own "with clear shadow lines") next to the light of item 3. "no muscle bulk" goes against rule 6 below (a negated word is still a word), but it is the tested wording: keep it while it works. GPT Image 2.5 is unchanged, as none of this was tested on it.
+
+## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · too muscular, not slim
+
+**TO TEST.**
+
+- Settings: woman, 27, 175 cm, Build "Très mince" (about 54 kg), lightly toned, muscle definition "Discrets" except the arms "Présents", veins "Très marquées", large pear-shaped bust, bikini.
+- Render: an athletic body, not slim: sculpted shoulders, back and arms, abs with horizontal lines; the bust round and full on top (the prompt asks hollow on top); the shoulders wider than the hips (the prompt asks the same width); the chin visible in two panels. The leg-to-torso ratio is as asked (crotch at about 43% from the collarbones down).
+- User: « les muscles trop présent, le corps trop musclé par rapport à ce que j'ai demandé ensuite j'ai dit mince c pas vraiment le cas ». The veins are wanted: « les veine j'en ai besoin si elles sont là c bien ».
+- Reading of the prompt: about ten cues push toward an athletic body, against five for slimness: "lightly toned"; "as often on lean athletic women" in the pear bust; the Muscles line names every zone even at "Discrets"; the abdomen groove; "Definition from leanness, not from muscle size"; "This definition never slims the breasts"; "high calves with long lower tendons, sturdy ankles, short, strong fingers"; the hard light, chosen because the veins are marked: "crisp shadows on the muscles and veins".
+- Test prompt given to the user, three changes:
+  1. Muscles line, the zones at "Discrets" replaced by one phrase: "Muscles: softly visible shoulder muscles, a softly toned back, a visible groove between biceps and triceps, lean, softly toned legs, slim upper arms, a flat trapezius line, a smooth upper chest." → "Muscles: barely visible muscles, no muscle bulk, a visible groove between biceps and triceps, slim upper arms, a flat trapezius line, a smooth upper chest."
+  2. Pear bust: ", as often on lean athletic women" removed.
+  3. Light: "crisp shadows on the muscles and veins" → "crisp shadows that bring out the veins; the muscles stay smooth".
+- Earlier lessons (section "Before v1.0.0" below) already record this failure: "a pear or bullet bust on a muscular body: very marked arms + 51 kg + a big bust → round bust and broad shoulders", with its workaround: lower the muscle definition, or a guide image; insisting in the text does not work. The hard light was validated only when the musculature is marked, not for veins alone. And "a negated word is still a word": change 1 says "no muscle bulk"; if the test fails, say it positively next (for example "slender, soft limbs with very little muscle"). The prompt has 586 words, under the 600 reported for Seedream.
+
+**REJECTED**, before any test: give marked veins the soft light instead of the hard one. It would have weakened the veins the user wants.
+
+## 2026-10-10 · Seedream 5.0 · Person, retouch card · help of "Autres retouches" (v1.1.1)
+
+**WORKS.** Interface text only, no prompt change: the help above the box says what its text is for (your own retouch, in English or French; a preset's text, already in the prompt; nothing to write while "Combine head and body" is only the default), with a French example. User: « ok c tout bon là ».
+
+## 2026-10-10 · GPT Image 2.5 and Seedream 5.0 · Object, clothing kept as in the photo · "On an invisible mannequin" (v1.1.0)
+
+**WORKS.** Optional, unticked by default. Ticked: SOURCE also allows "the presentation described below", and a PRESENTATION section asks for the invisible mannequin (ghost mannequin) in views 1 and 2 and the triptych's left and middle panels; view 3 and the right panel stay laid flat. User, after the release: « ok c bien » (the render was not described).
+
 ## Owner's second line · lessons from tool versions v76 to v95
 
 Source: the owner's file `lecons_prompts_planches_seedance.md` (2026-10-12), its parts dated v76 and later, translated; its v1 to v75 part is the section below. Its statuses come from the owner's working session. Each quoted phrase was checked against the v1.2.0 build (`new/patched.js`): a note in brackets says whether it is live.
