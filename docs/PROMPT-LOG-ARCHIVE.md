@@ -1,5 +1,13 @@
 # Prompt log archive
 
+## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · v114b integration
+
+**RULE.** Source: the owner's v114b ZIP, byte-identical rebuilt HTML and [unaltered lessons](sources/lecons_prompts_planches_seedance-v114b.md). Adult free outfit text replaces hidden garment choices on head/body and own-outfit retouches; empty/random text gives plain clothes. Named prints stay allowed. Vehicles use their described kind for staging, while this repository keeps its separate views and triptych. Face Character acts on Auto traits only, before Beauty; explicit traits, photo identity and children stay outside it. Auto/off keeps the established prompts.
+
+**RULE.** Retouch operations keep edited text and attachments; unavailable saved operations are normalized without destroying hidden personal text. Empty mobile Retouch opens its help and copies nothing. The house decor control also works in photo-only mode: grey staging changes the backdrop and light while preserving the house itself; separate views and photo attachments stay. Child options exclude grey/white hair, a receding hairline and heels without overwriting adult saves. Preserve animal body-first flow, calibrated lighting/ordinary faces, English default and copy-order guards.
+
+**DOES NOT WORK** in the supplied v114b, reproduced on both engines: changing only free outfit text falsely changed the copied-face signature. The integration excludes its new clothing line and logo exception from current and saved signatures, while actual identity/mark/Character changes still invalidate them. **TO TEST** in renders: the new outfit, vehicle and face-character wording. Local text/UI checks do not establish image quality or a model's filtering behavior.
+
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · v110b integration from the owner's second line
 
 **RULE.** Source: the owner's `planches-seedance-pipeline_v110b_v52.zip`, its companion HTML and [unaltered French lessons](sources/lecons_prompts_planches_seedance-v110b.md). Rebuilding that ZIP reproduced the supplied HTML byte for byte. Its source chain continues the second v95 line imported in commit `42646b1`; this integration starts from repository main `e85632f`. The standalone HTML is a comparison witness, not a replacement for the maintained build chain. The source's statuses below are reported user results, not new image tests.

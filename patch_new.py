@@ -16,9 +16,11 @@ def _sh(*a):
         return ''
 VERSION=os.environ.get('SD_VERSION','') or next((l.split('=',1)[1].strip() for l in _sh('python3','version.py').splitlines() if l.startswith('version=')), '')
 assert VERSION=='' or VERSION.count('.')==2 and all(p.isdigit() for p in VERSION.split('.')),VERSION
+# a local build's number is the one its merge would release, not a tag yet: marked "-pre" (semver pre-release, no translation needed)
+VERSION_SHOWN=VERSION+('' if os.environ.get('SD_VERSION') or not VERSION else '-pre')
 DATE=os.environ.get('SD_DATE','') or _sh('git','log','-1','--format=%cs').strip()
 assert DATE=='' or len(DATE)==10 and DATE[4]==DATE[7]=='-',DATE
-sd+='\nvar SD_VERSION = '+json.dumps(VERSION)+';'
+sd+='\nvar SD_VERSION = '+json.dumps(VERSION_SHOWN)+';'
 sd+='\nvar SD_DATE = '+json.dumps(DATE)+';'
 def rep(old,new,count=1):
     global src

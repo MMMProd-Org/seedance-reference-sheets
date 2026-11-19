@@ -103,7 +103,8 @@ page with that version (`SD_VERSION`), shown at the top of the page with the dat
 After a deploy that brings a new version, the `release` job tags the commit and creates a GitHub
 release with the page built and tested above attached as `seedance-reference-sheets-vX.Y.Z.html`;
 it runs no code of the repository, since its token can write to it, and a re-run only replaces
-the page. A local build shows the version `version.py` gives for its commit and that commit's date. `python version.py --check` runs its own checks.
+the page. A local build shows the version `version.py` gives for its commit, marked `-pre` (it is not a tag yet), and that
+commit's date. `python version.py --check` runs its own checks.
 
 ## Making changes
 

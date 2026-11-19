@@ -119,9 +119,11 @@ with sync_playwright() as p:
     # and a local build's own, with the last commit's date.
     stamp = page.locator("header [data-sd-version]")
     expect(stamp).to_be_visible()
-    expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2}$"))
+    expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+(-pre)? · \d{4}-\d{2}-\d{2}$"))
     if os.environ.get("SD_VERSION"):
         expect(stamp).to_have_text(re.compile("^v" + re.escape(os.environ["SD_VERSION"]) + " · "))
+    else:
+        expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+-pre · "))
 
     page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()
@@ -810,6 +812,8 @@ with sync_playwright() as p:
         assert "thick, very muscular obliques" in line.group(0), (model, ribs)
         belly, _ = side_body(model, "fat: 1, absStyle: 'four', fatBelly: 1")
         assert "small, smooth bulge of soft fat" in belly and "smooth and flat" not in belly and "softly rounded" in belly, (model, belly)
+        flat, _ = side_body(model, "fat: 1, absStyle: 'flat', defAbs: 'clear', fatBelly: 1")
+        assert "a firm, smooth upper stomach" in flat and "a flat, smooth stomach" not in flat, (model, flat)
         assert "thin layer of soft fat below the navel" not in belly, model
         split, _ = side_body(model, "fat: 1, biceps: 'medium', triceps: 'huge'")
         assert "moderate biceps" in split and "very large triceps" in split and "biceps and triceps" not in split, (model, split)

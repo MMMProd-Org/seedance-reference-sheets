@@ -12,6 +12,12 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
+
+**DOES NOT WORK**, the short legs (second render, made with `tapered runner's legs: lean thigh muscles`): the crotch about 44% down from the collarbones to the soles, for 48% asked, as on the first render (44%) and on 2026-10-28 (40%). Dropping "long" and "elongated" changed nothing measurable; the dropped words stay dropped (they contradicted the length). **RULE**: no more words for the leg length; the next step is a proportion guide image, as for the drop of the bust (v89).
+
+**REJECTED**, the slit navel said taller than wide: the second render drew it slit-like without it; the default prompts are back to the golden set before it. **RULE**: belly fat « Légère » with « Plat, lisse » says `a firm, smooth upper stomach`, no longer `a flat, smooth stomach` next to the bulge, both engines. A local build shows `vX.Y.Z-pre`: its number is the one its merge would release, not a tag yet.
+
 ## 2026-11-19 · All · One final version, its number and date at the top
 
 **RULE** (owner, 2026-11-19: « unifie, corrige tout pour une version finale et affiche moi en haut de la planche la version et la date »). Two pieces of his work had stayed out of the chain this release builds on: PR #64 (« Tubéreuse », « Basse », « Veines du buste », entry of 2026-10-28) and the 2026-10-29 « Agent 3D » prompts without a title (branch `feat/agent3d-no-headings`, no PR). Both are merged here with PRs #61 to #75 and the render audit. The header shows `vX.Y.Z · YYYY-MM-DD` on every build: CI's release version, or the one `version.py` gives a local build, and the last commit's date. No prompt changes.
@@ -158,11 +164,7 @@ Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO 
 
 ## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · v114b integration
 
-**RULE.** Source: the owner's v114b ZIP, byte-identical rebuilt HTML and [unaltered lessons](sources/lecons_prompts_planches_seedance-v114b.md). Adult free outfit text replaces hidden garment choices on head/body and own-outfit retouches; empty/random text gives plain clothes. Named prints stay allowed. Vehicles use their described kind for staging, while this repository keeps its separate views and triptych. Face Character acts on Auto traits only, before Beauty; explicit traits, photo identity and children stay outside it. Auto/off keeps the established prompts.
-
-**RULE.** Retouch operations keep edited text and attachments; unavailable saved operations are normalized without destroying hidden personal text. Empty mobile Retouch opens its help and copies nothing. The house decor control also works in photo-only mode: grey staging changes the backdrop and light while preserving the house itself; separate views and photo attachments stay. Child options exclude grey/white hair, a receding hairline and heels without overwriting adult saves. Preserve animal body-first flow, calibrated lighting/ordinary faces, English default and copy-order guards.
-
-**DOES NOT WORK** in the supplied v114b, reproduced on both engines: changing only free outfit text falsely changed the copied-face signature. The integration excludes its new clothing line and logo exception from current and saved signatures, while actual identity/mark/Character changes still invalidate them. **TO TEST** in renders: the new outfit, vehicle and face-character wording. Local text/UI checks do not establish image quality or a model's filtering behavior.
+**RULE / DOES NOT WORK / TO TEST.** The owner's v114b merged: free outfit text, vehicle staging, Face Character on Auto traits; a free-outfit change no longer breaks the copied-face signature. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-17--gpt-image-25--seedream-50--v114b-integration)
 
 ## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · Photo head tracking
 

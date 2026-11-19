@@ -5520,6 +5520,7 @@ function sdBellyLow(s) {
         .replace("the lower abdomen smooth and flat below them", "the lower abdomen softly rounded below them")
         .replace("below them the lower abdomen stays smooth and flat", "below them the lower abdomen is softly rounded")
         .replace("a flat stomach with a single vertical groove", "a firm upper stomach with a single vertical groove")
+        .replace("a flat, smooth stomach", "a firm, smooth upper stomach")
     : s;
 }
 function sdAbsSideTrim(s) {
@@ -5986,8 +5987,6 @@ function sdDetailMap(a) {
     ("a marked curve in the lower back" === x || "a fairly straight lower back" === x) && (y = [lb || y].concat(xb).join(", "));
     /* v157 review: "Extrême" pushes the glutes back and up, never with flat, low or drooping glutes */
     "hyper" === e.lordosis && (["flat", "low"].indexOf(e.glutesShape) >= 0 || sdGlDefOn("sag")) && (y = y.replace(", the glutes pushed back and up", "").replace("hollowing in sharply above them", "hollowing in sharply above the glutes"));
-    /* owner's render, 2026-11-19: the slit navel drawn round; said by its proportions (last, after every swap keyed on the short text) */
-    "a vertical, slit-like navel" === y && (y = "a vertical, slit-like navel, a narrow opening clearly taller than wide");
     return y;
   });
   /* v157: the calves set are said with the legs (sdLegShape), the drawn ones go */
