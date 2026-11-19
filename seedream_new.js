@@ -5194,6 +5194,14 @@ function sdArmSplit() {
     t = SD_TRIS[sdTri()];
   return [SD_BIS[e.biceps] ? SD_BIS[e.biceps] + f : "", t[0] + f + t[1]].filter(Boolean);
 }
+/* owner's third render, 2026-11-19 (« j'ai pas le petit bidon dont on a parlé »): belly fat at "Légère", said only in the fat line, was not
+   drawn on a body the muscle settings made athletic (very large deltoids and triceps, very marked obliques); said in the first sentence too,
+   where Seedream weights most, as the muscular arms, legs and glutes (v157) */
+function sdBellyLead(lead) {
+  if (!("person" === e.mode && !sdChild(e) && 1 === sdFatOn("fatBelly"))) return lead;
+  var b = "a small, soft pooch of fat just below the navel";
+  return lead ? lead + ", and " + b : ", with " + b;
+}
 /* owner's render, 2026-11-19: "soft, heavy hips, thighs and upper arms" from hip and thigh fat at "Légère" next to "slim thighs", rendered
    neither; "heavy" only for a "Forte" build or fat from "Marquée" up in a zone of that list */
 function sdHeavyFat() {
@@ -8540,7 +8548,7 @@ function sdBody() {
           ? ": soft" + (sdHeavyFat() || sf.indexOf("bust") >= 0 || sf.indexOf("glutes") >= 0 ? ", heavy " : " ") + sdList(sf) + ", with " + (1 === hd.length && "back" === hd[0] ? "a " : "") + "sharply defined " + sdList(hd) + "."
           : ", not a 3D character.")
       : "";
-  s += "\n" + t6(rS()) + ", " + e.height + " cm, about " + sdKg() + " kg" + rb() + sdLegLead() + "." + ni + " " + sdLegs(hl) + "\n\u0001";
+  s += "\n" + t6(rS()) + ", " + e.height + " cm, about " + sdKg() + " kg" + rb() + sdBellyLead(sdLegLead()) + "." + ni + " " + sdLegs(hl) + "\n\u0001";
   var sil = [
     sdShoulders(),
     "m" === e.pres

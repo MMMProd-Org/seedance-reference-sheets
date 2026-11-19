@@ -825,6 +825,9 @@ with sync_playwright() as p:
         assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
         if model == "Seedream 5.0":
             assert "with strong, muscular arms" in side_body(model, "fat: 1, triceps: 'big'")[0], model
+            assert "with a small, soft pooch of fat just below the navel." in belly, (model, belly)
+            pooch = side_body(model, "fat: 1, triceps: 'big', fatBelly: 1")[0]
+            assert "with strong, muscular arms, and a small, soft pooch of fat just below the navel." in pooch, (model, pooch)
             light, _ = side_body(model, "fat: 1, fatLower: 1, defShoulders: 'clear', defBack: 'clear'")
             heavy, _ = side_body(model, "fat: 1, fatLower: 3, defShoulders: 'clear', defBack: 'clear'")
             lead = next(ln for ln in light.split("\n") if "deliberately imperfect" in ln)
