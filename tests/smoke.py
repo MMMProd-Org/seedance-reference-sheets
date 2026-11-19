@@ -827,6 +827,52 @@ with sync_playwright() as p:
             assert (", apart from the pooch" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
         tc.close()
 
+    # owner, 2026-11-19 (« plusieurs curseurs »): the card's own settings, the pooch and the depth, over the body settings
+    def torso_of(state):
+        tc = clipboard_page(browser, errors)
+        tc.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, " + state + "}))")
+        tc.reload()
+        return tc, [x for x in prompts(tc) if "retouch the torso only" in x or "Pick a pooch or a depth" in x]
+    for state, want, absent in (
+        ("fatBelly: 1, sdTorsoPooch: '1'", "about half a finger's width", "about a finger's width"),
+        ("fatBelly: 2, sdTorsoPooch: '2'", "about a finger's width", "two fingers'"),
+        ("sdTorsoPooch: '3'", "about two fingers' width past the line of the upper abs in the side views, as on a fit woman whose upper abs stay sharp", "deeper from back to front"),
+        ("torsoDepth: 'deep', sdTorsoDeep: '10'", "the torso about a tenth deeper", "a quarter"),
+        ("sdTorsoDeep: '33', sdTorsoPooch: '1'", "the torso about a third deeper", "nothing"),
+        ("fatBelly: 1, torsoDepth: 'deep', sdTorsoPooch: '0', sdTorsoDeep: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
+        # PR #80 review (Sourcery): an explicit none keeps the card with no body setting behind it
+        ("sdTorsoPooch: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
+        # PR #80 review (Sourcery): belly fat above « Visible » keeps the abs soft, never "stay sharp"
+        ("fatBelly: 3, sdTorsoPooch: '1'", "the upper abs kept exactly as soft as they are", "stay sharp"),
+    ):
+        tc, torso = torso_of(state)
+        assert tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1 and len(torso) == 1, (state, torso)
+        assert want in torso[0] and absent not in torso[0], (state, torso)
+        assert (", apart from the pooch" in torso[0]) == ("deeper" in torso[0] and "pooch of lower-belly fat" in torso[0]), (state, torso)
+        # PR #80 review (Copilot): nothing to retouch, nothing to copy; the bar button leads to the card instead
+        off = "Pick a pooch" in torso[0]
+        assert tc.locator("#sd-card-growTorso button:has-text('Copy')").first.is_disabled() == off, state
+        if off:
+            assert tc.locator("#sd-card-growTorso", has_text="Nothing to retouch yet").count() == 1, state
+            tc.set_viewport_size({"width": 900, "height": 900})
+            tc.evaluate(HOLD_CLIPBOARD)
+            tc.locator("#sd-mobile-copy-bar button", has_text="Belly").click()
+            tc.wait_for_timeout(300)
+            assert tc.evaluate("window.writes.length") == 0, state
+        tc.close()
+    # the chips of the card set it, Auto follows the body settings again
+    tc, torso = torso_of("fatBelly: 1")
+    chips = tc.locator("[data-sd-torso-chips]")
+    assert "a finger's width" in torso[0] and chips.count() == 1
+    chips.get_by_role("radio", name="Very light", exact=True).click()
+    chips.get_by_role("radio", name="+20 %", exact=True).click()
+    torso = [x for x in prompts(tc) if "retouch the torso only" in x]
+    assert "half a finger's width" in torso[0] and "the torso about a fifth deeper" in torso[0], torso
+    chips.get_by_role("radio", name="Auto", exact=True).first.click()
+    torso = [x for x in prompts(tc) if "retouch the torso only" in x]
+    assert "about a finger's width" in torso[0], torso
+    tc.close()
+
     # owner, 2026-11-19 (« Uncaught Error: ResizeObserver loop completed with undelivered notifications » in the preview): the copy bar
     # with five buttons, 121 px tall, shown and hidden across the lg breakpoint, never resizes the page inside an observer callback
     ro = clipboard_page(browser, errors)
@@ -847,7 +893,7 @@ with sync_playwright() as p:
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
-    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset', sdTorsoPooch: '1', sdTorsoDeep: '33'}))")
     io.reload()
     with io.expect_download() as dl:
         io.get_by_role("button", name=re.compile(r"Export")).first.click()
@@ -858,6 +904,8 @@ with sync_playwright() as p:
     # the import always asks before replacing the current settings: wait for that question, then for the saved state
     io.get_by_role("button", name="Replace", exact=True).click()
     io.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').bustHigh === 'lowset'", timeout=5000)
+    # and the two settings of the « Ventre et torse » card
+    assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
