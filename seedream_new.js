@@ -1503,14 +1503,19 @@ function sdChildBuild() {
    sheet; the other full-body sheets (child, GPT) say the gap, not an angle, so the arms fit their equal panels (GPT checks panel widths;
    the figure includes the head); GPT names the waist, hips and thighs, not "from the armpit down", since its very large bust spreads
    "against the inner arms". The baby sheet keeps its sitting pose: a baby does not stand with its arms out */
-var SD_ARMS_OUT = "arms straight and held about 20 degrees out from the body, palms toward the thighs, hands visible: in the front and back views a clear gap of backdrop between each arm and the waist, hips and thighs, the hands well clear of the thighs";
-var SD_ARMS_OUT_C = "arms straight and held slightly out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel";
-var SD_ARMS_OUT_G = "arms straight and held slightly out from the body, just enough for a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel";
+/* owner, 2026-11-19 (« oui c une bonne idée », the arms of the side views): on his renders the hanging arm sat over the back half of the torso
+   in profile, the hand on the glute, so the back line hardly showed and the « Ventre et torse » card could not deepen it; every standing
+   body sheet now says where the arm hangs in the side views, appended to each arms text (the marked ones of SD_ARMS_M too); twelve words,
+   since the Seedream sheet with a fitted top and a very generous bust is just under its 600-word warning */
+var SD_ARMS_SIDE = "; in the side views the arms hang slightly forward, the back line clear";
+var SD_ARMS_OUT = "arms straight and held about 20 degrees out from the body, palms toward the thighs, hands visible: in the front and back views a clear gap of backdrop between each arm and the waist, hips and thighs, the hands well clear of the thighs" + SD_ARMS_SIDE;
+var SD_ARMS_OUT_C = "arms straight and held slightly out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel" + SD_ARMS_SIDE;
+var SD_ARMS_OUT_G = "arms straight and held slightly out from the body, just enough for a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel" + SD_ARMS_SIDE;
 /* v145 review: the Seedream sheets have no panel-width check (no GENERATION LIMIT) and Seedream draws less than the angle said (about 12
    degrees for 20 on his sheet): "slightly out" could leave no gap; the child sheet of Seedream and the GPT text rewritten for Seedream (3D,
    2D, from a photo; sdGptSdText) say the angle */
-var SD_ARMS_OUT_CS = "arms straight and held about 20 degrees out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel";
-var SD_ARMS_OUT_GS = "arms straight and held about 20 degrees out from the body, a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel";
+var SD_ARMS_OUT_CS = "arms straight and held about 20 degrees out from the body, hands visible: in the front and back views a clear gap of backdrop between each arm and the body from the armpit down, the hands inside the panel" + SD_ARMS_SIDE;
+var SD_ARMS_OUT_GS = "arms straight and held about 20 degrees out from the body, a clear gap of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel" + SD_ARMS_SIDE;
 /* v157 (user, on his render: "les bras ne sont pas écartés, pourquoi" (about 11 degrees measured each side for the "about 20 degrees" asked,
    as in v145), then "je dois pouvoir écarter plus l'entrejambe"): "Écart des bras", Marqué by default (the v156 texts are Léger), and
    "Écart des pieds" (hips, as before; shoulders; wide, the A-pose of 3D character references), adults only, both engines. The marked
@@ -1518,9 +1523,9 @@ var SD_ARMS_OUT_GS = "arms straight and held about 20 degrees out from the body,
    and the figure shrinks a little to fit (v151 measure), a full 45-degree A-pose does not fit four views in 16:9. Applied last to the
    finished prompts (sdPoseM), as exact replacements of the v156 texts. */
 var SD_ARMS_M = [
-  [SD_ARMS_OUT, "arms straight and held well out, about 30 degrees, palms toward the thighs: each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the body from the armpit down in the front and back views"],
-  [SD_ARMS_OUT_GS, "arms straight and held well out, about 30 degrees, each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel"],
-  [SD_ARMS_OUT_G, "arms straight and held well out from the body, each hand about a hand's width away from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel"],
+  [SD_ARMS_OUT, "arms straight and held well out, about 30 degrees, palms toward the thighs: each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the body from the armpit down in the front and back views" + SD_ARMS_SIDE],
+  [SD_ARMS_OUT_GS, "arms straight and held well out, about 30 degrees, each hand a full hand's width from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel" + SD_ARMS_SIDE],
+  [SD_ARMS_OUT_G, "arms straight and held well out from the body, each hand about a hand's width away from the outer thigh, a clear wedge of backdrop between each arm and the waist, hips and thighs in the front and back views, the hands inside the panel" + SD_ARMS_SIDE],
 ];
 var SD_FEET = {
   shoulders: "feet shoulder-width apart",
@@ -8787,7 +8792,7 @@ function sdBody() {
     "Neutral standing pose, feet hip-width apart" +
     ("low" === e.glutesShape ? ", pelvis slightly tucked, lower back flat" : "") +
     ", " + SD_ARMS_OUT +
-    ("m" !== e.pres && "conical" === e.bustShape && e.chest >= 2 ? "; in the side views the arms hang straight down behind the bust, fully separate from it" : "") +
+    ("m" !== e.pres && "conical" === e.bustShape && e.chest >= 2 ? "; the arms stay behind the bust there, fully separate from it" : "") +
     /* v145 review: "neutral expression" its own sentence, no longer hanging on the gap of the arms */
     (hl ? "." : ". Neutral expression.") +
     "\n\n";
