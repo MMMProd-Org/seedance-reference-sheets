@@ -803,14 +803,20 @@ with sync_playwright() as p:
     # at "Légère" a small smooth bulge below the navel, the upper abs kept; "Très marqués" obliques; "Triceps" apart from "Biceps" (Auto
     # follows it, prompts unchanged); "heavy" only from "Marquée"; a light cellulite visible in a full-body view
     # owner, 2026-11-19: the "Ventre et torse" retouche card (Seedream) with belly fat "Légère" or a torso depth set, never on Auto
-    for state, on in (("fatBelly: 1", True), ("torsoDepth: 'deep'", True), ("fat: 1", False)):
+    for state, on in (("fatBelly: 1", True), ("fatBelly: 2", True), ("torsoDepth: 'deep'", True), ("fatBelly: 1, torsoDepth: 'deep'", True), ("fat: 1", False)):
         tc = clipboard_page(browser, errors)
         tc.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, " + state + "}))")
         tc.reload()
         assert (tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1) == on, state
         if on:
             torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
-            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("deeper torso" in torso[0]) == ("deep" in state), (state, torso)
+            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("a quarter deeper" in torso[0]) == ("deep" in state), (state, torso)
+            assert ("two fingers'" in torso[0]) == ("fatBelly: 2" in state), (state, torso)
+            assert ("upper abs stay sharp" in torso[0]) == ("fatBelly: 1" in state), (state, torso)
+            assert "Every muscle keeps exactly its size and definition" in torso[0] and "belly line both further out" not in torso[0], (state, torso)
+            assert ("fullest point halfway between the navel" in torso[0]) == ("fatBelly" in state), (state, torso)
+            assert ("all of the extra depth at the back" in torso[0]) == ("deep" in state) and "nearly as deep as the chest" not in torso[0], (state, torso)
+            assert (", apart from the pooch" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
         tc.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it

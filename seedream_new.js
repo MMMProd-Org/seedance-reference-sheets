@@ -3704,20 +3704,34 @@ function sdGrowTorsoOn(t) {
   return (
     "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
     rq(t, function () {
-      return 1 === sdFatOn("fatBelly") || !!SD_DEPTH[e.torsoDepth];
+      /* owner's eighth render, 2026-11-19 (belly fat « Visible », no pooch drawn): the pooch from « Légère » or « Visible »; with « Visible »
+         the abs are soft shapes under the fat, kept soft (PR #77 review) */
+      return [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 || !!SD_DEPTH[e.torsoDepth];
     })
   );
 }
 function sdGrowTorsoPrompt() {
   var a = [];
-  1 === sdFatOn("fatBelly") &&
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about a finger's width past the line of the upper abs, as on a fit woman whose upper abs stay sharp; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
-  "deep" === e.torsoDepth && a.push("in the side views, a deeper torso: the ribcage and the waist thicker from back to front, the waist nearly as deep as the chest");
-  "shallow" === e.torsoDepth && a.push("in the side views, a shallower torso: the ribcage and the waist thinner from back to front");
+  [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
+    /* owner's render of this card, 2026-11-19 (v1.6.1-pre, « c déjà mieux »): the belly came out fullest at the navel, a round belly from
+       under the ribs and not a lower-belly pooch: its fullest point and the line above it are now set */
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs in the side views, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+  /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
+     than an absolute shape; the front width kept, so only the depth changes */
+  "deep" === e.torsoDepth &&
+    /* owner's render of this card, 2026-11-19: "the back line and the belly line both further out" added to the pooch, a belly far past a
+       finger's width, and the hanging arm hides most of the back line in profile: the extra depth now goes mostly behind */
+    /* owner's render of this card, 2026-11-19 (v1.6.1-pre): « mostly at the back » still put about two thirds of the extra waist depth in
+       front (measured in profile); the front line is now held in place and "the waist nearly as deep as the chest" dropped */
+    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + ([1, 2].indexOf(sdFatOn("fatBelly")) >= 0 ? ", apart from the pooch" : "") + "; the front and back views keep their width");
+  "shallow" === e.torsoDepth &&
+    a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
     " The result stays a believable real body: natural flesh that settles with gravity like the rest of the body. The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    /* owner's render of this card, 2026-11-19: the whole body came out softer, shoulders, arms and back lost their definition */
+    " Every muscle keeps exactly its size and definition from image 1: the shoulders, arms, back and upper abs as large and as sharp as they are; no other part gains fat." +
     " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +
     "the upper abs, the bust, the shoulders and arms, the hips, the glutes, the legs, the outfit (every garment exactly as in image 1, with the same cut and coverage, simply following the new shape), the light, the backdrop, the framing, the pose and the panel layout. No text or watermark."
   );
@@ -8257,7 +8271,7 @@ function sdCardExtra(k) {
         (0, l.jsx)("p", {
           className: "text-muted-foreground",
           children: (function () {
-            var b = 1 === sdFatOn("fatBelly"),
+            var b = [1, 2].indexOf(sdFatOn("fatBelly")) >= 0,
               d = !!SD_DEPTH[e.torsoDepth];
             return sdT(
               "Seedream dessine mal " + (b ? (d ? "ce petit bidon et cette épaisseur du torse" : "ce petit bidon sous le nombril") : "cette épaisseur du torse") + " à partir du texte seul, surtout sur un corps musclé. Une retouche de ta planche corps les ajoute.",
