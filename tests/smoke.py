@@ -840,11 +840,25 @@ with sync_playwright() as p:
         ("torsoDepth: 'deep', sdTorsoDeep: '10'", "the torso about a tenth deeper", "a quarter"),
         ("sdTorsoDeep: '33', sdTorsoPooch: '1'", "the torso about a third deeper", "nothing"),
         ("fatBelly: 1, torsoDepth: 'deep', sdTorsoPooch: '0', sdTorsoDeep: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
+        # PR #80 review (Sourcery): an explicit none keeps the card with no body setting behind it
+        ("sdTorsoPooch: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
+        # PR #80 review (Sourcery): belly fat above « Visible » keeps the abs soft, never "stay sharp"
+        ("fatBelly: 3, sdTorsoPooch: '1'", "the upper abs kept exactly as soft as they are", "stay sharp"),
     ):
         tc, torso = torso_of(state)
         assert tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1 and len(torso) == 1, (state, torso)
         assert want in torso[0] and absent not in torso[0], (state, torso)
         assert (", apart from the pooch" in torso[0]) == ("deeper" in torso[0] and "pooch of lower-belly fat" in torso[0]), (state, torso)
+        # PR #80 review (Copilot): nothing to retouch, nothing to copy; the bar button leads to the card instead
+        off = "Pick a pooch" in torso[0]
+        assert tc.locator("#sd-card-growTorso button:has-text('Copy')").first.is_disabled() == off, state
+        if off:
+            assert tc.locator("#sd-card-growTorso", has_text="Nothing to retouch yet").count() == 1, state
+            tc.set_viewport_size({"width": 900, "height": 900})
+            tc.evaluate(HOLD_CLIPBOARD)
+            tc.locator("#sd-mobile-copy-bar button", has_text="Belly").click()
+            tc.wait_for_timeout(300)
+            assert tc.evaluate("window.writes.length") == 0, state
         tc.close()
     # the chips of the card set it, Auto follows the body settings again
     tc, torso = torso_of("fatBelly: 1")

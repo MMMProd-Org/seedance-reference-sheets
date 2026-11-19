@@ -2013,10 +2013,10 @@ rep(r'''                      o === e
                           ? (0, l.jsx)(tB, { size: 17 })
                           : (0, l.jsx)(tV, { size: 17 }),''')
 rep(r'''                    disabled: n || sdX,
-                    onClick: () => A(e, m[e]),''', r'''                    disabled: (n && "iter" !== e) || sdX,
-                    onClick: () => (n && "iter" === e ? (sdGoIter(), h("Choisis ou écris une retouche dans la carte 3.")) : A(e, m[e])),''')
+                    onClick: () => A(e, m[e]),''', r'''                    disabled: (n && "iter" !== e && "growTorso" !== e) || sdX,
+                    onClick: () => (n && "iter" === e ? (sdGoIter(), h("Choisis ou écris une retouche dans la carte 3.")) : n && "growTorso" === e ? (sdGoTorso(), h(sdT("Choisis un bidon ou une épaisseur dans la carte « Retouche : ventre et torse ».", "Pick a pooch or a depth in the “Retouch: belly and torso” card."))) : A(e, m[e])),''')
 rep(r'''                      "rounded-full py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +''', r'''                      "rounded-full py-3 font-bold disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring " +
-                      (n && "iter" === e ? "opacity-45 " : "") +''')
+                      (n && ("iter" === e || "growTorso" === e) ? "opacity-45 " : "") +''')
 rep(r'''                                                    children: sdFittedWarn(t),''', r'''                                                    children: sdCoverNote(t) ? null : sdFittedWarn(t),''')
 rep(r'''                                              t.bodyRef &&
                                                 sdMineTenue(t) &&''', r'''                                              t.bodyRef &&
@@ -2294,11 +2294,11 @@ rep('''"iter" === t ? sdIterCopyMsg(e) : sdSrcCopyMsg(e);''', '''"iter" === t ? 
 rep('''                  "button",
                   {
                     type: "button",
-                    disabled: (n && "iter" !== e) || sdX,''', '''                  "button",
+                    disabled: (n && "iter" !== e && "growTorso" !== e) || sdX,''', '''                  "button",
                   {
                     type: "button",
                     title: sdBarTip(e, n),
-                    disabled: (n && "iter" !== e) || sdX,''')
+                    disabled: (n && "iter" !== e && "growTorso" !== e) || sdX,''')
 # P77 v125 (user: export and import the settings, with a new colored button, prominent and working): "Exporter" / "Importer" in the
 # header, after the Outil switch (sdIoButtons, seedream_new.js)
 rep('''                    options: [
@@ -4676,7 +4676,7 @@ for _a, _b in [
 for _a, _b in [
     ('''                                    !sdX && sdGrowBustOn(t) && B("growBust", ["2b", "2c", "2d"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0)], "Retouche : poitrine"),''',
      '''                                    !sdX && sdGrowBustOn(t) && B("growBust", ["2b", "2c", "2d"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0)], "Retouche : poitrine"),
-                                    !sdX && sdGrowTorsoOn(t) && B("growTorso", ["2b", "2c", "2d", "2e"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0)], "Retouche : ventre et torse"),'''),
+                                    !sdX && sdGrowTorsoOn(t) && B("growTorso", ["2b", "2c", "2d", "2e"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0)], "Retouche : ventre et torse", sdTorsoNone(t), sdT("Choisis un bidon ou une épaisseur ci-dessous.", "Pick a pooch or a depth below.")),'''),
     ('"grow" === t || "growUp" === t || "growBust" === t ? sdGrowCopyMsg(e)', '"grow" === t || "growUp" === t || "growBust" === t || "growTorso" === t ? sdGrowCopyMsg(e)'),
     (""""Tes six étapes, dans l'ordre", "Tes sept étapes, dans l'ordre"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0)""",
      """"Tes six étapes, dans l'ordre", "Tes sept étapes, dans l'ordre", "Tes huit étapes, dans l'ordre"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0) + (sdGrowTorsoOn(t) ? 1 : 0)"""),

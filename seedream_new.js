@@ -3734,6 +3734,16 @@ function sdGrowTorsoOn(t) {
     })
   );
 }
+/* PR #80 review (Copilot): with nothing to retouch (both settings at none), the card and the bar keep their place but do not copy */
+function sdTorsoNone(t) {
+  return rq(t, function () {
+    return sdTorsoPooch() <= 0 && 0 === sdTorsoDeep();
+  });
+}
+function sdGoTorso() {
+  var c = document.getElementById("sd-card-growTorso");
+  c && c.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 function sdGrowTorsoPrompt() {
   var a = [],
     po = sdTorsoPooch(),
@@ -3741,7 +3751,7 @@ function sdGrowTorsoPrompt() {
   po > 0 &&
     /* owner's render of this card, 2026-11-19 (v1.6.1-pre, « c déjà mieux »): the belly came out fullest at the navel, a round belly from
        under the ribs and not a lower-belly pooch: its fullest point and the line above it are now set */
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + SD_TORSO_POOCH[po] + " width past the line of the upper abs in the side views, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + " whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + SD_TORSO_POOCH[po] + " width past the line of the upper abs in the side views, " + (sdFatOn("fatBelly") >= 2 ? "the upper abs kept exactly as soft as they are" : "as on a fit " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + " whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
      than an absolute shape; the front width kept, so only the depth changes */
   dp > 0 &&
@@ -3777,7 +3787,7 @@ function sdBarTip(k, off) {
   if ("growUp" === k) return "Copier le prompt de la retouche du haut du corps de ta planche corps (épaules, dos, poitrine)";
   if ("fin" === k) return "Copier le prompt de la carte 4 : finition photo de ta planche finale";
   if ("growBust" === k) return "Copier le prompt de la retouche de la poitrine de ta planche corps (moins bombée de profil, la chute gardée)";
-  if ("growTorso" === k) return sdT("Copier le prompt de la retouche du ventre et du torse de ta planche corps", "Copy the prompt of the belly and torso retouch of your body sheet");
+  if ("growTorso" === k) return off ? sdT("Rien à retoucher : choisis un bidon ou une épaisseur dans la carte « Retouche : ventre et torse »", "Nothing to retouch: pick a pooch or a depth in the “Retouch: belly and torso” card") : sdT("Copier le prompt de la retouche du ventre et du torse de ta planche corps", "Copy the prompt of the belly and torso retouch of your body sheet");
   if ("iter" === k) {
     if (off) return "Carte 3 : choisis ou écris d'abord une retouche";
     var op = sdOp(e);
@@ -8202,7 +8212,7 @@ function sdBarItems(t) {
       return o[0] === (op || (sdFreeIter(t) ? "free" : ""));
     })[0] || [0, 0, "Retouche"])[2],
     it = ["iter", lab, sdIterOff(t)];
-  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdGrowTorsoOn(t) ? [["growTorso", "Ventre", !1]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
+  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdGrowTorsoOn(t) ? [["growTorso", "Ventre", sdTorsoNone(t)]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
 }
 /* options shown inside a card, folded: what you rarely need stays out of the way */
 function sdFold(label, children, open, onToggle) {
@@ -8303,6 +8313,8 @@ function sdCardExtra(k) {
           children: (function () {
             var b = sdTorsoPooch() > 0,
               d = 0 !== sdTorsoDeep();
+            /* PR #80 review (Sourcery): nothing set, nothing promised */
+            if (!b && !d) return sdT("Rien à retoucher pour l'instant : choisis un bidon ou une épaisseur ci-dessous.", "Nothing to retouch yet: pick a pooch or a depth below.");
             return sdT(
               "Seedream dessine mal " + (b ? (d ? "ce petit bidon et cette épaisseur du torse" : "ce petit bidon sous le nombril") : "cette épaisseur du torse") + " à partir du texte seul, surtout sur un corps musclé. Une retouche de ta planche corps les ajoute.",
               "From the text alone, Seedream rarely draws " + (b ? (d ? "this small pooch and this torso depth" : "this small pooch below the navel") : "this torso depth") + ", above all on a muscular body. A retouch of your body sheet adds " + (b && d ? "them" : "it") + ".",
