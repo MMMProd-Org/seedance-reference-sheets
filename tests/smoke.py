@@ -848,6 +848,12 @@ with sync_playwright() as p:
             # PR #76 review (Codex): marked veins bring the hard light; with smooth muscles it stays on the veins alone
             veins, _ = side_body(model, "fat: 1, def: 'subtle', veins: 'strong', biceps: 'big', musLook: 'smooth'")
             assert "crisp shadows that bring out the veins" in veins and "crisp shadows on the muscles" not in veins, (model, veins)
+        # "4 carreaux + ligne centrale" (owner, 2026-11-19): the four upper segments and the centre line below the navel; with light belly
+        # fat, no flat lower belly
+        fl, _ = side_body(model, "fat: 1, absStyle: 'fourline', defAbs: 'clear'")
+        assert re.search(r"four (visible abdominal )?segments", fl) and "below the navel" in fl and "groove" in fl, (model, fl)
+        flp, _ = side_body(model, "fat: 1, absStyle: 'fourline', defAbs: 'clear', fatBelly: 1")
+        assert "smooth and flat" not in flp and "softly rounded" in flp, (model, flp)
         cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
         assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
         if model == "Seedream 5.0":

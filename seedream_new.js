@@ -5434,6 +5434,7 @@ function sdAbs() {
         line: "a single soft vertical groove above the navel, no horizontal lines",
         groove: "a shallow vertical groove down the middle of the belly, above the navel, no visible abs",
         four: "four segments above the navel" + u,
+        fourline: "four segments above the navel, split by a vertical groove that runs on below the navel" + u,
         six: "six segments in three rows" + u,
         eight: "eight segments in four rows" + u,
         staggered: "abdominal segments in an uneven, staggered pattern" + u,
@@ -5450,13 +5451,16 @@ function sdAbs() {
       /* v140 (lessons: "soft" 11 times or more blocked every time): the same stomach without the word */
       groove: "a flat stomach with a shallow vertical groove down the middle, from below the breastbone to the navel, between two slightly fuller sides; no segments, no horizontal lines, no visible muscle",
       four: "four segments above the navel, the lower belly smooth and flat",
+      /* owner, 2026-11-19 (his photo: « cette fille a aussi une ligne centrale et 4 carreaux au-dessus mais le html ne permet pas de le
+         faire »): the four upper segments and the centre line that runs on below the navel */
+      fourline: "four segments above the navel, split by a vertical groove down the middle that runs on below the navel, the lower belly smooth and flat",
       six: "six segments in three rows",
       eight: "eight segments in four rows, down to below the navel",
       staggered: "abdominal segments in an uneven, staggered pattern",
       belly: "a small, soft lower belly that protrudes slightly, no visible abs",
       dadbod: "a soft, rounded belly over a solid, broad frame, no visible abs",
     }[r],
-    seg = ["four", "six", "eight", "staggered", "line"].indexOf(r) >= 0,
+    seg = ["four", "fourline", "six", "eight", "staggered", "line"].indexOf(r) >= 0,
     lv =
       {
             none: ", barely visible",
@@ -5526,6 +5530,8 @@ function sdBellyLow(s) {
   return "string" == typeof s && "person" === e.mode && !sdChild(e) && 1 === sdFatOn("fatBelly")
     ? s
         .replace("four segments above the navel, the lower belly smooth and flat", "four segments above the navel, the lower belly softly rounded below the navel")
+        .replace("that runs on below the navel, the lower belly smooth and flat", "that runs on below the navel, the lower belly softly rounded below the navel")
+        .replace("below the segments the lower abdomen stays smooth and flat", "below the segments the lower abdomen is softly rounded")
         .replace("the lower abdomen smooth and flat below them", "the lower abdomen softly rounded below them")
         .replace("below them the lower abdomen stays smooth and flat", "below them the lower abdomen is softly rounded")
         .replace("a flat stomach with a single vertical groove", "a firm upper stomach with a single vertical groove")

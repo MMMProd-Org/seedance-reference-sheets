@@ -4619,6 +4619,17 @@ src = src.replace('''    triceps: [
     ],
     triceps: [
       ["auto", "Auto", ""],''')
+# owner, 2026-11-19: "4 carreaux + ligne centrale" (seedream_new.js, sdAbs): GPT's text says the centre line running on below the navel
+_o = '''      [
+        "six",
+        "6 carreaux",'''
+assert src.count(_o) == 1, src.count(_o)
+src = src.replace(_o, '''      [
+        "fourline",
+        "4 carreaux + ligne centrale",
+        "exactly four visible abdominal segments, not six: only the two upper rows above the navel, separated by one horizontal line; a vertical groove runs down the middle, between the segments and on below the navel; below the segments the lower abdomen stays smooth and flat; low body fat on the upper abdomen, with clear shadow lines",
+      ],
+''' + _o)
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
