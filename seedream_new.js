@@ -3761,7 +3761,8 @@ function sdIoDom() {
   /* v157c review: the spacing and the height of "Forme de la poitrine" (since v157 their values were not all in tZ: "close", "out", "fwd"
      dropped at import, any height accepted) */
   d.bustWide = ["no", "yes", "close", "out", "fwd"];
-  d.bustHigh = ["auto", "high", "vhigh"];
+  /* PR #76 review (Codex): "Basse" (lowset, PR #64) kept by an export and import */
+  d.bustHigh = ["auto", "high", "vhigh", "lowset"];
   [t2, t3, t4].forEach(function (tabs) {
     (tabs || []).forEach(function (tb) {
       (tb.items || []).forEach(function (it) {
@@ -5555,10 +5556,14 @@ function sdSoft() {
     };
   return n(["subtle"]) > 0 && n(["subtle"]) >= n(["clear", "strong"]);
 }
-/* Musculature at "Athlétique" or less, no biceps, triceps, trapezius or deltoids at "Développés" or "Massifs", muscles not "Pleins et
-   lisses" (owner, 2026-11-19: very large deltoids next to "no muscle bulk") */
+/* Musculature at "Athlétique" or less, no biceps, triceps or trapezius at "Développés" or "Massifs" (the body light reads it too) */
 function sdNoBulk() {
-  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0 && ["big", "huge"].indexOf(sdMusLv("delts")) < 0 && !sdSmoothMus();
+  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
+}
+/* owner, 2026-11-19 (very large deltoids next to "no muscle bulk"): the words only, neither with deltoids from "Développés" nor with
+   "Pleins et lisses"; PR #76 review (Codex): kept apart from sdNoBulk, which also picks the body light */
+function sdNoBulkWords() {
+  return sdNoBulk() && ["big", "huge"].indexOf(sdMusLv("delts")) < 0 && !sdSmoothMus();
 }
 /* owner, 2026-11-19 (two photos of women with large, round deltoids and arms, smooth: « je n'arrive pas à avoir un bras large musclé mais
    sans avoir les muscles qui explosent au visage »; « Muscles apparents » at « Discrets » still drew every muscle cut): "Aspect des
@@ -5785,7 +5790,7 @@ function sdMus() {
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
-  soft && p.unshift(sdSmoothMus() ? SD_SMOOTH_MUS : "barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
+  soft && p.unshift(sdSmoothMus() ? SD_SMOOTH_MUS : "barely visible muscles" + (sdNoBulkWords() ? ", no muscle bulk" : ""));
   p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && !sdPecsF() && p.push("a smooth upper chest");
   var x = [],
     nz = [];
@@ -8708,7 +8713,8 @@ function sdBody() {
     "Seamless neutral 18% grey backdrop (about sRGB 118, 118, 118, with no blue, green or warm tint). " +
     (n0()
       ? "Key light from above and to the side, weak fill: " +
-        (sdNoBulk() &&
+        /* PR #76 review (Codex): "Pleins et lisses" keeps the muscles smooth under the hard light that veins ask for */
+        ((sdNoBulk() || sdSmoothMus()) &&
         sdSoft() &&
         !rA().some(function (k) {
           return "strong" === rP(k);

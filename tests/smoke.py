@@ -802,6 +802,21 @@ with sync_playwright() as p:
     # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
     # at "Légère" a small smooth bulge below the navel, the upper abs kept; "Très marqués" obliques; "Triceps" apart from "Biceps" (Auto
     # follows it, prompts unchanged); "heavy" only from "Marquée"; a light cellulite visible in a full-body view
+    # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
+    io.reload()
+    with io.expect_download() as dl:
+        io.get_by_role("button", name=re.compile(r"Export")).first.click()
+    saved = dl.value.path()
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'auto'}))")
+    io.reload()
+    io.locator("#sd-io-file").set_input_files(str(saved))
+    replace = io.get_by_role("button", name="Replace", exact=True)
+    replace.count() and replace.click()
+    io.wait_for_timeout(300)
+    assert io.evaluate("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).bustHigh") == "lowset"
+    io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
         smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")
@@ -830,6 +845,10 @@ with sync_playwright() as p:
         assert "full, rounded muscles under a thin" not in sharp and re.search(r"sharply|crisp shadows", sharp), (model, sharp)
         delts_only, _ = side_body(model, "fat: 1, def: 'subtle', delts: 'huge'")
         assert "no muscle bulk" not in delts_only, (model, delts_only)
+        if model == "Seedream 5.0":
+            # PR #76 review (Codex): marked veins bring the hard light; with smooth muscles it stays on the veins alone
+            veins, _ = side_body(model, "fat: 1, def: 'subtle', veins: 'strong', biceps: 'big', musLook: 'smooth'")
+            assert "crisp shadows that bring out the veins" in veins and "crisp shadows on the muscles" not in veins, (model, veins)
         cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
         assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
         if model == "Seedream 5.0":
