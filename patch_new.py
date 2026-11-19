@@ -3681,7 +3681,7 @@ rep("""                                    !sdX && sdGrowOn(t) && B("grow", "2b"
 # and from a photo) hold the arms out with a gap of backdrop beside the body (SD_ARMS_OUT_G, seedream_new.js); and the hip multiple
 # without the waist-to-hip ratio said with it (audit of his prompt: two targets in one sentence)
 rep(""""Neutral standing reference pose, weight on both feet, feet hip-width apart, arms relaxed and held slightly away from the body so the silhouette and both hands stay readable" +""",
-    """"Neutral standing reference pose, weight on both feet, feet hip-width apart, " + SD_ARMS_OUT_G + ", so the silhouette and both hands stay readable" +""")
+    """"Neutral standing reference pose, weight on both feet, feet hip-width apart, " + SD_ARMS_OUT_G + "; the silhouette and both hands stay readable" +""")
 rep(""": "Neutral standing reference pose, weight on both feet, arms relaxed and held slightly away from the body; the pose is the only other change.")""",
     """: "Neutral standing reference pose, weight on both feet, " + SD_ARMS_OUT_G + "; the pose is the only other change.")""")
 rep("""      e.waist <= 2 &&

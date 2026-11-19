@@ -797,6 +797,12 @@ with sync_playwright() as p:
             assert "tapered runner's legs" in short and not re.search(r"long, tapered|elongated", short), (model, legs, fat, short)
         avg, _ = side_body(model, "legs: 2, fat: 1, legShape: 'runner'")
         assert "long, tapered runner's legs: lean, elongated thigh muscles" in avg, (model, avg)
+        # owner, 2026-11-19: the arm of the side views hangs a little forward so the back line shows, with the marked and the light arms
+        for arms in ("", "armsOut: 'light', "):
+            pose, _ = side_body(model, arms + "fat: 1")
+            assert pose.count("; in the side views the arms hang slightly forward, the back line clear") == 1, (model, arms, pose)
+        cone, _ = side_body(model, "pres: 'f', bustShape: 'conical', chest: 3")
+        assert "hang straight down behind the bust" not in cone, (model, cone)
     assert not errors, errors
 
     # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
