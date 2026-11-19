@@ -121,10 +121,10 @@ with sync_playwright() as p:
     stamp = page.locator("header [data-sd-version]")
     expect(stamp).to_be_visible()
     expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+(-pre)? · \d{4}-\d{2}-\d{2}$"))
+    # with SD_VERSION (CI), its exact release number; without it, the page under test may be a local build ("-pre") or a release page
+    # given as argument (PR #76 review): the format above only
     if os.environ.get("SD_VERSION"):
         expect(stamp).to_have_text(re.compile("^v" + re.escape(os.environ["SD_VERSION"]) + " · "))
-    else:
-        expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+-pre · "))
 
     page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()
