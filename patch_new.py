@@ -77,10 +77,20 @@ rep('''        }, [d]),
         (0, s.useEffect)(() => {
           const bar = document.getElementById("sd-mobile-copy-bar");
           const measure = () => bar.parentElement.style.setProperty("--sd-copy-bar-height", bar.getBoundingClientRect().height + "px");
-          const observer = new ResizeObserver(measure);
+          /* owner, 2026-11-19 (« Uncaught Error: ResizeObserver loop completed with undelivered notifications », four times in the
+             preview): with five buttons the bar is 121 px tall, so the page's bottom padding (.pb-32) follows it; set inside the observer
+             callback, that padding resized #root, which the scroll arrows observe, in the same frame. Measured on the next frame instead. */
+          let raf = 0;
+          const observer = new ResizeObserver(() => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(measure);
+          });
           observer.observe(bar, { box: "border-box" });
           measure();
-          return () => observer.disconnect();
+          return () => {
+            observer.disconnect();
+            cancelAnimationFrame(raf);
+          };
         }, []),
         (e = t));''')
 rep('''            className:
