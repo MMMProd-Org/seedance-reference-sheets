@@ -4410,6 +4410,83 @@ assert src.count("Seamless plain mid-grey studio backdrop") == 4, src.count("Sea
 src = src.replace("Seamless plain mid-grey studio backdrop", _g)
 # the four older "Assembler" texts (sdJoinOld) keep "mid-grey": saved sessions are recognized by their exact text
 assert src.count("mid-grey") == 4, src.count("mid-grey")
+# owner, 2026-11-19 (« ajoute les obliques, lignes latérales, V etc etc »): "Lignes latérales des abdos", "Obliques", "V du bas-ventre" and
+# "Dentelés", after "Muscles apparents : abdos", "Auto" by default (nothing said); their text and rules in seedream_new.js (SD_ABS_SIDES,
+# sdAbsSides, sdAbsSideTrim). Shown where the prompt does not already say a soft or fat belly (sdAbsSidesOk); the body light is unchanged.
+rep('''    navel: "auto",
+    ribcage: "auto",
+''', '''    navel: "auto",
+    ribcage: "auto",
+    absSides: "auto",
+    obliques: "auto",
+    vLine: "auto",
+    serratus: "auto",
+''')
+rep('''    navel: [
+      ["auto", "Auto", ""],
+      ["round", "Rond", ""],
+''', '''    absSides: [
+      ["auto", "Auto", ""],
+      ["visible", "Visibles", ""],
+      ["marked", "Marquées", ""],
+    ],
+    obliques: [
+      ["auto", "Auto", ""],
+      ["visible", "Visibles", ""],
+      ["marked", "Marqués", ""],
+    ],
+    vLine: [
+      ["auto", "Auto", ""],
+      ["light", "Léger", ""],
+      ["marked", "Marqué", ""],
+    ],
+    serratus: [
+      ["auto", "Auto", ""],
+      ["visible", "Visibles", ""],
+    ],
+    navel: [
+      ["auto", "Auto", ""],
+      ["round", "Rond", ""],
+''')
+_SIDES_HIDE = "Masqué avec « Ventre doux », « Plat, sillon au milieu », « Bas du ventre arrondi », du gras sur le ventre ou les flancs dès « Visible », ou en corpulence Forte."
+rep('''        { t: "bins", k: "fatBelly", l: "Graisse : ventre",''', '''        {
+          t: "chips",
+          k: "absSides",
+          l: "Lignes latérales des abdos",
+          show: sdAbsSidesOk,
+          hint: "Le sillon vertical au bord extérieur des abdos, des côtes vers l'os de la hanche. Auto : rien n'est dit. ''' + _SIDES_HIDE + '''",
+        },
+        {
+          t: "chips",
+          k: "obliques",
+          l: "Obliques",
+          show: sdAbsSidesOk,
+          hint: "Les muscles des côtés de la taille, entre les côtes et l'os de la hanche. Auto : rien n'est dit. ''' + _SIDES_HIDE + '''",
+        },
+        {
+          t: "chips",
+          k: "vLine",
+          l: "V du bas-ventre",
+          show: sdAbsSidesOk,
+          hint: "Les deux lignes qui descendent en V des os des hanches vers le bas-ventre. Auto : rien n'est dit. Ne se voit que si la tenue découvre le bas-ventre : le haut ajusté avec cycliste et le maillot une pièce le cachent. ''' + _SIDES_HIDE + '''",
+        },
+        {
+          t: "chips",
+          k: "serratus",
+          l: "Dentelés (côtés des côtes)",
+          show: sdAbsSidesOk,
+          hint: "Petites crêtes en doigts de gant sur le côté des côtes, sous l'aisselle. Auto : rien n'est dit. ''' + _SIDES_HIDE + '''",
+        },
+        { t: "bins", k: "fatBelly", l: "Graisse : ventre",''')
+rep('''      n.push(
+        sdFatOn("fatBelly") >= 2 ? sdAbs().slice(0, -1) + ", visible wherever the skin there is uncovered" : "Abdomen: " +''', '''      n.push(
+        sdAbsSideTrim(sdFatOn("fatBelly") >= 2 ? sdAbs().slice(0, -1) + ", visible wherever the skin there is uncovered" : "Abdomen: " +''')
+rep('''          ", visible wherever the skin there is uncovered",
+      ),
+    sdForteFat(1) && n.push(sdForteFat(1)),''', '''          ", visible wherever the skin there is uncovered"),
+      ),
+    sdAbsSides() && n.push("Sides of the torso: " + sdAbsSides()),
+    sdForteFat(1) && n.push(sdForteFat(1)),''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

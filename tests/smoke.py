@@ -24,6 +24,8 @@ SAME_IN_BOTH = {
     "III", "Pseudo", "Rectangle", "Triangle",
     # v137 and v156 place helpers and moods ("Place" is the French chip for a town square and the English for "Lieu")
     "Cyberpunk", "Docks", "Festive", "Jungle", "Place", "Renaissance", "Tunnel", "Village",
+    # sides of the torso (2026-11-19)
+    "Obliques",
 }
 NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
@@ -723,6 +725,49 @@ with sync_playwright() as p:
         plain = [t for t in prompts(bare) if re.search(r"(?i)plain, everyday face", t)]
         assert plain and not any(re.search(r":\s*,", t) for t in plain), (model, [t[:200] for t in plain])
         bare.close()
+    assert not errors, errors
+
+    # Sides of the torso (owner, 2026-11-19): "Side lines of the abs", "Obliques", "Lower-belly V" and "Serratus" add one line after
+    # the abdomen on both engines; on Auto the body prompt is unchanged; the side grooves GPT's own "4 carreaux" text names are said
+    # once; the body light is unchanged; hidden and ignored with a soft belly, belly fat from "Visible" or the "Strong" build; with
+    # every zone at "Non" and abs on Auto, no "No visible muscle definition." next to them.
+    SIDE_NAMES = ("Side lines of the abs", "Obliques", "Lower-belly V", "Serratus (sides of the ribs)")
+    SIDES_SET = "absSides: 'marked', obliques: 'marked', vLine: 'marked', serratus: 'visible'"
+    GPT_SIDE_GROOVE = " and a curved groove runs down each side from the lower ribs, at the outer edges of the abdominal muscles"
+
+    def side_body(model, state):
+        """The body prompt and the number of side controls shown, for a saved state on a model (fixed seed: the same drawn details)."""
+        pg = clipboard_page(browser, errors)
+        pg.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, faceSeed: 7, faceGen: 2, " + state + "}))")
+        pg.reload()
+        pg.get_by_role("radio", name=model, exact=True).click()
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        shown = sum(pg.locator(f'fieldset:has(legend:text-is("{n}")), [role=radiogroup][aria-label="{n}"]').count() for n in SIDE_NAMES)
+        body = [t for t in prompts(pg) if "navel" in t]
+        pg.close()
+        assert body, (model, state)
+        return body[0], shown
+
+    def light_of(t):
+        return re.findall(r"Seamless[^\n]*", t)
+
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        base, shown = side_body(model, "fat: 1, absStyle: 'four'")
+        assert shown == 4 and "Sides of the torso" not in base, (model, shown)
+        sides, _ = side_body(model, "fat: 1, absStyle: 'four', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", sides)
+        assert line and all(w in line.group(0) for w in ("outer edge of the abs", "defined obliques", "clear V-line", "serratus")), (model, sides)
+        assert GPT_SIDE_GROOVE not in sides and "faint lines at the sides" not in sides, model
+        assert light_of(sides) == light_of(base), model
+        assert re.sub(r" ?Sides of the torso: [^.\n]*\.?", "", sides) == base.replace(GPT_SIDE_GROOVE, ""), model
+        for hide in ("absStyle: 'soft'", "absStyle: 'groove'", "fat: 4", "fatBelly: 2", "fatFlanks: 2"):
+            hidden, shown = side_body(model, hide + ", " + SIDES_SET)
+            assert shown == 0 and "Sides of the torso" not in hidden, (model, hide)
+        none, _ = side_body(model, "def: 'none', absStyle: 'auto'")
+        none_sides, _ = side_body(model, "def: 'none', absStyle: 'auto', " + SIDES_SET)
+        assert "Sides of the torso" in none_sides and "No visible muscle definition." not in none_sides, model
+        if model == "Seedream 5.0":
+            assert "No visible muscle definition." in none, "the sentence the sides replace is still written without them"
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the

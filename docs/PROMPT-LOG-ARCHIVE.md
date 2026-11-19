@@ -1,5 +1,26 @@
 # Prompt log archive
 
+## 2026-10-12 · GPT Image 2.5 and Seedream 5.0 · Person · the owner's second v95 line in the app (v1.2.0)
+
+**RULE.** The owner kept a second line of the tool outside this repository. It split from the first around v75 (both start from the v1 to v75 lessons at the bottom of this file) and reached its own v95 (`planches-seedance-pipeline_v95_v52.zip`, 2026-10-12). Its lessons are the section "Owner's second line" below. This release brings its changes into the app: where only that line changed a prompt, its text is now live. Where both lines changed the same thing, the merge kept:
+
+- Face, Beauty levels "Ordinaire" to "Ingrat": this repository's scale, recalibrated on renders (Seedream v80 and GPT v82 of the first line). The second line kept the v75 wording: the whole "Quelconque" sentence `A plain, forgettable face, the kind nobody notices in a crowd: features slightly out of proportion with each other, ...`, `A homely, unconventional face: ...` for "Ingrat", and `Flat, even frontal light like an ID or casting photo`. Those stay out; this repository's "Ordinaire" still opens with `A plain, forgettable face, the kind nobody notices in a crowd:`, then names its own features. The second line's v94 lettering fix (below) is added to the head and body prompts.
+- Seedream body light: the v1.1.2 rule (entry of 2026-10-11). The second line's v84 rule gives the hard light only from "Athlétique" or with a zone at "Marqués". On Seedream the two differ only when the veins show ("Visibles" or "Très marquées") and no zone is at "Marqués", in two cases:
+  - musculature "Faible" or "Légère": v84 writes the soft light; v1.1.2 writes "crisp shadows that bring out the veins; the muscles stay smooth" on a lean body whose zones at "Discrets" share one phrase, otherwise "crisp shadows on the muscles and veins";
+  - a lean "Athlétique" body (biceps and trapezius at neither "Développés" nor "Massifs") whose zones at "Discrets" share one phrase: v84 writes "crisp shadows on the muscles and veins", v1.1.2 the light for the veins alone.
+
+  With the veins showing, from "Athlétique" up in every other case, both write the same hard light.
+
+  The evidence conflicts: both were judged on nearly the same body (very slim, zones at "Discrets", visible veins), and both **WORK** (v84: shoulders, traps and arms clearly softer, two images; v1.1.2: « c bon ça marche avant »). Kept: v1.1.2, the one this repository tested, which keeps the veins the user wants. **TO TEST**: that body with each light. v84 now drives GPT's body light, which this repository had not changed; the lessons do not say its two images were GPT renders: **TO TEST** on GPT.
+- "Retouche libre": both lines added it. This repository's version stays (leaving a preset keeps a text the user wrote). From the second line: it is an operation of its own, so, empty, it copies nothing (its Copy buttons are off, on the card and in the mobile bar) instead of the default join. The second line cleared the text on every switch to it; here it clears only the text a preset put in the box (even after a setting changed that preset's wording), and keeps a text the user wrote or edited.
+- GPT body prompt, the head sheet: this repository's `four head close-ups: front, three-quarter, profile and back of the head`.
+- An engine nobody picked: the second line's v94 rule (it follows the subject live, so a reload never switches it). A saved GPT session that rule would never have saved counts as picked by hand and stays on GPT, as before: one from before the choice was recorded, or one an earlier build saved for a subject Seedream can do.
+- Seedream copy messages for a missing or changed head sheet: the second line's wording, which speaks of the copied head prompt.
+
+Default prompts: the only change is the default Seedream body (build "Moyenne"), which now gets `A normal, healthy layer of soft body fat: ...` (v78 below). The delivered page is not copied: the import commit rebuilds it byte for byte.
+
+Found in review, GPT with a source photo whose clothing is kept: the second line's v94 lettering fix did not reach this ending, so a tattoo reading a word was still followed by `No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.` on the head and body sheets. It now gets the lettering ending, followed by `, besides any logo or print on the clothing taken from the photo.` **TO TEST** in a render, like the v94 fix itself.
+
 ## 2026-10-11 · Seedream 5.0 · Person, headless body sheet · the test's three changes in the app (v1.1.2)
 
 **WORKS**, by the user's test of the prompt in the entry below, with its three changes: « c bon ça marche avant » (the render was not described). Now in the app, on Seedream only, in a person's body prompt:
