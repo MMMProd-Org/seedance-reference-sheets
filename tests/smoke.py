@@ -782,6 +782,12 @@ with sync_playwright() as p:
         assert line and "outer edge of the abs" in line.group(0) and ("V-line" in line.group(0)) == (model == "GPT Image 2.5"), (model, shorts)
         own, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: false, refCover: 'onepiece', " + SIDES_SET)
         assert "clear V-line" in own, (model, "the user's own outfit may bare it")
+        # owner's render, 2026-11-19: short legs never get the runner's "long" and "elongated" legs; average legs keep them
+        for legs, fat in ((1, 1), (0, 3)):
+            short, _ = side_body(model, f"legs: {legs}, fat: {fat}, legShape: 'runner'")
+            assert "tapered runner's legs" in short and not re.search(r"long, tapered|elongated", short), (model, legs, fat, short)
+        avg, _ = side_body(model, "legs: 2, fat: 1, legShape: 'runner'")
+        assert "long, tapered runner's legs: lean, elongated thigh muscles" in avg, (model, avg)
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the

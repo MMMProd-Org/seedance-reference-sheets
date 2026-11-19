@@ -3410,6 +3410,9 @@ function sdLegShape() {
   /* v157 review: "Forte" or soft knees: no lean muscles, slim knees or slim ankles said with the shape */
   (+e.fat >= 3 || sdFatOn("fatKnees") >= 2) && (t = t.split("to slim knees").join("to the knees"));
   +e.fat >= 3 && (t = t.split("lean, elongated").join("elongated").split(" and slim ankles").join(""));
+  /* owner's render, 2026-11-19 (Seedream 5.0, "Courtes" with "Coureur"): the crotch at about 44% down for 48% asked, as on 2026-10-28
+     (40%); the runner's legs said "long" and "elongated" in the prompt that asks for short legs: with short legs, the taper only */
+  +e.legs <= 1 && (t = t.replace("long, tapered runner's", "tapered runner's").replace("lean, elongated", "lean").replace("elongated thigh", "thigh"));
   return [t, sdThighFront(), sdCalvesTxt()].filter(Boolean).join("; ");
 }
 function sdCalvesTxt() {
