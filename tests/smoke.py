@@ -810,7 +810,7 @@ with sync_playwright() as p:
         assert (tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1) == on, state
         if on:
             torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
-            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("deeper torso" in torso[0]) == ("deep" in state), (state, torso)
+            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("a quarter deeper" in torso[0]) == ("deep" in state), (state, torso)
             assert ("two fingers'" in torso[0]) == ("fatBelly: 2" in state), (state, torso)
             assert ("upper abs stay sharp" in torso[0]) == ("fatBelly: 1" in state), (state, torso)
         tc.close()

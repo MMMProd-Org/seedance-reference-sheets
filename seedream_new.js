@@ -3714,8 +3714,12 @@ function sdGrowTorsoPrompt() {
   var a = [];
   [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
     a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
-  "deep" === e.torsoDepth && a.push("in the side views, a deeper torso: the ribcage and the waist thicker from back to front, the waist nearly as deep as the chest");
-  "shallow" === e.torsoDepth && a.push("in the side views, a shallower torso: the ribcage and the waist thinner from back to front");
+  /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
+     than an absolute shape; the front width kept, so only the depth changes */
+  "deep" === e.torsoDepth &&
+    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1: the ribcage, the waist and the lower back all thicker, the back line and the belly line both further out, the waist nearly as deep as the chest; the front and back views keep their width");
+  "shallow" === e.torsoDepth &&
+    a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
