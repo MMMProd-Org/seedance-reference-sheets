@@ -803,6 +803,8 @@ with sync_playwright() as p:
             assert pose.count("; in the side views the arms hang slightly forward, the back line clear") == 1, (model, arms, pose)
         cone, _ = side_body(model, "pres: 'f', bustShape: 'conical', chest: 3")
         assert "hang straight down behind the bust" not in cone, (model, cone)
+        # PR #78 review (Sourcery): the conical bust keeps its own arm clause (Seedream only, as before)
+        assert ("the arms hang slightly forward, the back line clear; the arms stay behind the bust there, fully separate from it" in cone) == (model == "Seedream 5.0"), (model, cone)
     assert not errors, errors
 
     # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
