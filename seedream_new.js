@@ -6019,6 +6019,7 @@ function sdDetailMap(a) {
     return y;
   });
   /* v157: the calves set are said with the legs (sdLegShape), the drawn ones go */
+  out.push(sdPick(SD_DEPTH, "torsoDepth"));
   return out.filter(Boolean);
 }
 /* v140 (user: "Silhouettes types", "Vergetures", "Cambrure et posture", "Cuisses et nombril", and the settings for real bodies he had not
@@ -6142,6 +6143,12 @@ function sdClavSlim(hb) {
 }
 /* v140 (user's reference photos): the ribcage width, drawn at random until now */
 var SD_RIB = { narrow: "a narrow ribcage", wide: "a slightly wide ribcage" };
+/* owner, 2026-11-19 (his photo of a fit woman: « elle est très large entre le dos et le ventre, du moins de profil »): "Épaisseur du torse",
+   the depth from back to front that only the side views show (the width is "Cage thoracique"); Auto: nothing said */
+var SD_DEPTH = {
+  shallow: "a shallow torso in profile: the ribcage and the waist thin from back to front",
+  deep: "a deep torso in profile: the ribcage and the waist thick from back to front, the side views showing a solid, deep trunk, the waist in profile nearly as deep as the chest",
+};
 /* v143 (user's render with "Blanches, nacrées": "on dirait plus des cicatrices que des vergetures"; a few single lines, sunken and
    wrinkled, drawn like cuts): a group of many fine, faint streaks side by side, flush with the skin, fading at their ends; no
    "sunken" or "wrinkled", which the model draws at their strongest (as "crinkled", v141). Calibration to check on renders. */

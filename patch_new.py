@@ -4630,6 +4630,38 @@ src = src.replace(_o, '''      [
         "exactly four visible abdominal segments, not six: only the two upper rows above the navel, separated by one horizontal line; a vertical groove runs down the middle, between the segments and on below the navel; below the segments the lower abdomen stays smooth and flat; low body fat on the upper abdomen, with clear shadow lines",
       ],
 ''' + _o)
+# owner, 2026-11-19: "Épaisseur du torse" after "Cage thoracique" (seedream_new.js, SD_DEPTH)
+for _a, _b in [
+    ('''          hint: "Largeur des côtes sous la poitrine. Large avec une taille fine : la taille paraît plus creusée. Auto : tirée au hasard.",
+        },''', '''          hint: "Largeur des côtes sous la poitrine. Large avec une taille fine : la taille paraît plus creusée. Auto : tirée au hasard.",
+        },
+        {
+          t: "chips",
+          k: "torsoDepth",
+          l: "Épaisseur du torse (de profil)",
+          show: function () {
+            return "person" === e.mode && !sdChild(e);
+          },
+          hint: "La distance du dos au ventre, vue de profil (la largeur de face se règle dans « Cage thoracique »). Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.",
+        },'''),
+    ('    ribcage: "auto",\n', '    ribcage: "auto",\n    torsoDepth: "auto",\n'),
+    ('''    ribcage: [
+      ["auto", "Auto", ""],
+      ["narrow", "Étroite", ""],
+      ["wide", "Large", ""],
+    ],''', '''    ribcage: [
+      ["auto", "Auto", ""],
+      ["narrow", "Étroite", ""],
+      ["wide", "Large", ""],
+    ],
+    torsoDepth: [
+      ["auto", "Auto", ""],
+      ["shallow", "Fin", ""],
+      ["deep", "Épais", ""],
+    ],'''),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

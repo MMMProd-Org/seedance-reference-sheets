@@ -854,6 +854,9 @@ with sync_playwright() as p:
         assert re.search(r"four (visible abdominal )?segments", fl) and "below the navel" in fl and "groove" in fl, (model, fl)
         flp, _ = side_body(model, "fat: 1, absStyle: 'fourline', defAbs: 'clear', fatBelly: 1")
         assert "smooth and flat" not in flp and "softly rounded" in flp, (model, flp)
+        # "Épaisseur du torse" (owner, 2026-11-19): the depth in profile among the body details; Auto says nothing
+        deep, _ = side_body(model, "fat: 1, torsoDepth: 'deep'")
+        assert "a deep torso in profile" in deep and "torso in profile" not in side_body(model, "fat: 1")[0], (model, deep)
         cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
         assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
         if model == "Seedream 5.0":

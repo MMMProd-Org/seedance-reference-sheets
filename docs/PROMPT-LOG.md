@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-19 · GPT Image 2.5 and Seedream 5.0 · Person, body sheet: « Épaisseur du torse »
+
+**RULE** (owner, 2026-11-19, a photo of the same fit woman: « elle est très large entre le dos et le ventre, du moins de profil »). « Épaisseur du torse (de profil) » after « Cage thoracique »: Auto (nothing said), Fin `a shallow torso in profile: the ribcage and the waist thin from back to front`, Épais `a deep torso in profile: the ribcage and the waist thick from back to front, the side views showing a solid, deep trunk, the waist in profile nearly as deep as the chest`, among the body details, both engines. **TO TEST**.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the pooch by a free retouch of the sheet
 
 **WORKS**, a little too much (owner, 2026-11-19: « ça marche mais un peu trop sur le profil mais on y est »). « Retouche libre » on his best sheet with `in all four views, just below the navel, a small, soft, rounded pooch of lower-belly fat that pushes the lower belly slightly forward in profile, as on a fit woman whose upper abs stay sharp`: a clear pooch in both profiles, the upper abs, the arms and the rest kept. In the profiles it bulges more than his photo. **TO TEST**: the same retouch on that result, `in the side views, the lower-belly pooch about half as deep, the front view unchanged`.

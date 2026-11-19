@@ -692,6 +692,8 @@
 "Léger": "Light",
 "Marqué": "Marked",
 "Très marqués": "Very marked",
+"Épaisseur du torse (de profil)": "Torso depth (in profile)",
+"La distance du dos au ventre, vue de profil (la largeur de face se règle dans « Cage thoracique »). Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.": "The distance from the back to the belly, seen in profile (the width in front is set in “Ribcage”). Thick: a deep trunk, the waist nearly as deep as the chest in profile. Auto: nothing is said.",
 "4 carreaux + ligne centrale": "4-pack + centre line",
 "Aspect des muscles": "Muscle look",
 "Pleins et lisses": "Full and smooth",
