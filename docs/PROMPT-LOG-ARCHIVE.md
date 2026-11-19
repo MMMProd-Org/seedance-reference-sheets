@@ -8,6 +8,12 @@
 
 **DOES NOT WORK** in the supplied v114b, reproduced on both engines: changing only free outfit text falsely changed the copied-face signature. The integration excludes its new clothing line and logo exception from current and saved signatures, while actual identity/mark/Character changes still invalidate them. **TO TEST** in renders: the new outfit, vehicle and face-character wording. Local text/UI checks do not establish image quality or a model's filtering behavior.
 
+## 2026-10-17 · GPT Image 2.5 and Seedream 5.0 · v111/v112 integration
+
+**RULE.** Source: the owner's v112 ZIP and [unaltered lessons](sources/lecons_prompts_planches_seedance-v112.md). A person's photo can supply the clothes, or the Outfit tab can supply both sheets. Old saved garments keep priority. Photo-only keeps the photos unchanged; body/attachment help follows the clothes, reference outfit and body-source choices. GPT photo-only no longer requests a head sheet; neutral silhouette wording changes `typical adult adult` to `typical adult person`.
+
+**TO TEST** in renders: Seedream now offers people from photos and in 3D/2D, with GPT prose adapted to numbered images and no conversation instructions; children/babies keep their dressed builder with the chosen style. Keep the adult wording at 18–20. Automatic engine choices, calibrated prompts, animal body-first flow, object triptychs/separate views and saved personal retouches stay. Long prompts retain their warning. Text, save and UI tests do not prove image quality; no new image result is claimed.
+
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · v110b integration from the owner's second line
 
 **RULE.** Source: the owner's `planches-seedance-pipeline_v110b_v52.zip`, its companion HTML and [unaltered French lessons](sources/lecons_prompts_planches_seedance-v110b.md). Rebuilding that ZIP reproduced the supplied HTML byte for byte. Its source chain continues the second v95 line imported in commit `42646b1`; this integration starts from repository main `e85632f`. The standalone HTML is a comparison witness, not a replacement for the maintained build chain. The source's statuses below are reported user results, not new image tests.

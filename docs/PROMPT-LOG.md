@@ -176,9 +176,7 @@ Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO 
 
 ## 2026-10-17 · GPT Image 2.5 and Seedream 5.0 · v111/v112 integration
 
-**RULE.** Source: the owner's v112 ZIP and [unaltered lessons](sources/lecons_prompts_planches_seedance-v112.md). A person's photo can supply the clothes, or the Outfit tab can supply both sheets. Old saved garments keep priority. Photo-only keeps the photos unchanged; body/attachment help follows the clothes, reference outfit and body-source choices. GPT photo-only no longer requests a head sheet; neutral silhouette wording changes `typical adult adult` to `typical adult person`.
-
-**TO TEST** in renders: Seedream now offers people from photos and in 3D/2D, with GPT prose adapted to numbered images and no conversation instructions; children/babies keep their dressed builder with the chosen style. Keep the adult wording at 18–20. Automatic engine choices, calibrated prompts, animal body-first flow, object triptychs/separate views and saved personal retouches stay. Long prompts retain their warning. Text, save and UI tests do not prove image quality; no new image result is claimed.
+**RULE / TO TEST.** The owner's v112 merged: a photo can supply the clothes, Seedream people from photos and in 3D/2D, photo-only keeps the photos unchanged. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-17--gpt-image-25-and-seedream-50--v111v112-integration)
 
 ## 2026-10-16 · Seedream 5.0 · Person, male Canon head · explicit brows and jaw
 
