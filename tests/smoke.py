@@ -827,6 +827,24 @@ with sync_playwright() as p:
             assert (", apart from the pooch" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
         tc.close()
 
+    # owner, 2026-11-19 (« Uncaught Error: ResizeObserver loop completed with undelivered notifications » in the preview): the copy bar
+    # with five buttons, 121 px tall, shown and hidden across the lg breakpoint, never resizes the page inside an observer callback
+    ro = clipboard_page(browser, errors)
+    ro.add_init_script("window.sdRoErrors = []; window.addEventListener('error', (e) => /ResizeObserver/.test(e.message) && window.sdRoErrors.push(e.message));")
+    ro.set_viewport_size({"width": 1000, "height": 900})
+    ro.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, age: 27, fatBelly: 1, torsoDepth: 'deep', shoulders: 3}))")
+    ro.reload()
+    assert ro.locator("#sd-mobile-copy-bar button").count() == 5 and ro.locator("#sd-mobile-copy-bar").bounding_box()["height"] > 112
+    for w in (1040, 1000, 1040, 1000, 600, 1000):
+        ro.set_viewport_size({"width": w, "height": 900})
+        ro.wait_for_timeout(250)
+    assert ro.evaluate("window.sdRoErrors") == [], ro.evaluate("window.sdRoErrors")
+    # PR #79 review (Sourcery): the measure still runs, so the page keeps room for the tall bar
+    room = ro.evaluate("""() => { const bar = document.getElementById('sd-mobile-copy-bar'), p = bar.parentElement;
+      return [bar.getBoundingClientRect().height, parseFloat(p.style.getPropertyValue('--sd-copy-bar-height')), parseFloat(getComputedStyle(p).paddingBottom)]; }""")
+    assert abs(room[0] - room[1]) < 1 and room[2] >= room[0] + 16 - 1, room
+    ro.close()
+
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
     io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
