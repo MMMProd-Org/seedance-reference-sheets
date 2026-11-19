@@ -812,10 +812,9 @@ with sync_playwright() as p:
     io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'auto'}))")
     io.reload()
     io.locator("#sd-io-file").set_input_files(str(saved))
-    replace = io.get_by_role("button", name="Replace", exact=True)
-    replace.count() and replace.click()
-    io.wait_for_timeout(300)
-    assert io.evaluate("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).bustHigh") == "lowset"
+    # the import always asks before replacing the current settings: wait for that question, then for the saved state
+    io.get_by_role("button", name="Replace", exact=True).click()
+    io.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').bustHigh === 'lowset'", timeout=5000)
     io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
