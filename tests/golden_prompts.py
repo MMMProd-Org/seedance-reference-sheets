@@ -69,6 +69,24 @@ with sync_playwright() as p:
             assert len(texts) == (1 if subject == "Baby" else 2) and all(texts), (model, subject)
             prompts[f"{model} / {subject}"] = texts
             page.close()
+    # A place (v137: its own type, a house, an interior or an outdoor location), from a fresh page: its default prompts.
+    for model, code in [("GPT Image 2.5", "gpt"), ("Seedream 5.0", "seedream")]:
+        page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.route(re.compile(r"^https://fonts\.(googleapis|gstatic)\.com/"), lambda route: route.fulfill(body=""))
+        page.add_init_script(SEED)
+        state = {"model": code, "modelPick": 1, "uiLang": "en"}
+        page.add_init_script("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(" + json.dumps(state) + "));")
+        page.goto(page_path.resolve().as_uri())
+        radio = page.get_by_role("radiogroup", name="Type").get_by_role("radio", name="Place", exact=True)
+        radio.click()
+        expect(radio).to_be_checked()
+        show = page.get_by_role("button", name="Show the prompt", exact=True)
+        for _ in range(show.count()):
+            show.first.click()
+        texts = page.locator("pre").all_text_contents()
+        assert texts and all(texts), (model, "Place")
+        prompts[f"{model} / Place"] = texts
+        page.close()
     browser.close()
 
 empty = [state for state, texts in prompts.items() if not texts and state not in unsupported]

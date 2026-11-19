@@ -20,8 +20,17 @@ SAME_IN_BOTH = {
     "Dark", "Denim", "Description", "Dreadlocks", "Format", "Imperfections", "Long", "Moustache",
     "Musculature", "Musculature (volume)", "Nude", "Parka", "Smoky", "Style", "T-shirt", "Texture",
     "Twists", "Type", "Undercut", "Visible",
+    # v140 silhouette types, v158 ptosis grades (Regnault, Roman numerals)
+    "III", "Pseudo", "Rectangle", "Triangle",
+    # v137 and v156 place helpers and moods ("Place" is the French chip for a town square and the English for "Lieu")
+    "Cyberpunk", "Docks", "Festive", "Jungle", "Place", "Renaissance", "Tunnel", "Village",
+    # sides of the torso (2026-11-19)
+    "Obliques",
+    "Biceps",
+    "Triceps",
 }
-NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
+# the header stamp (semver, "-pre" on a local build, and an ISO date) reads the same in both languages
+NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|v\d+\.\d+\.\d+(-pre)? · \d{4}-\d{2}-\d{2}|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
   const out = new Set(), skip = new Set(["PRE", "CODE", "TEXTAREA", "SCRIPT", "STYLE"]);
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -61,6 +70,10 @@ def clipboard_page(browser, errors):
     page.goto(page_path.resolve().as_uri())
     page.evaluate(HOLD_CLIPBOARD)
     return page
+
+
+# card titles: the h3 headings outside the named sections of the Body tab (v144)
+CARD_H3 = "h3:not([id^='sd-sec-'] h3)"
 
 
 HOLD_CLIPBOARD = "() => { window.writes = []; navigator.clipboard.writeText = () => new Promise((done) => window.writes.push(done)); }"
@@ -103,9 +116,15 @@ with sync_playwright() as p:
     assert not errors, errors
     assert page.evaluate("document.documentElement.lang") == "en", "page must open in English"
     assert page.title() == "Seedance Reference Sheets", page.title()
-    # CI builds the page with the release version (version.py) and runs this test with it: the header shows it.
+    # The header shows the version and the date (owner, 2026-11-19): CI's release version (version.py) when it runs this test with it,
+    # and a local build's own, with the last commit's date.
+    stamp = page.locator("header [data-sd-version]")
+    expect(stamp).to_be_visible()
+    expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+(-pre)? · \d{4}-\d{2}-\d{2}$"))
+    # with SD_VERSION (CI), its exact release number; without it, the page under test may be a local build ("-pre") or a release page
+    # given as argument (PR #76 review): the format above only
     if os.environ.get("SD_VERSION"):
-        expect(page.locator("header").get_by_text("v" + os.environ["SD_VERSION"], exact=True)).to_be_visible()
+        expect(stamp).to_have_text(re.compile("^v" + re.escape(os.environ["SD_VERSION"]) + " · "))
 
     page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()
@@ -115,7 +134,7 @@ with sync_playwright() as p:
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
     open_folds(page)
     page.get_by_role("button", name="Free retouch", exact=True).click()
-    preset = page.get_by_role("button", name="Dress", exact=True)
+    preset = page.get_by_role("button", name="Dress for assembly", exact=True)
     change = page.locator("#sd-iter")
     hint = page.get_by_text("Pick or write a retouch below.", exact=True)
 
@@ -133,7 +152,7 @@ with sync_playwright() as p:
     expect(hint).to_be_hidden()
     open_retouches()
     expect(preset).to_have_attribute("aria-pressed", "true")
-    expect(page.get_by_text(re.compile(r"^Same body, in a cropped top and leggings\. The text below is ready and already in the prompt: "))).to_be_visible()
+    expect(page.get_by_text(re.compile(r"^Same body, in a fitted cobalt-blue sleeveless cropped top and leggings, to combine the head and the body next\. The Outfit tab is not used\. The text below is ready and already in the prompt: "))).to_be_visible()
     assert change.input_value().rstrip(". ") in page.locator('pre[data-out="iter"]').text_content()
     preset.click()
     expect(change).to_have_value("")
@@ -166,15 +185,20 @@ with sync_playwright() as p:
     ]:
         change.fill(text)
         expect(retouch).to_contain_text(kept)
-        expect(retouch).not_to_contain_text(dropped)
+        # the list of what is kept; anywhere in the prompt too, except for a clothing change, whose fit paragraph (v124) may
+        # name the outfit
+        keep_line = next(x for x in retouch.text_content().splitlines() if x.startswith("Keep everything this change does not touch"))
+        assert kept in keep_line and dropped not in keep_line, (text, keep_line)
+        if dropped != "the outfit":
+            expect(retouch).not_to_contain_text(dropped)
     change.fill("")
     page.get_by_role("switch", name="Headless body sheet", exact=True).click()
 
     found = {}
     for model in ["GPT Image 2.5", "Seedream 5.0"]:
         page.get_by_role("radio", name=model, exact=True).click()
-        for subject in ["Person", "Animal", "Object"]:
-            page.get_by_role("radio", name=subject, exact=True).click()
+        for subject in ["Person", "Animal", "Object", "Place"]:  # "Place" since v137
+            page.get_by_role("radio", name=subject, exact=True).first.click()  # the type row, above the "Object" category chip
             tabs = page.get_by_role("tab")
             for i in range(tabs.count()):
                 tabs.nth(i).click()
@@ -182,10 +206,11 @@ with sync_playwright() as p:
                 untranslated(page, f"{model} / {subject} / {tabs.nth(i).inner_text()}", found)
             if subject == "Person":
                 tabs.first.click()
-                page.get_by_text("Man", exact=True).click()
+                # the presentation chip of the tab (the header also shows the sex, as a radio button)
+                page.locator("label").filter(has_text=re.compile(r"^Man$")).click()
                 untranslated(page, f"{model} / Person / Man", found)
-                page.get_by_text("Woman", exact=True).click()
-            if model == "GPT Image 2.5" and subject != "Object":
+                page.locator("label").filter(has_text=re.compile(r"^Woman$")).click()
+            if model == "GPT Image 2.5" and subject in ("Person", "Animal"):
                 tabs.first.click()
                 several = page.get_by_text(re.compile(r"^Several (characters|animals) in the same GPT conversation"))
                 several.click()
@@ -195,7 +220,7 @@ with sync_playwright() as p:
                 untranslated(page, f"{model} / {subject} / several, named", found)
                 name.fill("")
                 several.click()
-            page.get_by_role("button", name=re.compile(r"^New (character|animal|object)$")).click()
+            page.get_by_role("button", name=re.compile(r"^New (character|animal|object|place)$")).click()
             untranslated(page, f"{model} / {subject} / reset confirmation", found)
     assert not found, "untranslated: " + "; ".join(f"{t!r} ({w})" for t, w in sorted(found.items()))
     assert not errors, errors
@@ -219,7 +244,7 @@ with sync_playwright() as p:
     copy = race.get_by_role("button", name="Copy for Seedream 5.0")
     head, body = copy.nth(0).element_handle(), copy.nth(1).element_handle()  # labels change to "Copied"
     head.click()
-    race.get_by_text("Man", exact=True).click()
+    race.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     head.click()
     race.wait_for_function("window.writes.length === 2")
     race.evaluate("() => window.writes[1]()")  # the newer copy finishes first
@@ -239,7 +264,7 @@ with sync_playwright() as p:
     cross.evaluate("() => window.writes[0]()")
     cross.evaluate("() => window.writes[1]()")
     cross.get_by_role("radio", name="Seedream 5.0", exact=True).click()
-    expect(seedream).to_have_count(3)  # the "Copied" labels are back
+    expect(seedream).to_have_count(4)  # the "Copied" labels are back (head, body, retouch, final photo pass)
     seedream.nth(1).click()
     cross.wait_for_function("window.writes.length === 3")
     cross.evaluate("() => window.writes[2]()")
@@ -254,13 +279,13 @@ with sync_playwright() as p:
         headless.get_by_text("Choose the retouch", exact=True).click()
     expect(join).to_have_attribute("aria-pressed", "true")
     # its prompt is built while the change is empty, and the help says so
-    expect(headless.get_by_text("The body is kept and the head is added. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
+    expect(headless.get_by_text("The body is kept and the head is added. Switching the model (Seedream, Nano Banana or GPT Image) puts that model's text back. The prompt is already complete: the box can stay empty.", exact=True)).to_be_visible()
     join.click()
     expect(headless.locator("#sd-iter")).not_to_have_value("")
-    expect(headless.get_by_text(re.compile(r"^The body is kept and the head is added\. The text below is ready "))).to_be_visible()
+    expect(headless.get_by_text(re.compile(r"^The body is kept and the head is added\. Switching the model \(Seedream, Nano Banana or GPT Image\) puts that model's text back\. The text below is ready "))).to_be_visible()
     # in French too; "Free retouch" asks for the user's own text, with a French example
     set_lang(headless, "Français", "fr")
-    expect(headless.get_by_text(re.compile(r"^Le corps est gardé, la tête est ajoutée\. Le texte ci-dessous est prêt "))).to_be_visible()
+    expect(headless.get_by_text(re.compile(r"^Le corps est gardé, la tête est ajoutée\. Changer de modèle \(Seedream, Nano Banana ou GPT Image\) remet le texte de ce modèle\. Le texte ci-dessous est prêt "))).to_be_visible()
     headless.get_by_role("button", name="Retouche libre", exact=True).click()
     expect(headless.get_by_text(re.compile(r"^Écris ce qu'il faut changer sur ta planche \(image 1\), en français ou en anglais\. "))).to_be_visible()
     expect(headless.locator("#sd-iter")).to_have_attribute("placeholder", "ex. biceps et triceps plus dessinés")
@@ -276,7 +301,7 @@ with sync_playwright() as p:
     subject.wait_for_function("window.writes.length === 2")
     subject.evaluate("() => window.writes[0]()")  # the Person copy finishes once back on Person
     subject.evaluate("() => window.writes[1]()")
-    subject.get_by_text("Man", exact=True).click()  # after a head change, the prompts build on the copied head sheet
+    subject.locator("label").filter(has_text=re.compile(r"^Man$")).click()  # after a head change, the prompts build on the copied head sheet
     expect(subject.get_by_text(re.compile(r"^Variant: the prompts reuse"))).to_be_visible()
     assert not errors, errors
 
@@ -290,7 +315,7 @@ with sync_playwright() as p:
     looks.reload()
     expect(looks.get_by_role("radio", name="GPT Image 2.5", exact=True)).to_be_checked()
     variant = looks.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-    looks.get_by_text("Man", exact=True).click()
+    looks.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     expect(variant).to_be_visible()  # a head change alone still builds on the copied head sheet
     looks.get_by_role("tab", name="Face").click()
     looks.get_by_role("slider", name="Beauty").press("ArrowRight")
@@ -307,7 +332,7 @@ with sync_playwright() as p:
     fat.get_by_role("radio", name="Animal", exact=True).click()
     fat.get_by_role("radio", name="Person", exact=True).click()
     variant = fat.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-    fat.get_by_text("Man", exact=True).click()
+    fat.locator("label").filter(has_text=re.compile(r"^Man$")).click()
     expect(variant).to_be_visible()
     fat.get_by_role("tab", name=re.compile(r"^Body")).click()
     fat.get_by_role("slider", name="Build", exact=True).press("ArrowRight")
@@ -333,12 +358,41 @@ with sync_playwright() as p:
         if away:
             old.get_by_role("radio", name="Person", exact=True).click()
         variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
-        old.get_by_text("Man", exact=True).click()
+        old.locator("label").filter(has_text=re.compile(r"^Man$")).click()
         expect(variant).to_be_visible()
         old.get_by_role("tab", name="Face").click()
         old.get_by_role("slider", name="Beauty").press("ArrowRight")
         expect(variant).to_be_hidden()
         old.close()
+    assert not errors, errors
+
+    # A head copied before the port (v115 to v158) is still the same face: the long-hair back view of v118 and the
+    # contradictory random pairs v131 resolves ("a high, broad forehead" with "a low hairline") change no setting.
+    # A change of "Fat: face" (v156), the face's own fat, makes a new GPT face, as the build does.
+    old = clipboard_page(browser, errors)
+    old.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person',"
+                 " pres: 'f', age: 30, faceSeed: 7, hairLen: 'long'}))")
+    old.reload()
+    old.evaluate(HOLD_CLIPBOARD)
+    old.get_by_role("button", name="Copy for GPT Image 2.5").first.click()
+    old.wait_for_function("window.writes.length === 1")
+    old.evaluate("() => window.writes[0]()")
+    old.wait_for_function(f"{SAVED}.headSig")
+    sig = old.evaluate(f"{SAVED}.headSig")
+    assert "showing how the hair falls at the back, its length and parting, worn down with no tie or clip" in sig, sig
+    assert "runs on past its bottom edge" not in sig and "a high, broad forehead" in sig and "a rounded hairline" in sig, sig
+    old.evaluate(f"""() => {{ const s = {SAVED}; s.headSig = s.headSig.replace('a rounded hairline', 'a low hairline');
+      localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify(s)); }}""")
+    old.reload()
+    open_folds(old)
+    expect(old.get_by_text(re.compile(r"^The face has changed"))).to_be_hidden()
+    variant = old.get_by_text(re.compile(r"^Variant: the prompts reuse"))
+    old.locator("label").filter(has_text=re.compile(r"^Man$")).click()
+    expect(variant).to_be_visible()
+    old.get_by_role("tab", name="Face").click()
+    old.get_by_role("slider", name="Fat: face", exact=True).press("ArrowRight")
+    expect(variant).to_be_hidden()
+    old.close()
     assert not errors, errors
 
     # A person's beauty level does not make a new animal of an animal's copied GPT sheet.
@@ -379,16 +433,18 @@ with sync_playwright() as p:
     leftover = re.compile(r"\bsix\b|six-view|panels?\b|3 by 2|top row|bottom row|aerial view|high-angle view from a top corner")
     obj = clipboard_page(browser, errors)
     obj.get_by_role("radio", name="GPT Image 2.5", exact=True).click()
-    obj.get_by_role("radio", name="Object", exact=True).click()
-    for cat in ("Vehicle", "Weapon (film prop)", "Clothing", "Accessory", "Object", "House (exterior)", "Interior"):
-        obj.get_by_role("tab", name="Object", exact=True).click()
+    # places are their own type since v137 ("Place": a house, an interior or an outdoor location), with their own tab
+    for cat in ("Vehicle", "Weapon (film prop)", "Clothing", "Accessory", "Object", "House", "Interior", "Outdoor"):
+        kind = "Place" if cat in ("House", "Interior", "Outdoor") else "Object"
+        obj.get_by_role("radio", name=kind, exact=True).first.click()  # the type row, above the "Object" category chip
+        obj.get_by_role("tab", name=kind, exact=True).click()
         obj.get_by_role("tabpanel").get_by_text(cat, exact=True).click()
-        for light in ("Day", "Night", "Day and night") if cat in ("House (exterior)", "Interior") else ("",):
+        for light in ("Day", "Night", "Day and night") if kind == "Place" else ("",):
             if light:
                 obj.get_by_role("tab", name="Light and mood", exact=True).click()
                 obj.get_by_role("tabpanel").get_by_text(light, exact=True).click()
             texts = prompts(obj)
-            cards = [h for h in obj.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            cards = [h for h in obj.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
             if light:
                 assert not [c for c in cards if c.startswith("Triptych")], (cat, light, cards)
             else:
@@ -414,7 +470,7 @@ with sync_playwright() as p:
                 mode: 'object', objCat: '{place}', objTime: 'both', photo: true, photoOnly: {str(only).lower()}}}))""")
             lit.reload()
             texts = prompts(lit)
-            cards = [h for h in lit.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+            cards = [h for h in lit.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
             if only:
                 assert len(texts) == len(cards) == 3, (place, cards)
             else:
@@ -529,7 +585,7 @@ with sync_playwright() as p:
             assert "the most recent animal sheet" in changed and "head sheet" not in changed
             ani.get_by_role("button", name="Random animal").click()
         body, head = prompts(ani)[:2]
-        cards = ani.locator("h3").all_inner_texts()[:2]
+        cards = ani.locator(CARD_H3).all_inner_texts()[:2]
         assert cards == ["Animal sheet", "Head close-ups (optional)"], (step, cards)
         assert "head sheet" not in body and "identity reference" in body and "SUBJECT:" in body, step
         assert "The same animal as on its four-view sheet" in head and "of your own choice" not in head, step
@@ -616,12 +672,12 @@ with sync_playwright() as p:
     msg = clipboard_page(browser, errors)
     msg.get_by_role("radio", name="Seedream 5.0", exact=True).click()
     msg.get_by_text("Start from a photo", exact=True).click()
-    assert msg.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+    assert msg.locator(CARD_H3).all_inner_texts() == ["Head sheet", "Body sheet"]
     assert len(prompts(msg)) == 2
     for button in msg.get_by_role("button", name="Copy for Seedream 5.0", exact=True).all():
         expect(button).to_be_enabled()
     msg.get_by_text("Start from a photo", exact=True).click()
-    cards = [h for h in msg.locator("h3").all_inner_texts() if h != "Rules for your sheets"]
+    cards = [h for h in msg.locator(CARD_H3).all_inner_texts() if h != "Rules for your sheets"]
     assert cards[2].startswith("Retouch"), cards
     msg.close()
     assert not errors, errors
@@ -680,7 +736,153 @@ with sync_playwright() as p:
         bare.close()
     assert not errors, errors
 
-    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG.md, 2026-10-11), with the settings that shape the
+    # Sides of the torso (owner, 2026-11-19): "Side lines of the abs", "Obliques", "Lower-belly V" and "Serratus" add one line after
+    # the abdomen on both engines; on Auto the body prompt is unchanged; the side grooves GPT's own "4 carreaux" text names are said
+    # once; the body light is unchanged; hidden and ignored with a soft belly, belly fat from "Visible" or the "Strong" build; with
+    # every zone at "Non" and abs on Auto, no "No visible muscle definition." next to them.
+    SIDE_NAMES = ("Side lines of the abs", "Obliques", "Lower-belly V", "Serratus (sides of the ribs)")
+    SIDES_SET = "absSides: 'marked', obliques: 'marked', vLine: 'marked', serratus: 'visible'"
+    GPT_SIDE_GROOVE = " and a curved groove runs down each side from the lower ribs, at the outer edges of the abdominal muscles"
+
+    def side_body(model, state):
+        """The body prompt and the number of side controls shown, for a saved state on a model (fixed seed: the same drawn details)."""
+        pg = clipboard_page(browser, errors)
+        pg.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, faceSeed: 7, faceGen: 2, " + state + "}))")
+        pg.reload()
+        pg.get_by_role("radio", name=model, exact=True).click()
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        shown = sum(pg.locator(f'fieldset:has(legend:text-is("{n}")), [role=radiogroup][aria-label="{n}"]').count() for n in SIDE_NAMES)
+        body = [t for t in prompts(pg) if "navel" in t]
+        pg.close()
+        assert body, (model, state)
+        return body[0], shown
+
+    def light_of(t):
+        return re.findall(r"Seamless[^\n]*", t)
+
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        base, shown = side_body(model, "fat: 1, absStyle: 'four'")
+        assert shown == 4 and "Sides of the torso" not in base, (model, shown)
+        sides, _ = side_body(model, "fat: 1, absStyle: 'four', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", sides)
+        assert line and all(w in line.group(0) for w in ("outer edge of the abs", "defined obliques", "clear V-line", "serratus")), (model, sides)
+        assert GPT_SIDE_GROOVE not in sides and "faint lines at the sides" not in sides, model
+        assert light_of(sides) == light_of(base), model
+        assert re.sub(r" ?Sides of the torso: [^.\n]*\.?", "", sides) == base.replace(GPT_SIDE_GROOVE, ""), model
+        for hide in ("absStyle: 'soft'", "absStyle: 'groove'", "fat: 4", "fatBelly: 2", "fatFlanks: 2"):
+            hidden, shown = side_body(model, hide + ", " + SIDES_SET)
+            assert shown == 0 and "Sides of the torso" not in hidden, (model, hide)
+        none, _ = side_body(model, "def: 'none', absStyle: 'auto'")
+        none_sides, _ = side_body(model, "def: 'none', absStyle: 'auto', " + SIDES_SET)
+        assert "Sides of the torso" in none_sides and "No visible muscle definition." not in none_sides, model
+        if model == "Seedream 5.0":
+            assert "No visible muscle definition." in none, "the sentence the sides replace is still written without them"
+        # PR #75 review: the line comes after the abdomen's; "Ligne centrale" loses its own "faint lines at the sides" to the side
+        # lines; a part the reference outfit covers is not asked for (the one-piece covers the torso but the serratus, the top with
+        # bike shorts the lower belly; the GPT shorts leave it bare)
+        assert sides.index("segments") < sides.index("Sides of the torso"), (model, sides)
+        mid, _ = side_body(model, "fat: 1, absStyle: 'line', " + SIDES_SET)
+        assert "vertical groove down the middle" in mid and "faint lines at the sides" not in mid and "outer edge of the abs" in mid, (model, mid)
+        piece, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'onepiece', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", piece)
+        assert line and "serratus" in line.group(0) and not any(w in line.group(0) for w in ("V-line", "outer edge", "obliques")), (model, piece)
+        shorts, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'sport', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", shorts)
+        assert line and "outer edge of the abs" in line.group(0) and ("V-line" in line.group(0)) == (model == "GPT Image 2.5"), (model, shorts)
+        own, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: false, refCover: 'onepiece', " + SIDES_SET)
+        assert "clear V-line" in own, (model, "the user's own outfit may bare it")
+        # owner's render, 2026-11-19: short legs never get the runner's "long" and "elongated" legs; average legs keep them
+        for legs, fat in ((1, 1), (0, 3)):
+            short, _ = side_body(model, f"legs: {legs}, fat: {fat}, legShape: 'runner'")
+            assert "tapered runner's legs" in short and not re.search(r"long, tapered|elongated", short), (model, legs, fat, short)
+        avg, _ = side_body(model, "legs: 2, fat: 1, legShape: 'runner'")
+        assert "long, tapered runner's legs: lean, elongated thigh muscles" in avg, (model, avg)
+    assert not errors, errors
+
+    # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
+    # at "Légère" a small smooth bulge below the navel, the upper abs kept; "Très marqués" obliques; "Triceps" apart from "Biceps" (Auto
+    # follows it, prompts unchanged); "heavy" only from "Marquée"; a light cellulite visible in a full-body view
+    # owner, 2026-11-19: the "Ventre et torse" retouche card (Seedream) with belly fat "Légère" or a torso depth set, never on Auto
+    for state, on in (("fatBelly: 1", True), ("torsoDepth: 'deep'", True), ("fat: 1", False)):
+        tc = clipboard_page(browser, errors)
+        tc.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, " + state + "}))")
+        tc.reload()
+        assert (tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1) == on, state
+        if on:
+            torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
+            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("deeper torso" in torso[0]) == ("deep" in state), (state, torso)
+        tc.close()
+
+    # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
+    io.reload()
+    with io.expect_download() as dl:
+        io.get_by_role("button", name=re.compile(r"Export")).first.click()
+    saved = dl.value.path()
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'auto'}))")
+    io.reload()
+    io.locator("#sd-io-file").set_input_files(str(saved))
+    # the import always asks before replacing the current settings: wait for that question, then for the saved state
+    io.get_by_role("button", name="Replace", exact=True).click()
+    io.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').bustHigh === 'lowset'", timeout=5000)
+    io.close()
+    SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")
+        auto_back, _ = side_body(model, "fat: 1, backDimples: 'none'")
+        assert SMOOTH_BACK in smooth and SMOOTH_BACK not in auto_back and "dimples in the lower back" not in smooth, model
+        ribs, _ = side_body(model, "fat: 1, absStyle: 'four', serratus: 'none', obliques: 'strong'")
+        line = re.search(r"Sides of the torso: [^.\n]*", ribs)
+        assert line and "sides of the ribcage below the armpits smooth" in line.group(0) and "serratus" not in line.group(0), (model, ribs)
+        assert "thick, very muscular obliques" in line.group(0), (model, ribs)
+        belly, _ = side_body(model, "fat: 1, absStyle: 'four', fatBelly: 1")
+        assert "small, smooth bulge of soft fat" in belly and "smooth and flat" not in belly and "softly rounded" in belly, (model, belly)
+        flat, _ = side_body(model, "fat: 1, absStyle: 'flat', defAbs: 'clear', fatBelly: 1")
+        assert "a firm, smooth upper stomach" in flat and "a flat, smooth stomach" not in flat, (model, flat)
+        assert "thin layer of soft fat below the navel" not in belly, model
+        split, _ = side_body(model, "fat: 1, biceps: 'medium', triceps: 'huge'")
+        assert "moderate biceps" in split and "very large triceps" in split and "biceps and triceps" not in split, (model, split)
+        for same in ("biceps: 'big'", "biceps: 'big', triceps: 'big'"):
+            both, _ = side_body(model, "fat: 1, " + same)
+            assert "biceps and triceps" in both and "very large triceps" not in both, (model, same, both)
+        # "Aspect des muscles" at "Pleins et lisses": the sizes stay, no sharp definition, no hard light; very large deltoids never next to
+        # "no muscle bulk"
+        smooth_mus, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big', musLook: 'smooth'")
+        assert "full, rounded muscles under a thin, even layer of soft fat" in smooth_mus and "very large, round deltoids" in smooth_mus, (model, smooth_mus)
+        assert not re.search(r"sharply|crisp shadows|deep groove", smooth_mus), (model, smooth_mus)
+        sharp, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big'")
+        assert "full, rounded muscles under a thin" not in sharp and re.search(r"sharply|crisp shadows", sharp), (model, sharp)
+        delts_only, _ = side_body(model, "fat: 1, def: 'subtle', delts: 'huge'")
+        assert "no muscle bulk" not in delts_only, (model, delts_only)
+        if model == "Seedream 5.0":
+            # PR #76 review (Codex): marked veins bring the hard light; with smooth muscles it stays on the veins alone
+            veins, _ = side_body(model, "fat: 1, def: 'subtle', veins: 'strong', biceps: 'big', musLook: 'smooth'")
+            assert "crisp shadows that bring out the veins" in veins and "crisp shadows on the muscles" not in veins, (model, veins)
+        # "4 carreaux + ligne centrale" (owner, 2026-11-19): the four upper segments and the centre line below the navel; with light belly
+        # fat, no flat lower belly
+        fl, _ = side_body(model, "fat: 1, absStyle: 'fourline', defAbs: 'clear'")
+        assert re.search(r"four (visible abdominal )?segments", fl) and "below the navel" in fl and "groove" in fl, (model, fl)
+        flp, _ = side_body(model, "fat: 1, absStyle: 'fourline', defAbs: 'clear', fatBelly: 1")
+        assert "smooth and flat" not in flp and "softly rounded" in flp, (model, flp)
+        # "Épaisseur du torse" (owner, 2026-11-19): the depth in profile among the body details; Auto says nothing
+        deep, _ = side_body(model, "fat: 1, torsoDepth: 'deep'")
+        assert "a deep torso in profile" in deep and "torso in profile" not in side_body(model, "fat: 1")[0], (model, deep)
+        cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
+        assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
+        if model == "Seedream 5.0":
+            assert "with strong, muscular arms" in side_body(model, "fat: 1, triceps: 'big'")[0], model
+            assert "with a small, soft pooch of fat just below the navel." in belly, (model, belly)
+            pooch = side_body(model, "fat: 1, triceps: 'big', fatBelly: 1")[0]
+            assert "with strong, muscular arms, and a small, soft pooch of fat just below the navel." in pooch, (model, pooch)
+            light, _ = side_body(model, "fat: 1, fatLower: 1, defShoulders: 'clear', defBack: 'clear'")
+            heavy, _ = side_body(model, "fat: 1, fatLower: 3, defShoulders: 'clear', defBack: 'clear'")
+            lead = next(ln for ln in light.split("\n") if "deliberately imperfect" in ln)
+            assert ": soft hips and thighs" in lead and "heavy" not in lead, (model, lead)
+            assert ": soft, heavy hips and thighs" in heavy, (model, heavy)
+    assert not errors, errors
+
+    # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the
     # lines checked here: muscles at "Discrets" except the arms, very marked veins, abs with a centre line at "Discrets";
     # height and proportions stay at their defaults, as they change none of these lines. The zones at "Discrets" share
     # one phrase, the pear bust says nothing athletic, and the hard light brings out the veins, not the muscles. Three
@@ -695,7 +897,8 @@ with sync_playwright() as p:
               " a flat trapezius line, a smooth upper chest.")
     for extra, wanted in (
         ("", (tested,
-              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, softly visible.",
+              # v128 (owner: "Discrets" and "Présents" abs looked the same): "Discrets" no longer reads "softly visible"
+              "Abdomen: a flat stomach with a single vertical groove down the middle and no horizontal lines, only faintly hinted, no deep shadows.",
               "weak fill: crisp shadows that bring out the veins; the muscles stay smooth.",
               "the upper part slightly deflated; the lowest point")),
         ("absStyle: 'auto'", (tested,)),  # abs at "Discrets" with no style: in the shared phrase, not one of their own
@@ -727,6 +930,29 @@ with sync_playwright() as p:
         assert all(w in body for w in wanted), (extra, [w for w in wanted if w not in body], body)
         assert "lean athletic" not in body, (extra, body)
         slim.close()
+    assert not errors, errors
+
+    # Thighs the leg definition says soft (hip and thigh fat from "Light", saddlebags, cellulite, front thigh fat from "Visible")
+    # are never "slim, lean thighs" in the size line, in either engine (owner's render, 2026-10-28); without them "lean" stays.
+    for model in ("seedream", "gpt"):
+        for extra, lean in (
+            ("", True),
+            ("fatLower: 1", False),
+            ("fatLower: 4", False),
+            ("saddle: 'light'", False),
+            ("cellulite: 'light'", False),
+            ("fatThighs: 1", True),
+            ("fatThighs: 2", False),
+        ):
+            soft = clipboard_page(browser, errors)
+            soft.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'person', style: 'photo', pres: 'f', age: 26, faceSeed: 5, fat: 1, thighs: 1, headless: true, bodyRef: true,
+                refCover: 'tanga', {extra}}}))""")
+            soft.reload()
+            text = "\n".join(prompts(soft))
+            assert ("slim, lean thighs, clearly narrower than the hips" in text) == lean, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            assert lean or "slim thighs, clearly narrower than the hips" in text, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            soft.close()
     assert not errors, errors
 
     # A saved GPT session from before the model choice was recorded keeps GPT, and so does one saved by an earlier build
@@ -802,7 +1028,7 @@ with sync_playwright() as p:
     pet.get_by_role("radio", name="Animal", exact=True).click()
     open_folds(pet)
     text = pet.locator("body").inner_text()
-    assert pet.locator("h3").all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator("h3").all_inner_texts()
+    assert pet.locator(CARD_H3).all_inner_texts()[:2] == ["Animal sheet", "Head close-ups (optional)"], pet.locator(CARD_H3).all_inner_texts()
     for word in ("Choose the retouch", "shape guide", "bust shape", "Your three steps", "Combine head and body"):
         assert word not in text, word
     assert "The animal sheet: char_" in text
@@ -822,7 +1048,7 @@ with sync_playwright() as p:
     for style in ("3d", "2d"):
         flat.evaluate("style => localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'seedream', modelPick: 1, mode: 'person', style}))", style)
         flat.reload()
-        assert flat.locator("h3").all_inner_texts() == ["Head sheet", "Body sheet"]
+        assert flat.locator(CARD_H3).all_inner_texts() == ["Head sheet", "Body sheet"]
         texts = prompts(flat)
         assert len(texts) == 2 and all(texts)
         assert not re.search(r"conversation|GENERATION LIMIT|this message", "\n".join(texts))
@@ -910,7 +1136,7 @@ with sync_playwright() as p:
         assert len(ratios) == 2 and min(ratios) >= 4.5, (scheme, ratios)
         red.context.close()
 
-    # "Dress" writes the outfit of the with-head body sheet word for word (the dressed sheet becomes its image 2): a man's top
+    # "Dress for assembly" writes the outfit of the with-head body sheet word for word (the dressed sheet becomes its image 2): a man's top
     # lies over his chest, a very slim woman's has the lower neckline; at "Very generous" both cards carry the red warning.
     head_outfit = re.compile(r"Outfit, the same in every view: (.*?)\. Opaque, plain, no logos\.")
     dress_outfit = re.compile(r"Change only this: the outfit is replaced by (.*?); opaque, plain, no logos; ")
@@ -919,8 +1145,9 @@ with sync_playwright() as p:
                           ("pres: 'm', chest: 2, fat: 2", False)):
         dressed = saved_page(f"age: 27, bodyRef: true, headless: true, refCover: 'sport', {state}")
         open_folds(dressed)
-        dressed.get_by_role("button", name="Dress", exact=True).click()
-        edit = next(t for t in prompts(dressed) if t.startswith("Edit image 1"))
+        dressed.get_by_role("button", name="Dress for assembly", exact=True).click()
+        prompts(dressed)
+        edit = dressed.locator('pre[data-out="iter"]').text_content()  # card 3 (since v147 a bust retouch card can come before it)
         assert (dress_warn in dressed.locator("body").inner_text()) == warned, state
         whole = saved_page(f"age: 27, bodyRef: true, headless: false, refCover: 'sport', {state}")
         outfit_text = next(t for t in prompts(whole) if "Outfit, the same in every view" in t)
@@ -957,7 +1184,7 @@ with sync_playwright() as p:
     # the text a preset put in the box is cleared even after a setting has changed that preset's wording
     stale = saved_page("headless: true, bodyRef: true, pres: 'f', chest: 2.5")
     open_folds(stale)
-    stale.get_by_role("button", name="Dress", exact=True).click()
+    stale.get_by_role("button", name="Dress for assembly", exact=True).click()
     picked = stale.evaluate(f"{SAVED}.sdIter")
     stale.get_by_role("tab", name=re.compile(r"^Body")).click()
     stale.get_by_role("slider", name="Bust", exact=True).press("ArrowRight")
@@ -966,7 +1193,7 @@ with sync_playwright() as p:
     saved = stale.evaluate(SAVED)
     assert saved.get("sdIterOp") == "free" and not saved.get("sdIter"), saved
     open_folds(stale)
-    stale.get_by_role("button", name="Dress", exact=True).click()
+    stale.get_by_role("button", name="Dress for assembly", exact=True).click()
     assert stale.evaluate(f"{SAVED}.sdIter") != picked, "the bust change must change the Dress text"
     stale.close()
 
@@ -1002,6 +1229,301 @@ with sync_playwright() as p:
         assert ("the only lettering is the one the marks above describe, besides any logo or print on the clothing taken from"
                 " the photo.") in text, text[-300:]
     photo.close()
+
+    # "Large" and "Very large" glutes keep their size but lose their profile words with a "Flat" or "Low" glute shape, which the
+    # shape's hint says is independent of the volume (both engines).
+    profile = re.compile(r"round glutes|projecting far behind|a hand's width behind the line of the shoulder blades|a deep shelf")
+    for model in ("gpt", "seedream"):
+        for size, shape, shown in ((3, "flat", False), (4, "low", False), (3, "round", True), (4, "auto", True)):
+            gl = saved_page(f"model: '{model}', pres: 'f', age: 30, glutes: {size}, glutesShape: '{shape}'")
+            body = next(t for t in prompts(gl) if "standing" in t)
+            assert bool(profile.search(body)) == shown, (model, size, shape, profile.findall(body))
+            assert ("very large" if 3 == size else "extremely large") in body, (model, size, shape)
+            gl.close()
+    assert not errors, errors
+
+    # Bust morphology: "Tuberous" (no wide-base words), "Low" placement (with every shape but "Drooping", which its click
+    # unticks), "Bust veins", both engines.
+    wide = re.compile(r"wide base|covering most of the|fills the whole width of the chest")
+    for model in ("gpt", "seedream"):
+        for chest in (2, 3, 4):
+            bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: {chest}, bustShape: 'tuberous'")
+            body = next(t for t in prompts(bm) if "standing" in t)
+            assert "tuberous" in body and "a narrow, constricted base" in body and not wide.search(body), (model, chest, wide.findall(body))
+            bm.close()
+        for shape, said in (("round", True), ("pear", True), ("low", False)):
+            bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: 3, bustShape: '{shape}', bustHigh: 'lowset'")
+            body = next(t for t in prompts(bm) if "standing" in t)
+            assert ("set low on the chest: the fullest point near the bottom of the ribcage" in body) == said, (model, shape)
+            bm.close()
+        bm = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, chest: 1, bustVeins: 'visible'")
+        body = next(t for t in prompts(bm) if "standing" in t)
+        assert "bluish veins clearly visible under the skin of the upper chest and the upper bust" in body, model
+        bm.close()
+    bm = saved_page("pres: 'f', age: 30, chest: 3")
+    bm.get_by_role("tab", name=re.compile(r"^Body")).click()
+    open_folds(bm)
+    bust = bm.locator("#sd-bust")
+    for name in ("Tuberous", "Low"):
+        expect(bust.get_by_role("checkbox", name=name, exact=True)).to_have_count(1)
+    bust.get_by_role("checkbox", name="Low", exact=True).click()
+    bust.get_by_role("checkbox", name="Drooping", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["low", "auto"]
+    bust.get_by_role("checkbox", name="Low", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["auto", "lowset"]
+    bust.get_by_role("checkbox", name="Tuberous", exact=True).click()
+    assert bm.evaluate(f"[{SAVED}.bustShape, {SAVED}.bustHigh]") == ["tuberous", "lowset"]
+    expect(bust.get_by_role("checkbox", name="Auto (age)", exact=True)).not_to_be_checked()
+    expect(bm.get_by_text("Bust veins", exact=True)).to_have_count(1)
+    bm.close()
+    assert not errors, errors
+
+    # "3D agent" (v158): its prompt follows the interface language, the French one as v158 wrote it.
+    agent = saved_page("pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true")
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    a3d = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
+    text = agent.evaluate(a3d)
+    assert text.startswith("Adult female 3D character (26 years old) for a video game. It currently wears "), text[:120]
+    # owner: "titre et contexte ça sert à rien": no title, no CONTEXT heading, in either agent prompt
+    assert not re.search(r"^# |^## CONTEXT", text, re.M) and "\n## INPUTS\n" in text, text[:200]
+    for want in ("## INPUTS", "- TOP_TYPE = SOFT_TRIANGLE (", "- PTOSIS_GRADE = NONE (", "Shape key \"bare_rest\" on the body; at 1.0, V1 to V10 OK"):
+        assert want in text, (want, text[:400])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_HAUT|COQUES_|AUCUNE|nu_relache|À VALIDER)\b", text), re.findall(r"[àâçéèêëîïôùûüœ«»]", text)[:5]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(a3d)
+    assert text.startswith("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte ") and "- TYPE_DE_HAUT = TRIANGLE_SOUPLE (" in text, text[:200]
+    assert not re.search(r"^# |^## CONTEXTE", text, re.M), text[:200]
+    set_lang(agent, "English", "en")
+    agent.close()
+    assert not errors, errors
+
+    # "3D agent" (v158) for an adult woman with a bust, never a man or a woman under 21. Its "Nipples" and "Areolas" choices: on
+    # Auto the prompt keeps both out of scope; a type set by hand gives its sourced target, its own shape key and check V11.
+    A3D = "() => (document.querySelector('#sd-a3d textarea') || {}).value || ''"
+    agent_state = "pres: 'f', age: 26, chest: 2.5, bustShape: 'round', bodyRef: true, refCover: 'tanga', headless: true, height: 160"
+    for state, shown in ((agent_state, True), ("pres: 'm', age: 26, chest: 2", False), ("pres: 'f', age: 20, chest: 2.5", False)):
+        pg = saved_page(state)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        assert (pg.locator("#sd-a3d").count() == 1) == shown, state
+        pg.close()
+    agent = saved_page(agent_state)
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    agent.locator("#sd-a3d summary").click()
+    text = agent.evaluate(A3D)
+    assert "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig" in text and "- NIPPLE =" not in text, text[-600:]
+    assert "V1 to V10 OK" in text and "V11" not in text
+    # every choice of the panel has its tooltip; the grades say where the nipple sits against the fold under the breast
+    assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3d [data-a3d]')].every((b) => b.title)")
+    assert agent.get_by_role("button", name="II", exact=True).get_attribute("title") == (
+        "Moderate sag: the nipple below the fold, but not the lowest point of the breast.")
+    assert "Zhong 2023" in agent.get_by_role("button", name="Thick cups", exact=True).get_attribute("title")
+    assert agent.get_by_text("Ptosis grade (how far the bust sags)", exact=True).count() == 1
+    projecting = agent.get_by_role("button", name="Projecting", exact=True)
+    assert projecting.get_attribute("title") == "About 9 mm high above the areola."
+    assert agent.get_by_role("button", name="Big", exact=True).get_attribute("title") == (
+        "About 41 mm across: the area is marked for the texture, the mesh does not move for it.")
+    projecting.click()
+    agent.get_by_role("button", name="Big", exact=True).click()
+    assert agent.evaluate(f"[{SAVED}.a3dNip, {SAVED}.a3dAre]") == ["SAILLANT", "GRANDE"]
+    text = agent.evaluate(A3D)
+    for want in ("\n- NIPPLE = PROJECTING\n", "\n- AREOLA = LARGE\n", "\n- CHARACTER_HEIGHT = 160 cm\n", "areola LARGE: D_ar = 41 mm",
+                 "nipple PROJECTING: p = 9 mm", "d = 10 mm", "multiply them by H / 1600.", "Shape keys \"bare_rest\" and \"nipples\"",
+                 "   - V11: ", "V1 to V11 OK or FAILED", "(Lee et al. 2008: 30.93 ± 10.07 mm, mean plus one SD; Sanuki et al. 2009: 40 mm)",
+                 "p = 9 mm (the mean of Sanuki et al. 2009)",
+                 "(the areola's color and grain included)",
+                 "Names \"nipples\", \"areola_L\" or \"areola_R\" already taken (shape key or vertex group): stop and ask, rename nothing.",
+                 "; the top hidden (hide_viewport, hide_render), not deleted; the bottom unchanged."):
+        assert want in text, (want, text[-800:])
+    assert "swimsuit hidden" not in text, text  # step 1 once hid the whole swimsuit, the bottom with it
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(MAMELON|AREOLE|SAILLANT|GRANDE|mamelons|À VALIDER)\b", text), text[-800:]
+    # an image model given this text redrew the bottom (owner: "il ne faut pas que le prompt change le tanga"): only the top goes
+    keep = " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is."
+    assert keep in text.split("\n")[0], text.split("\n")[0]
+
+    # the context line says the choices in plain words, early enough for an image model that reads the start (600 words for Seedream)
+    def context(text, want):
+        line = text.split("\n")[0]
+        assert line.endswith(want) and len(text[:text.index(want)].split()) < 600, (want, line)
+        assert not re.search(r"\b(AUTO|PLAT|MOYENN?E?|SAILLANT|OMBILIQUE|PETITE|GRANDE|PLATE|PLATEAU|HERNIEE|VISIBLES|FLAT|AVERAGE|PROJECTING"
+                             r"|UMBILICATED|SMALL|LARGE|FLUSH|DOMED|VISIBLE)\b", line), line
+
+    context(text, " Nipples and areolas: projecting nipples, about 9 mm high above the areola; big areolas, about 41 mm across.")
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3D)
+    context(text, " Mamelons et aréoles : mamelons saillants, environ 9 mm de haut au-dessus de l'aréole ;"
+            " grandes aréoles, environ 41 mm de diamètre.")
+    for want in ("\n- MAMELON = SAILLANT\n", "\n- AREOLE = GRANDE\n", "\n- TAILLE_PERSONNAGE = 160 cm\n", "aréole GRANDE : D_ar = 41 mm",
+                 "mamelon SAILLANT : p = 9 mm", "d = 10 mm", "multiplie-les par H / 1600.", "Shape keys \"nu_relache\" et \"mamelons\"",
+                 "   - V11 : ", "V1 à V11 OK ou KO", "(Lee et al. 2008 : 30,93 ± 10,07 mm, moyenne plus un écart-type ; Sanuki et al. 2009 : 40 mm)",
+                 "p = 9 mm (moyenne de Sanuki et al. 2009)",
+                 "(couleur et grain de l'aréole compris)",
+                 "Noms \"mamelons\", \"areole_G\" ou \"areole_D\" déjà pris (shape key ou vertex group) : arrête-toi et demande, ne renomme rien."):
+        assert want in text, (want, text[-800:])
+    set_lang(agent, "English", "en")
+    agent.locator("[data-a3d='a3dNip:PLAT']").click()
+    assert "nipple FLAT: p = 2 mm (Demiröz et al. 2021: 4.0 ± 1.8 mm, minus one SD)" in agent.evaluate(A3D)
+    agent.get_by_role("button", name="Umbilicated", exact=True).click()
+    areola_auto = agent.locator("[data-a3d='a3dAre:auto']")
+    assert areola_auto.inner_text() == "Auto (mesh)"
+    areola_auto.click()
+    text = agent.evaluate(A3D)
+    assert "nipple UMBILICATED: p < 0" in text and "- AREOLA = AUTO (" in text and "d = 10 mm" not in text and "D_ar = 41 mm" not in text and "D_ar = its diameter" in text, text[-800:]
+    # "Areola relief" and "Montgomery tubercles": geometry in the "nipples" shape key, their inputs and check
+    agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
+    agent.locator("[data-a3d='a3dTub:VISIBLES']").click()
+    assert agent.evaluate(f"[{SAVED}.a3dRel, {SAVED}.a3dTub]") == ["HERNIEE", "VISIBLES"]
+    text = agent.evaluate(A3D)
+    context(text, " Nipples and areolas: umbilicated nipples, drawn into a dip at the centre of the areola;"
+            " areola size unchanged; puffy areolas: each whole areola forms a small, soft, rounded cone that extends the tip of the breast;"
+            " in profile the tip has two steps, the curve of the breast then the cone of the areola, the nipple on top; at its base a slight"
+            " constriction that blends into the skin, with no sharp edge or ring; the same skin and grain as the breast;"
+            " small round bumps (Montgomery tubercles) visible on the areolas.")
+    for want in ("\n- AREOLA_RELIEF = DOMED\n", "\n- TUBERCLES = VISIBLE\n", "areola DOMED: h_ar > 0, the areola domed, a constricting groove at its base",
+                 "tubercles VISIBLE: small round bumps on the areola",
+                 "h_ar = the distance from the areola plane to that of the skin between 1.0 and 1.3 × D_ar / 2 from C, positive forward",
+                 "p = the signed distance from the plane to the bottom of a central dip", "96.23% of inverted nipples, Park et al. 1999",
+                 "h_ar > 0, a groove at the edge of the areola", "Shape keys \"bare_rest\" and \"nipples\""):
+        assert want in text, (want, text[-800:])
+    # the step that builds the geometry names both operations (the nipple is the umbilicated one set above)
+    step_m = next(x for x in text.split("\n") if x.startswith("   - M (nipples and areolas)"))
+    assert "the areola domed, a groove at its base" in step_m and "small round bumps on the areola" in step_m, step_m
+    # with the nipple on Auto, its vertices are kept and checked
+    agent.locator("[data-a3d='a3dNip:auto']").click()
+    text = agent.evaluate(A3D)
+    step_m = next(x for x in text.split("\n") if x.startswith("   - M (nipples and areolas)"))
+    assert "the mesh's nipple kept: its vertices (the local bump around C) do not move" in step_m, step_m
+    assert "NIPPLE = AUTO: in \"nipples\", nipple vertices moved by 1e-6 scene unit at most" in text, text[-800:]
+    agent.locator("[data-a3d='a3dRel:PLATE']").click()
+    text = agent.evaluate(A3D)
+    assert "on 8 radial sections through C, between 0.8 and 1.2 × D_ar / 2 from C" in text and "(no step or ridge)" in text, text[-800:]
+    agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3D)
+    for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
+        assert want in text, (want, text[-800:])
+    context(text, " Mamelons et aréoles : mamelons inchangés ; taille des aréoles inchangée ;"
+            " aréoles bombées (puffy areolas) : chaque aréole entière forme un petit cône arrondi et souple qui prolonge la pointe du sein ;"
+            " de profil, la pointe a deux étages, la courbe du sein puis le cône de l'aréole, le mamelon au sommet ; à sa base, un léger"
+            " étranglement qui se fond dans la peau, sans arête ni anneau ; même peau et même grain que le sein ;"
+            " petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles.")
+    set_lang(agent, "English", "en")
+    # every label and tooltip of the panel in both languages (the rest of the page is swept elsewhere)
+    panel = "() => [...document.querySelectorAll('#sd-a3d summary, #sd-a3d p, #sd-a3d button')].map((n) => [n.textContent.trim(), n.title])"
+    en = agent.evaluate(panel)
+    set_lang(agent, "Français", "fr")
+    fr = agent.evaluate(panel)
+    set_lang(agent, "English", "en")
+    same = [a for pair in zip(en, fr) for a, b in zip(*pair) if a == b and re.search(r"[A-Za-zÀ-ÿ]{3,}", a)
+            and a not in SAME_IN_BOTH and not NEUTRAL.match(a)]
+    assert len(en) == len(fr) and not same, same
+    agent.close()
+    assert not errors, errors
+
+    # The agent prompt fits the 10,000 characters of an image tool's prompt box (owner: "Cannot exceed 10000 characters"), counting
+    # each line break twice in case the box counts it as CRLF, on the longest settings, in both languages.
+    longest = ("pres: 'x', age: 26, fat: 1, chest: 3, bodyRef: true, refCover: 'tanga', headless: true, height: 160, bustShape: 'slender',"
+               " bustHigh: 'vhigh', bustWide: 'out', bustAsym: 'yes', bustSkin: 'loose', a3dNip: 'OMBILIQUE', a3dAre: 'GRANDE',"
+               " a3dRel: 'HERNIEE', a3dTub: 'VISIBLES'")
+    for extra in ("a3dTop: 'HAUT_AJUSTE'", "a3dTop: 'UNE_PIECE_AJUSTEE', a3dGrade: 'III'", "a3dTop: 'COQUES_FINES', chest: 2",
+                  "a3dNip: 'MOYEN', a3dAre: 'PETITE', a3dRel: 'PLATEAU'", "a3dNip: 'SAILLANT', a3dRel: 'PLATE', bustShape: 'conical'"):
+        pg = saved_page(longest + ", " + extra)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        for label, code in (("Français", "fr"), ("English", "en")):
+            set_lang(pg, label, code)
+            text = pg.evaluate(A3D)
+            assert text.startswith(("Personnage 3D ", "Adult ")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+            # a one-piece has no separate bottom to keep; the sentence is in the language picked, never in the other one
+            here, other = ("Only the top is removed:", "Seul le haut est retiré :")[:: 1 if code == "en" else -1]
+            assert (here in text) != ("UNE_PIECE" in extra) and other not in text, (extra, code)
+        pg.close()
+    assert not errors, errors
+
+    # "3D agent: glutes" (owner, 2026-10-28: "pour éviter que les fesses restent en l'air", "si elles doivent descendre parce qu'elles sont
+    # grosses elles descendent, si elles ne bougent pas parce qu'elles sont musclées elles ne bougent pas"): gated as the bust's panel, the
+    # bottom read from the outfit, the natural ptosis grade from the glute settings, only ever lowered to, the context line in plain words.
+    A3G = "() => (document.querySelector('#sd-a3g textarea') || {}).value || ''"
+    glute_state = ("pres: 'f', age: 26, fat: 1, chest: 2.5, bodyRef: true, refCover: 'tanga', headless: true, height: 160, glutesShape: 'auto',"
+                   " gluteMus: 0, glutes: 2")
+    for state, shown in ((glute_state, True), ("pres: 'x', age: 30", True), ("pres: 'm', age: 26", False), ("pres: 'f', age: 20", False)):
+        pg = saved_page(state)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        assert (pg.locator("#sd-a3g").count() == 1) == shown, state
+        pg.close()
+    for extra, grade in (("", "0"), ("glutes: 3", "1"), ("glutes: 3, gluteMus: 2", "0"), ("fatGlutes: 3", "2"), ("fatGlutes: 4, gluteMus: 3", "2"),
+                         ("glutesShape: 'low'", "2"), ("glutesDef: ['sag']", "4"), ("glutesShape: 'high', fatGlutes: 4", "0"), ("fat: 4", "3")):
+        pg = saved_page(glute_state + (", " + extra if extra else ""))
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        text = pg.evaluate(A3G)
+        assert f"\n- GLUTEAL_PTOSIS_GRADE = {grade} (taken from the sheet's glutes)\n" in text, (extra, re.findall(r"GLUTEAL_PTOSIS_GRADE = .*", text))
+        pg.close()
+    for extra, model, bottom in (("", "seedream", "TANGA_THONG"), ("refCover: 'sport'", "seedream", "FITTED_SHORTS"),
+                                 ("refCover: 'onepiece'", "seedream", "ONE_PIECE"), ("", "gpt", "FITTED_SHORTS"),
+                                 ("refCover: 'sport'", "gpt", "COMPRESSION_SHORTS")):
+        pg = saved_page(glute_state + ", model: '" + model + "'" + (", " + extra if extra else ""))
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        text = pg.evaluate(A3G)
+        assert f"\n- BOTTOM_TYPE = {bottom} (read from the sheet)\n" in text, (extra, model, re.findall(r"BOTTOM_TYPE = .*", text))
+        # an image model given this text as an edit prompt keeps the top; a one-piece starts from the bust prompt's result
+        keep = "Only the bottom is removed: the top keeps exactly its cut, color and fabric, and everything else stays as it is."
+        assert (keep in text.split("\n")[0]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n")[0])
+        assert (bottom == "ONE_PIECE") == ("Start from the result of the bust prompt" in text), (extra, model)
+        pg.close()
+    agent = saved_page(glute_state)
+    agent.get_by_role("tab", name=re.compile(r"^Body")).click()
+    agent.locator("#sd-a3g summary").click()
+    text = agent.evaluate(A3G)
+    assert text.startswith("Adult female 3D character (26 years old) for a video game. It currently wears a tanga bikini bottom or a thong."), text[:120]
+    assert not re.search(r"^# |^## CONTEXT", text, re.M), text[:200]
+    for want in ("Character sheet: build: slim; glutes: average.", "   - b. drop: none (grade 0); outside \"edge_band\", nothing moves.",
+                 "Gluteal ptosis grades (Gonzalez, Aesthet Plast Surg 2006, 30(3):320-326; definitions from a secondary source, Blaya 2020:"
+                 " TO VALIDATE), decided in this order: 4 = ptotic tissue on M; otherwise 3 = the crease past M by more than tol;", "7. Out of scope: the genital area (neither modelled nor changed)", "V1 to V8 OK or FAILED",
+                 "Tanga or thong: it neither covers nor carries the mass of the glutes (a mechanical deduction, no published measure)",
+                 # review: every landmark measurable, one decision order, no lift, the groups V5 names, H as the owner defined it
+                 "H = the height of the body's bounding box in the measuring state (constraint 8); 1 real mm = H / (CHARACTER_HEIGHT × 10)",
+                 "no vertex of the area risen by more than tol", "Requested grade: 0. A base at this grade or past it: no drop, do not lift it, report it.",
+                 "V5: vertices outside \"glute_region\" and \"edge_band\" (weight 0 in both)", "STOP and report, no global correction",
+                 "A required field empty or off the list: stop and ask"):
+        assert want in text, (want, text[:1200])
+    assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_BAS|GRADE_PTOSE_FESSIERE|FICHIER_SOURCE|nu_fesses|bande_bord|region_fessiere|À VALIDER"
+                         r"|TANGA_STRING|CULOTTE_\w+|SHORT_\w+)\b", text), re.findall(r".{20}[àâçéèêëîïôùûüœ«»]", text)[:5]
+    line = text.split("\n")[0]
+    assert line.endswith(" Glutes: at their current height and in their current shape, with no sag added; the same size, the same skin and"
+                         " grain; the marks left by the bottom's edges erased."), line
+    assert "the natural sag its size and muscle tone give it, never lifted." in line, line
+    assert len(line.split()) < 600 and not re.search(r"\b[A-Z]{3,}_[A-Z_]+\b", line), line
+    # every choice has its tooltip; a grade set by hand is saved, said "by hand", and its drop asked in the steps
+    assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3g [data-a3d]')].every((b) => b.title)")
+    agent.locator("[data-a3d='a3gGrade:3']").click()
+    assert agent.evaluate(f"{SAVED}.a3gGrade") == "3"
+    text = agent.evaluate(A3G)
+    assert "\n- GLUTEAL_PTOSIS_GRADE = 3 (by hand)\n" in text and "   - b. drop, only if the base is below grade 3: " in text, text[-1500:]
+    assert "running past the middle of the back of the thigh" in text.split("\n")[0], text.split("\n")[0]
+    set_lang(agent, "Français", "fr")
+    text = agent.evaluate(A3G)
+    for want in ("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte un bas de maillot tanga ou un string.", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
+                 "\n- GRADE_PTOSE_FESSIERE = 3 (à la main)\n", "Seul le bas est retiré : le haut garde exactement sa coupe",
+                 "shape key \"nu_relache\" reste alors strictement inchangée"):
+        assert want in text, (want, text[:1200])
+    panel = "() => [...document.querySelectorAll('#sd-a3g summary, #sd-a3g p, #sd-a3g button')].map((n) => [n.textContent.trim(), n.title])"
+    fr = agent.evaluate(panel)
+    set_lang(agent, "English", "en")
+    en = agent.evaluate(panel)
+    same = [a for pair in zip(en, fr) for a, b in zip(*pair) if a == b and re.search(r"[A-Za-zÀ-ÿ]{3,}", a)
+            and a not in SAME_IN_BOTH and not NEUTRAL.match(a)]
+    assert len(en) == len(fr) and not same, same
+    agent.close()
+    # the longest glute prompts fit the 10,000 characters of an image tool's prompt box, each line break counted twice, in both languages
+    for extra in ("glutesDef: ['sag', 'square', 'dips'], glutesShape: 'low', gluteMus: 4, fatGlutes: 4, glutes: 4, a3gBottom: 'SHORT_COMPRESSION'",
+                  "a3gBottom: 'CULOTTE_REMBOURREE', a3gGrade: '4', glutesShape: 'shelf', gluteMus: 3, fatGlutes: 2",
+                  "a3gBottom: 'UNE_PIECE', glutesDef: ['sag'], fatGlutes: 3, gluteMus: 1"):
+        pg = saved_page(glute_state + ", " + extra)
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        for label, code in (("Français", "fr"), ("English", "en")):
+            set_lang(pg, label, code)
+            text = pg.evaluate(A3G)
+            assert text.startswith(("Personnage 3D ", "Adult ")) and len(text) + text.count("\n") <= 10000, (extra, code, len(text))
+        pg.close()
+    assert not errors, errors
 
     # An engine nobody picked follows the subject live, and a reload keeps it: GPT for a person in 3D, Seedream again in Photo.
     auto = clipboard_page(browser, errors)
