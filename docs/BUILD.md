@@ -98,11 +98,12 @@ On `main`, it also publishes `new/merged.html` to GitHub Pages as `index.html`
 (`feat!:`, `BREAKING CHANGE:`) bumps the major version, a `feat` the minor one, a `fix` or `perf`
 the patch; other types make no release, and the first release is `v1.0.0`. Every tag starting
 with `v` is a release tag: if the last one is not exactly `vX.Y.Z`, the run stops. CI builds the
-page with that version (`SD_VERSION`), shown in the header, and the smoke test checks it is there.
+page with that version (`SD_VERSION`), shown at the top of the page with the date of the last commit
+(`SD_DATE` overrides it), and the smoke test checks both are there.
 After a deploy that brings a new version, the `release` job tags the commit and creates a GitHub
 release with the page built and tested above attached as `seedance-reference-sheets-vX.Y.Z.html`;
 it runs no code of the repository, since its token can write to it, and a re-run only replaces
-the page. A local build shows no version. `python version.py --check` runs its own checks.
+the page. A local build shows the version `version.py` gives for its commit and that commit's date. `python version.py --check` runs its own checks.
 
 ## Making changes
 

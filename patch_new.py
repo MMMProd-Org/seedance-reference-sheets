@@ -4,10 +4,22 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 LANG='en'  # default interface language ('en' or 'fr'; tests/smoke.py expects 'en'); visitors can switch in the header
 src=open('new/pretty.js',encoding='utf-8').read()
 sd=open('seedream_new.js',encoding='utf-8').read()+'\n'+open('sd_i18n.js',encoding='utf-8').read()
-# the release version shown in the header, set by CI from version.py; none in a local build
-VERSION=os.environ.get('SD_VERSION','')
+# the version and date shown at the top of the page (owner, 2026-11-19: « affiche moi en haut de la planche la version et la date
+# dorénavant »): CI sets SD_VERSION from version.py; a local build asks version.py itself (the version this commit would release, or the
+# last one), and the date is the last commit's (SD_DATE overrides it), so two builds of one commit show the same text
+import subprocess
+def _sh(*a):
+    try:
+        r = subprocess.run(a, capture_output=True, text=True, timeout=30)
+        return r.stdout if r.returncode == 0 else ''
+    except Exception:
+        return ''
+VERSION=os.environ.get('SD_VERSION','') or next((l.split('=',1)[1].strip() for l in _sh('python3','version.py').splitlines() if l.startswith('version=')), '')
 assert VERSION=='' or VERSION.count('.')==2 and all(p.isdigit() for p in VERSION.split('.')),VERSION
+DATE=os.environ.get('SD_DATE','') or _sh('git','log','-1','--format=%cs').strip()
+assert DATE=='' or len(DATE)==10 and DATE[4]==DATE[7]=='-',DATE
 sd+='\nvar SD_VERSION = '+json.dumps(VERSION)+';'
+sd+='\nvar SD_DATE = '+json.dumps(DATE)+';'
 def rep(old,new,count=1):
     global src
     n=src.count(old)
@@ -257,11 +269,12 @@ rep('''              (0, l.jsx)("p", {
                       ["en", "English"],
                     ],
                   }),
-                  SD_VERSION &&
+                  (SD_VERSION || SD_DATE) &&
                     (0, l.jsx)("span", {
-                      className: "text-xs text-muted-foreground",
-                      style: { alignSelf: "center" },
-                      children: "v" + SD_VERSION,
+                      className: "text-xs font-medium text-foreground",
+                      style: { alignSelf: "center", whiteSpace: "nowrap" },
+                      "data-sd-version": "",
+                      children: [SD_VERSION ? "v" + SD_VERSION : "", SD_DATE].filter(Boolean).join(" · "),
                     }),
                 ],
               }),''')
@@ -2281,13 +2294,13 @@ rep('''                    options: [
                       ["integ", "Intégration d'image"],
                     ],
                   }),
-                  SD_VERSION &&''', '''                    options: [
+                  (SD_VERSION || SD_DATE) &&''', '''                    options: [
                       ["sheets", "Planches"],
                       ["integ", "Intégration d'image"],
                     ],
                   }),
                   sdIoButtons(t, h),
-                  SD_VERSION &&''')
+                  (SD_VERSION || SD_DATE) &&''')
 # P78 v128 (user: "Discrets" and "Présents" abs look the same; fat sliders for the belly and the other zones, to mix muscle and fat): the
 # fat options, the sliders next to each zone's "Muscles apparents", GPT's abs wording and the fat sentence in its "Muscles and details"
 rep('''    fatLower: [

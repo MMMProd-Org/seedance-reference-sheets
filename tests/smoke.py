@@ -115,9 +115,13 @@ with sync_playwright() as p:
     assert not errors, errors
     assert page.evaluate("document.documentElement.lang") == "en", "page must open in English"
     assert page.title() == "Seedance Reference Sheets", page.title()
-    # CI builds the page with the release version (version.py) and runs this test with it: the header shows it.
+    # The header shows the version and the date (owner, 2026-11-19): CI's release version (version.py) when it runs this test with it,
+    # and a local build's own, with the last commit's date.
+    stamp = page.locator("header [data-sd-version]")
+    expect(stamp).to_be_visible()
+    expect(stamp).to_have_text(re.compile(r"^v\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2}$"))
     if os.environ.get("SD_VERSION"):
-        expect(page.locator("header").get_by_text("v" + os.environ["SD_VERSION"], exact=True)).to_be_visible()
+        expect(stamp).to_have_text(re.compile("^v" + re.escape(os.environ["SD_VERSION"]) + " · "))
 
     page.get_by_text("Details and prompt", exact=True).first.click()
     prompt = page.locator("pre").first.inner_text()
