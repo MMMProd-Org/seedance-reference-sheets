@@ -827,6 +827,38 @@ with sync_playwright() as p:
             assert (", apart from the pooch" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
         tc.close()
 
+    # owner, 2026-11-19 (« plusieurs curseurs »): the card's own settings, the pooch and the depth, over the body settings
+    def torso_of(state):
+        tc = clipboard_page(browser, errors)
+        tc.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, " + state + "}))")
+        tc.reload()
+        return tc, [x for x in prompts(tc) if "retouch the torso only" in x or "Pick a pooch or a depth" in x]
+    for state, want, absent in (
+        ("fatBelly: 1, sdTorsoPooch: '1'", "about half a finger's width", "about a finger's width"),
+        ("fatBelly: 2, sdTorsoPooch: '2'", "about a finger's width", "two fingers'"),
+        ("sdTorsoPooch: '3'", "about two fingers' width past the line of the upper abs in the side views, as on a fit woman whose upper abs stay sharp", "deeper from back to front"),
+        ("torsoDepth: 'deep', sdTorsoDeep: '10'", "the torso about a tenth deeper", "a quarter"),
+        ("sdTorsoDeep: '33', sdTorsoPooch: '1'", "the torso about a third deeper", "nothing"),
+        ("fatBelly: 1, torsoDepth: 'deep', sdTorsoPooch: '0', sdTorsoDeep: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
+    ):
+        tc, torso = torso_of(state)
+        assert tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1 and len(torso) == 1, (state, torso)
+        assert want in torso[0] and absent not in torso[0], (state, torso)
+        assert (", apart from the pooch" in torso[0]) == ("deeper" in torso[0] and "pooch of lower-belly fat" in torso[0]), (state, torso)
+        tc.close()
+    # the chips of the card set it, Auto follows the body settings again
+    tc, torso = torso_of("fatBelly: 1")
+    chips = tc.locator("[data-sd-torso-chips]")
+    assert "a finger's width" in torso[0] and chips.count() == 1
+    chips.get_by_role("radio", name="Very light", exact=True).click()
+    chips.get_by_role("radio", name="+20 %", exact=True).click()
+    torso = [x for x in prompts(tc) if "retouch the torso only" in x]
+    assert "half a finger's width" in torso[0] and "the torso about a fifth deeper" in torso[0], torso
+    chips.get_by_role("radio", name="Auto", exact=True).first.click()
+    torso = [x for x in prompts(tc) if "retouch the torso only" in x]
+    assert "about a finger's width" in torso[0], torso
+    tc.close()
+
     # owner, 2026-11-19 (« Uncaught Error: ResizeObserver loop completed with undelivered notifications » in the preview): the copy bar
     # with five buttons, 121 px tall, shown and hidden across the lg breakpoint, never resizes the page inside an observer callback
     ro = clipboard_page(browser, errors)

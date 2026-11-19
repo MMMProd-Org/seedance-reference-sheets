@@ -3705,32 +3705,54 @@ function sdGrowBustPrompt() {
    « un peu trop sur le profil »; then « il faut adapter le html pour savoir ce qui doit être fait après et ça doit être ui friendly »):
    the method of cards 2b to 2d for what Seedream draws from an edit but not from a description: the pooch of belly fat « Légère » and
    the torso's depth in profile. The pooch at half the depth of his first retouche. Seedream, native adult person only. */
+/* owner, 2026-11-19 (his renders of this card: « pour le ventre ça peut marcher mais c un peu trop on devrait pouvoir avoir plusieurs
+   curseurs pour ça », then « fait ce qu'il faut »): the card's own two settings, the pooch and the depth in profile. Auto follows the body
+   settings as before (belly fat « Légère »: a finger, « Visible »: two fingers; « Épais »: a quarter, « Fin »: a fifth shallower). A finger's
+   width came out about as asked on his renders, so the step below is half a finger. No setting for the back/front split: three
+   wordings left it unchanged (PROMPT-LOG). */
+var SD_TORSO_POOCH = { 1: "half a finger's", 2: "a finger's", 3: "two fingers'" };
+var SD_TORSO_DEEP = { 10: "a tenth", 20: "a fifth", 25: "a quarter", 33: "a third" };
+function sdTorsoPooch() {
+  var v = e.sdTorsoPooch;
+  if (v && "auto" !== v) return SD_TORSO_POOCH[v] ? +v : 0;
+  var f = sdFatOn("fatBelly");
+  return 1 === f ? 2 : 2 === f ? 3 : 0;
+}
+function sdTorsoDeep() {
+  var v = e.sdTorsoDeep;
+  if (v && "auto" !== v) return SD_TORSO_DEEP[v] ? +v : 0;
+  return "deep" === e.torsoDepth ? 25 : "shallow" === e.torsoDepth ? -20 : 0;
+}
 function sdGrowTorsoOn(t) {
   return (
     "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
     rq(t, function () {
       /* owner's eighth render, 2026-11-19 (belly fat « Visible », no pooch drawn): the pooch from « Légère » or « Visible »; with « Visible »
-         the abs are soft shapes under the fat, kept soft (PR #77 review) */
-      return [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 || !!SD_DEPTH[e.torsoDepth];
+         the abs are soft shapes under the fat, kept soft (PR #77 review). The card stays once one of its own settings is set, even to
+         none, so it can be set back */
+      return sdTorsoPooch() > 0 || 0 !== sdTorsoDeep() || "auto" !== (e.sdTorsoPooch || "auto") || "auto" !== (e.sdTorsoDeep || "auto");
     })
   );
 }
 function sdGrowTorsoPrompt() {
-  var a = [];
-  [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
+  var a = [],
+    po = sdTorsoPooch(),
+    dp = sdTorsoDeep();
+  po > 0 &&
     /* owner's render of this card, 2026-11-19 (v1.6.1-pre, « c déjà mieux »): the belly came out fullest at the navel, a round belly from
        under the ribs and not a lower-belly pooch: its fullest point and the line above it are now set */
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs in the side views, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + SD_TORSO_POOCH[po] + " width past the line of the upper abs in the side views, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + " whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
      than an absolute shape; the front width kept, so only the depth changes */
-  "deep" === e.torsoDepth &&
+  dp > 0 &&
     /* owner's render of this card, 2026-11-19: "the back line and the belly line both further out" added to the pooch, a belly far past a
        finger's width, and the hanging arm hides most of the back line in profile: the extra depth now goes mostly behind */
     /* owner's render of this card, 2026-11-19 (v1.6.1-pre): « mostly at the back » still put about two thirds of the extra waist depth in
        front (measured in profile); the front line is now held in place and "the waist nearly as deep as the chest" dropped */
-    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + ([1, 2].indexOf(sdFatOn("fatBelly")) >= 0 ? ", apart from the pooch" : "") + "; the front and back views keep their width");
-  "shallow" === e.torsoDepth &&
+    a.push("in the side views, the torso about " + SD_TORSO_DEEP[dp] + " deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + (po > 0 ? ", apart from the pooch" : "") + "; the front and back views keep their width");
+  dp < 0 &&
     a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
+  if (!a.length) return sdT("Choisis un bidon ou une épaisseur dans la carte pour obtenir ce prompt.", "Pick a pooch or a depth in the card to get this prompt.");
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
@@ -3809,6 +3831,9 @@ function sdIoDom() {
   d.bustWide = ["no", "yes", "close", "out", "fwd"];
   /* PR #76 review (Codex): "Basse" (lowset, PR #64) kept by an export and import */
   d.bustHigh = ["auto", "high", "vhigh", "lowset"];
+  /* the « Ventre et torse » card's own settings */
+  d.sdTorsoPooch = ["auto", "0", "1", "2", "3"];
+  d.sdTorsoDeep = ["auto", "0", "10", "20", "33"];
   [t2, t3, t4].forEach(function (tabs) {
     (tabs || []).forEach(function (tb) {
       (tb.items || []).forEach(function (it) {
@@ -8276,14 +8301,15 @@ function sdCardExtra(k) {
         (0, l.jsx)("p", {
           className: "text-muted-foreground",
           children: (function () {
-            var b = [1, 2].indexOf(sdFatOn("fatBelly")) >= 0,
-              d = !!SD_DEPTH[e.torsoDepth];
+            var b = sdTorsoPooch() > 0,
+              d = 0 !== sdTorsoDeep();
             return sdT(
               "Seedream dessine mal " + (b ? (d ? "ce petit bidon et cette épaisseur du torse" : "ce petit bidon sous le nombril") : "cette épaisseur du torse") + " à partir du texte seul, surtout sur un corps musclé. Une retouche de ta planche corps les ajoute.",
               "From the text alone, Seedream rarely draws " + (b ? (d ? "this small pooch and this torso depth" : "this small pooch below the navel") : "this torso depth") + ", above all on a muscular body. A retouch of your body sheet adds " + (b && d ? "them" : "it") + ".",
             );
           })(),
         }),
+        sdTorsoChips(t, g),
         (0, l.jsx)("ol", {
           className: "mt-2",
           style: { listStyle: "decimal", paddingLeft: "1.25rem", margin: 0 },
@@ -10284,6 +10310,36 @@ function sdFinOn(t) {
 function sdFinCopyMsg() {
   sdNewClear("card:fin");
   return sdT("Copié. Dans Seedream, ajoute ta planche " + sdFinWord(0) + " (image 1), puis compare le résultat avec elle.", "Copied. In Seedream, add your " + sdFinWord(1) + " sheet (image 1), then compare the result with it.");
+}
+/* the two settings of the « Ventre et torse » card (owner, 2026-11-19, « plusieurs curseurs »), chips as in the « Finition » card */
+function sdTorsoChips(t, g) {
+  var grp = function (k, lab, opts, hint) {
+    return (0, l.jsxs)("div", {
+      children: [
+        (0, l.jsx)("div", { className: "mb-2 font-semibold", children: lab }),
+        (0, l.jsx)(ab, { label: lab, value: t[k] || "auto", onChange: (v) => g(k, v), wrap: !0, options: opts }),
+        (0, l.jsx)("p", { className: "mt-1 text-muted-foreground", children: hint }),
+      ],
+    });
+  };
+  return (0, l.jsxs)("div", {
+    className: "mt-3 grid gap-3",
+    "data-sd-torso-chips": "",
+    children: [
+      grp(
+        "sdTorsoPooch",
+        "Bidon sous le nombril",
+        [["auto", "Auto"], ["0", "Aucun"], ["1", "Très léger"], ["2", "Léger"], ["3", "Marqué"]],
+        sdT("De profil, ce qu'il dépasse la ligne des abdos du haut : un demi-doigt, un doigt, deux doigts. Auto : suit « Graisse : ventre » (Légère : un doigt, Visible : deux).", "In profile, how far it passes the line of the upper abs: half a finger, a finger, two fingers. Auto: follows “Fat: belly” (Light: a finger, Visible: two)."),
+      ),
+      grp(
+        "sdTorsoDeep",
+        "Épaisseur de profil",
+        [["auto", "Auto"], ["0", "Aucune"], ["10", "+10 %"], ["20", "+20 %"], ["33", "+33 %"]],
+        sdT("Le torse plus épais du dos au ventre, vu de profil, par rapport à ta planche. Auto : suit « Épaisseur du torse (de profil) » (Épais : +25 %, Fin : −20 %).", "The torso deeper from back to front in profile, compared with your sheet. Auto: follows “Torso depth (in profile)” (Thick: +25%, Fine: −20%)."),
+      ),
+    ],
+  });
 }
 function sdFinPre(t, g) {
   return (0, l.jsxs)("div", {

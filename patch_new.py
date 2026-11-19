@@ -4654,7 +4654,7 @@ for _a, _b in [
           },
           hint: "La distance du dos au ventre, vue de profil (la largeur de face se règle dans « Cage thoracique »). Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.",
         },'''),
-    ('    ribcage: "auto",\n', '    ribcage: "auto",\n    torsoDepth: "auto",\n'),
+    ('    ribcage: "auto",\n', '    ribcage: "auto",\n    torsoDepth: "auto",\n    sdTorsoPooch: "auto",\n    sdTorsoDeep: "auto",\n'),
     ('''    ribcage: [
       ["auto", "Auto", ""],
       ["narrow", "Étroite", ""],
