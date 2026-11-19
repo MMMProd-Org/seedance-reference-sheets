@@ -813,6 +813,7 @@ with sync_playwright() as p:
             assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("a quarter deeper" in torso[0]) == ("deep" in state), (state, torso)
             assert ("two fingers'" in torso[0]) == ("fatBelly: 2" in state), (state, torso)
             assert ("upper abs stay sharp" in torso[0]) == ("fatBelly: 1" in state), (state, torso)
+            assert "Every muscle keeps exactly its size and definition" in torso[0] and "belly line both further out" not in torso[0], (state, torso)
         tc.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it

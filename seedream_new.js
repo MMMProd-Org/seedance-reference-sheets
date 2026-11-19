@@ -3717,13 +3717,17 @@ function sdGrowTorsoPrompt() {
   /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
      than an absolute shape; the front width kept, so only the depth changes */
   "deep" === e.torsoDepth &&
-    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1: the ribcage, the waist and the lower back all thicker, the back line and the belly line both further out, the waist nearly as deep as the chest; the front and back views keep their width");
+    /* owner's render of this card, 2026-11-19: "the back line and the belly line both further out" added to the pooch, a belly far past a
+       finger's width, and the hanging arm hides most of the back line in profile: the extra depth now goes mostly behind */
+    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1, the extra depth mostly at the back: the ribcage and the lower back fuller behind, the back line further out above and below the hanging arm, the chest and the upper abs forward by only a little, the waist nearly as deep as the chest; the front and back views keep their width");
   "shallow" === e.torsoDepth &&
     a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
     " The result stays a believable real body: natural flesh that settles with gravity like the rest of the body. The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    /* owner's render of this card, 2026-11-19: the whole body came out softer, shoulders, arms and back lost their definition */
+    " Every muscle keeps exactly its size and definition from image 1: the shoulders, arms, back and upper abs as large and as sharp as they are; no other part gains fat." +
     " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +
     "the upper abs, the bust, the shoulders and arms, the hips, the glutes, the legs, the outfit (every garment exactly as in image 1, with the same cut and coverage, simply following the new shape), the light, the backdrop, the framing, the pose and the panel layout. No text or watermark."
   );
