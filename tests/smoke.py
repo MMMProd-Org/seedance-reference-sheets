@@ -819,8 +819,8 @@ with sync_playwright() as p:
             light, _ = side_body(model, "fat: 1, fatLower: 1, defShoulders: 'clear', defBack: 'clear'")
             heavy, _ = side_body(model, "fat: 1, fatLower: 3, defShoulders: 'clear', defBack: 'clear'")
             lead = next(ln for ln in light.split("\n") if "deliberately imperfect" in ln)
-            assert ": soft hips, thighs" in lead and "heavy" not in lead, (model, lead)
-            assert ": soft, heavy hips, thighs" in heavy, (model, heavy)
+            assert ": soft hips and thighs" in lead and "heavy" not in lead, (model, lead)
+            assert ": soft, heavy hips and thighs" in heavy, (model, heavy)
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the
