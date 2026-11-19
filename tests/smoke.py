@@ -768,6 +768,20 @@ with sync_playwright() as p:
         assert "Sides of the torso" in none_sides and "No visible muscle definition." not in none_sides, model
         if model == "Seedream 5.0":
             assert "No visible muscle definition." in none, "the sentence the sides replace is still written without them"
+        # PR #75 review: the line comes after the abdomen's; "Ligne centrale" loses its own "faint lines at the sides" to the side
+        # lines; a part the reference outfit covers is not asked for (the one-piece covers the torso but the serratus, the top with
+        # bike shorts the lower belly; the GPT shorts leave it bare)
+        assert sides.index("segments") < sides.index("Sides of the torso"), (model, sides)
+        mid, _ = side_body(model, "fat: 1, absStyle: 'line', " + SIDES_SET)
+        assert "vertical groove down the middle" in mid and "faint lines at the sides" not in mid and "outer edge of the abs" in mid, (model, mid)
+        piece, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'onepiece', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", piece)
+        assert line and "serratus" in line.group(0) and not any(w in line.group(0) for w in ("V-line", "outer edge", "obliques")), (model, piece)
+        shorts, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'sport', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", shorts)
+        assert line and "outer edge of the abs" in line.group(0) and ("V-line" in line.group(0)) == (model == "GPT Image 2.5"), (model, shorts)
+        own, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: false, refCover: 'onepiece', " + SIDES_SET)
+        assert "clear V-line" in own, (model, "the user's own outfit may bare it")
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the

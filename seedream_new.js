@@ -5419,20 +5419,24 @@ function sdAbsSidesOk() {
     sdFatOn("fatFlanks") < 2
   );
 }
+/* PR #75 review: a reference outfit that covers a part never asks for it (the fitted top with bike shorts covers the lower belly; the
+   one-piece the whole torso but the sides below the armpits); an outfit of the user's own may bare it, so it is said */
+var SD_ABS_SIDES_HID = { sport: ["vLine"], fitted: ["vLine"], onepiece: ["absSides", "obliques", "vLine"] };
+function sdAbsSideOn(k) {
+  return sdAbsSidesOk() && !!SD_ABS_SIDES[k][e[k]] && (SD_ABS_SIDES_HID[nv() ? sdShownCover(e) : ""] || []).indexOf(k) < 0;
+}
 function sdAbsSides() {
-  return sdAbsSidesOk()
-    ? ["absSides", "obliques", "vLine", "serratus"]
-        .map(function (k) {
-          return SD_ABS_SIDES[k][e[k]] || "";
-        })
-        .filter(Boolean)
-        .join("; ")
-    : "";
+  return ["absSides", "obliques", "vLine", "serratus"]
+    .filter(sdAbsSideOn)
+    .map(function (k) {
+      return SD_ABS_SIDES[k][e[k]];
+    })
+    .join("; ");
 }
 /* GPT's own abdomen texts already name faint side lines ("Ligne centrale") or the side grooves ("4 carreaux"): with "Lignes latérales des
    abdos" set, the setting says them, once */
 function sdAbsSideTrim(s) {
-  return "string" == typeof s && SD_ABS_SIDES.absSides[e.absSides] && sdAbsSidesOk()
+  return "string" == typeof s && sdAbsSideOn("absSides")
     ? s
         .replace(", and faint lines at the sides", "")
         .replace(" and a curved groove runs down each side from the lower ribs, at the outer edges of the abdominal muscles", "")
