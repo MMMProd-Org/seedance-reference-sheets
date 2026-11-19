@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: the pooch by a free retouch of the sheet
+
+**WORKS**, a little too much (owner, 2026-11-19: « ça marche mais un peu trop sur le profil mais on y est »). « Retouche libre » on his best sheet with `in all four views, just below the navel, a small, soft, rounded pooch of lower-belly fat that pushes the lower belly slightly forward in profile, as on a fit woman whose upper abs stay sharp`: a clear pooch in both profiles, the upper abs, the arms and the rest kept. In the profiles it bulges more than his photo. **TO TEST**: the same retouch on that result, `in the side views, the lower-belly pooch about half as deep, the front view unchanged`.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: sixth and seventh renders, the pooch, « 4 carreaux + ligne centrale »
 
 **DOES NOT WORK** (owner, 2026-11-19: « toujours pas de petit bidon »; belly fat « Visible » tried too: « le ventre ne bouge plus mis à part les muscles qui disparaissent », the bust larger and the glutes with cellulite). Three texts (« Légère », « Légère » in the lead, « Visible ») drew no lower-belly pooch on a muscular body. **RULE**: no more words for it; the owner's own lesson (Seedream enlarges in an edit of a sheet already made what a description does not draw) points to the free retouch of the sheet. **RULE**: a new abs style « 4 carreaux + ligne centrale » (« cette fille a aussi une ligne centrale et 4 carreaux au-dessus mais le html ne permet pas de le faire »): `four segments above the navel, split by a vertical groove down the middle that runs on below the navel`, both engines. **TO TEST**.
@@ -176,7 +180,7 @@ Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO 
 
 ## 2026-10-19 · Seedream 5.0 · Person, body reference · README example
 
-**LEAD.** The owner supplied [this four-view body sheet](realistic-body-seedream-5.jpg) and asked to highlight its body realism, identifying Seedream 5.0 as the image model. The image shows skin texture, natural folds and variations in tone; it is preserved unchanged for the README. Settings, the source prompt and the app release used were not provided; there is no before/after prompt comparison. This records one owner-selected example, not a general validation of every body setting or the current release. No prompt is changed.
+**LEAD.** An owner-selected four-view Seedream body sheet kept for the README; no prompt change. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-19--seedream-50--person-body-reference--readme-example)
 
 ## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · v114b integration
 
