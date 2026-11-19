@@ -839,6 +839,10 @@ with sync_playwright() as p:
         ro.set_viewport_size({"width": w, "height": 900})
         ro.wait_for_timeout(250)
     assert ro.evaluate("window.sdRoErrors") == [], ro.evaluate("window.sdRoErrors")
+    # PR #79 review (Sourcery): the measure still runs, so the page keeps room for the tall bar
+    room = ro.evaluate("""() => { const bar = document.getElementById('sd-mobile-copy-bar'), p = bar.parentElement;
+      return [bar.getBoundingClientRect().height, parseFloat(p.style.getPropertyValue('--sd-copy-bar-height')), parseFloat(getComputedStyle(p).paddingBottom)]; }""")
+    assert abs(room[0] - room[1]) < 1 and room[2] >= room[0] + 16 - 1, room
     ro.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
