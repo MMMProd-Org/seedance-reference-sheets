@@ -3713,13 +3713,17 @@ function sdGrowTorsoOn(t) {
 function sdGrowTorsoPrompt() {
   var a = [];
   [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+    /* owner's render of this card, 2026-11-19 (v1.6.1-pre, « c déjà mieux »): the belly came out fullest at the navel, a round belly from
+       under the ribs and not a lower-belly pooch: its fullest point and the line above it are now set */
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs in the side views, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
      than an absolute shape; the front width kept, so only the depth changes */
   "deep" === e.torsoDepth &&
     /* owner's render of this card, 2026-11-19: "the back line and the belly line both further out" added to the pooch, a belly far past a
        finger's width, and the hanging arm hides most of the back line in profile: the extra depth now goes mostly behind */
-    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1, the extra depth mostly at the back: the ribcage and the lower back fuller behind, the back line further out above and below the hanging arm, the chest and the upper abs forward by only a little, the waist nearly as deep as the chest; the front and back views keep their width");
+    /* owner's render of this card, 2026-11-19 (v1.6.1-pre): « mostly at the back » still put about two thirds of the extra waist depth in
+       front (measured in profile); the front line is now held in place and "the waist nearly as deep as the chest" dropped */
+    a.push("in the side views, the torso about a quarter deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + ([1, 2].indexOf(sdFatOn("fatBelly")) >= 0 ? ", apart from the pooch" : "") + "; the front and back views keep their width");
   "shallow" === e.torsoDepth &&
     a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
   return (
