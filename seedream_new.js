@@ -3704,14 +3704,15 @@ function sdGrowTorsoOn(t) {
   return (
     "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
     rq(t, function () {
-      return 1 === sdFatOn("fatBelly") || !!SD_DEPTH[e.torsoDepth];
+      /* owner's eighth render, 2026-11-19 (belly fat « Visible », no pooch drawn): the pooch from « Légère » or « Visible » */
+      return [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 || !!SD_DEPTH[e.torsoDepth];
     })
   );
 }
 function sdGrowTorsoPrompt() {
   var a = [];
-  1 === sdFatOn("fatBelly") &&
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about a finger's width past the line of the upper abs, as on a fit woman whose upper abs stay sharp; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+  [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs, as on a fit woman whose upper abs stay sharp; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   "deep" === e.torsoDepth && a.push("in the side views, a deeper torso: the ribcage and the waist thicker from back to front, the waist nearly as deep as the chest");
   "shallow" === e.torsoDepth && a.push("in the side views, a shallower torso: the ribcage and the waist thinner from back to front");
   return (
@@ -8257,7 +8258,7 @@ function sdCardExtra(k) {
         (0, l.jsx)("p", {
           className: "text-muted-foreground",
           children: (function () {
-            var b = 1 === sdFatOn("fatBelly"),
+            var b = [1, 2].indexOf(sdFatOn("fatBelly")) >= 0,
               d = !!SD_DEPTH[e.torsoDepth];
             return sdT(
               "Seedream dessine mal " + (b ? (d ? "ce petit bidon et cette épaisseur du torse" : "ce petit bidon sous le nombril") : "cette épaisseur du torse") + " à partir du texte seul, surtout sur un corps musclé. Une retouche de ta planche corps les ajoute.",

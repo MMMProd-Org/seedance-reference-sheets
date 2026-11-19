@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: eighth render (v1.6.0), the card's pooch from « Visible » too
+
+**LEAD** (owner's eighth render, 2026-11-19, v1.6.0: belly fat « Visible », « 4 carreaux + ligne centrale », « Pleins et lisses », « Épais », deltoids at their top, no retouche). Muscles large and smooth, arms kept their volume, the four upper abs and the centre line soft under the fat, the trunk deeper in profile than before (one render); the lower back smooth. The pooch barely there; the deltoids larger than his reference photo, as `the widest part of the upper body` asks; the faint line above the tanga and the crotch at about 44% for 48% unchanged. **RULE**: the « Ventre et torse » card also adds the pooch with belly fat « Visible », `about two fingers' width` past the upper abs (« Légère »: one). **TO TEST**.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the « Ventre et torse » retouche card
 
 **RULE** (owner, 2026-11-19: « il faut adapter le html pour savoir ce qui doit être fait après et ça doit être ui friendly »). As cards 2b to 2d for what Seedream draws from an edit and not from a description, a card « Retouche : ventre et torse » (button « Ventre ») shows with belly fat « Légère » or a torso depth set: its intro says why, then the order of the steps; its prompt edits the torso only, the pooch at about half the depth of the first retouche that worked (`brings the lower belly only slightly forward in the side views, about a finger's width past the line of the upper abs`), the depth as the setting says, everything else kept. The two settings' help names the card. **TO TEST** on Seedream 5.0.

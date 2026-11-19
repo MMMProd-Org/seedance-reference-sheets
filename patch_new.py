@@ -4676,7 +4676,7 @@ for _a, _b in [
 # owner, 2026-11-19 (« il faut adapter le html pour savoir ce qui doit être fait après »): the two settings say where their retouche is
 for _a, _b in [
     ('''{ t: "bins", k: "fatBelly", l: "Graisse : ventre", hint: "Gras sous la peau de cette zone, en plus des muscles : dès « Visible », les muscles apparents de la zone se lisent en formes douces sous le gras.''',
-     '''{ t: "bins", k: "fatBelly", l: "Graisse : ventre", hint: "Gras sous la peau de cette zone, en plus des muscles : dès « Visible », les muscles apparents de la zone se lisent en formes douces sous le gras. Légère : un petit bidon sous le nombril ; dans Seedream, il vient surtout de la retouche « Ventre et torse » de la planche corps.'''),
+     '''{ t: "bins", k: "fatBelly", l: "Graisse : ventre", hint: "Gras sous la peau de cette zone, en plus des muscles : dès « Visible », les muscles apparents de la zone se lisent en formes douces sous le gras. Légère ou Visible : un petit bidon sous le nombril ; dans Seedream, il vient surtout de la retouche « Ventre et torse » de la planche corps.'''),
     ('''Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.",''',
      '''Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Dans Seedream, elle vient surtout de la retouche « Ventre et torse » de la planche corps. Auto : rien n'est dit.",'''),
 ]:
