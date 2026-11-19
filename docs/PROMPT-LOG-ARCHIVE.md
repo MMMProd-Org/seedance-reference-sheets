@@ -1,5 +1,23 @@
 # Prompt log archive
 
+## 2026-10-28 · Blender agent and Seedream 5.0 · Person, "Agent 3D": the prompt within 10,000 characters
+
+**RULE.** Owner: « attention pour le prompt 3D Cannot exceed 10000 characters » (the prompt box of the image tool he pastes it into), then « je veux un prompt à 10 000 caractères ». Before: 12,238 characters in French with the four nipple and areola choices on Auto (v158 was already over), 17,096 with Saillants, Moyennes and Bombée, about 17,400 at most. Now at most about 9,760 characters (9,785 with the tuberous shape of PR #64), French being the longer language, on a grid of 112 settings and on the longest settings found (androgynous, slender, very high, outward, asymmetric, relaxed skin, fitted top, the four choices set); `tests/smoke.py` checks length plus one per line break ≤ 10,000 on the longest settings, in both languages. How:
+- only the method in use: method B no longer carries method A's ratios, the Zhong data table and its limits; method A no longer carries method B's fold landmarks and grades;
+- only the requested grade's condition, instead of the five grades; the base shape is reported by its z values, not by a grade; a base already lower is one whose nipple or lower breast is below the target;
+- the inputs without their lists of allowed values (the app writes them), and the method rule reduced to `Méthode : B`;
+- the published data as author-year citations next to the target they support (Lee et al. 2008, Sanuki et al. 2009, Demiröz et al. 2021, Park et al. 1999, Denoël et al. 2002, Shahlini 2014; Zhong et al. with its journal) instead of the data tables; the full references stay in the code comments and in this log;
+- the nipple and areola targets, landmarks and scale in one paragraph, their tolerances in V11;
+- the FORBIDDEN section dropped: each of its items is a target, a constraint or the definition of done;
+- dropped as not executed: Brown 2012 and Coltman 2018 (a larger bust sits lower at rest), the areola growing with age and pregnancies (Lee), the cohort details behind the P/W threshold;
+- shorter wording everywhere, the "Bombée" image-model phrase included: `aréoles bombées en dôme : de profil, chaque aréole dépasse nettement de la courbe du sein en un petit dôme, le mamelon au sommet, un pli net à sa base ; de face, l'aréole paraît gonflée, cernée par l'ombre de ce pli`.
+
+Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO TEST** in Blender (no run yet) and as a Seedream 5.0 edit prompt.
+
+## 2026-10-28 · Blender agent · Person, "Agent 3D": areola relief and tubercles
+
+**RULE.** Owner's request (areolas "disgracieuses", and "analyser la forme des seins ... ça peut amener à des choses supplémentaires"): two more choices in the "Agent 3D" panel, Auto by default. "Relief de l'aréole": Plate (`|h_ar| ≤ 0,5 mm`, and no step or ridge on 8 radial sections across its edge), En plateau (`h_ar > 0`, no groove at the edge: the "elevated plateau without constriction" type, 60.2% of breasts in Sanuki et al. 2009), Bombée (`h_ar > 0`, a groove at the base: the areolar herniation of the tuberous breast, Grolleau as described by Denoël et al., Rev Med Liège 2002). "Tubercules de Montgomery": Visibles, small round bumps on the areola. Geometry only, in the `mamelons` shape key with the nipple, measured by `h_ar` against the breast skin just around the areola, checked in V11; a nipple left on Auto keeps its vertices, checked too. No published height of either relief and no reliable count of the tubercles was read: free, `À VALIDER`. With all four nipple and areola choices on Auto the agent prompt is unchanged; once one is set, the inputs list all four. **TO TEST** in Blender.
+
 ## 2026-10-28 · GPT Image 2.5 / Seedream 5.0 · Person, body sheet: tuberous bust, low placement, bust veins
 
 **RULE.** Owner's request (study real bodies "pour avoir un logiciel qui est capable de faire tout le monde"): three bust options, adults, both engines; default prompts unchanged (golden: 31 prompts match). Settings: Person, body sheet, "Forme de la poitrine" and "Veines du buste". Prompt lines before: none (new choices); each line below is added only when its choice is set, the same words in both engines, GPT's tuberous one as a bust line (`a tuberous bust line: a narrow, constricted base, the lower half short and underdeveloped with a high, tight crease below it, each side looking tubular, projecting forward and pointing slightly down`).
