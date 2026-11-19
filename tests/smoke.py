@@ -879,7 +879,7 @@ with sync_playwright() as p:
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
-    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset', sdTorsoPooch: '1', sdTorsoDeep: '33'}))")
     io.reload()
     with io.expect_download() as dl:
         io.get_by_role("button", name=re.compile(r"Export")).first.click()
@@ -890,6 +890,8 @@ with sync_playwright() as p:
     # the import always asks before replacing the current settings: wait for that question, then for the saved state
     io.get_by_role("button", name="Replace", exact=True).click()
     io.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').bustHigh === 'lowset'", timeout=5000)
+    # and the two settings of the « Ventre et torse » card
+    assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
