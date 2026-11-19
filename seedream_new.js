@@ -3425,8 +3425,12 @@ function sdLegMus() {
 }
 function sdLegLead() {
   var l = sdLegMus(),
-    g = "person" === e.mode && !sdChild(e) && +e.gluteMus >= 3;
-  return l || g ? ", with strong, muscular " + (l && g ? "legs and glutes" : l ? "legs" : "glutes") : "";
+    g = "person" === e.mode && !sdChild(e) && +e.gluteMus >= 3,
+    /* owner's render, 2026-11-19 (« j'ai mis aussi bras développés et pourtant ils sont fins »): "Développés" and "Très développés" arms
+       were said only in the muscle line, after the build ("Average build"); said here too, where Seedream weights most */
+    a = "person" === e.mode && !sdChild(e) && ["big", "huge"].indexOf(sdArmTop()) >= 0,
+    w = [l && "legs", a && "arms", g && "glutes"].filter(Boolean);
+  return w.length ? ", with strong, muscular " + sdList(w) : "";
 }
 /* the shape names the ankles (runner, shapely), "Mollets" left on Auto: the drawn ankles go */
 function sdLegAnkles() {
@@ -5131,6 +5135,39 @@ function sdFatOn(k) {
 function sdArmFat() {
   return Math.max(sdFatOn("fatArms"), sdFatOn("fatBiceps"));
 }
+/* owner, 2026-11-19 (« j'arrive pas à augmenter la taille du biceps ... on devrait séparer les deux », then his photo of a fit woman:
+   « regarde la taille de ces triceps ils sont énormes, on devrait pouvoir choisir indépendamment les triceps »): "Triceps", "Auto" by
+   default (the triceps follow "Biceps", as "Biceps et triceps" did: prompts unchanged); set to another size, each muscle is said apart */
+var SD_ARM_LV = ["slim", "medium", "big", "huge"];
+function sdTri() {
+  return "person" === e.mode && !sdChild(e) && SD_ARM_LV.indexOf(e.triceps) >= 0 ? e.triceps : "";
+}
+function sdTriSplit() {
+  return !!sdTri() && sdTri() !== e.biceps;
+}
+/* the larger of the two sizes set, for every rule that asked whether the arms were set or big ("auto" when neither is set) */
+function sdArmTop() {
+  var b = e.biceps,
+    t = sdTri();
+  return !t ? b : SD_ARM_LV.indexOf(b) < 0 || SD_ARM_LV.indexOf(t) > SD_ARM_LV.indexOf(b) ? t : b;
+}
+var SD_BIS = { slim: "slim biceps", medium: "moderate biceps", big: "well-developed, rounded biceps", huge: "very large biceps" };
+var SD_TRIS = {
+  slim: ["slim triceps", ""],
+  medium: ["moderate triceps", ""],
+  big: ["well-developed triceps", " that fill out the back of the upper arms"],
+  huge: ["very large triceps", ", a thick horseshoe of muscle filling the back of the upper arms, clearly visible in the side and back views"],
+};
+function sdArmSplit() {
+  var f = sdArmFat() >= 2 ? " under the arm fat" : "",
+    t = SD_TRIS[sdTri()];
+  return [SD_BIS[e.biceps] ? SD_BIS[e.biceps] + f : "", t[0] + f + t[1]].filter(Boolean);
+}
+/* owner's render, 2026-11-19: "soft, heavy hips, thighs and upper arms" from hip and thigh fat at "Légère" next to "slim thighs", rendered
+   neither; "heavy" only for a "Forte" build or fat from "Marquée" up in a zone of that list */
+function sdHeavyFat() {
+  return +e.fat >= 3 || ("m" !== e.pres && +e.fatLower >= 3) || sdArmFat() >= 3 || sdFatOn("fatBelly") >= 3 || ("m" !== e.pres && "marked" === e.saddle);
+}
 /* fat on the torso (belly, flanks or back): no ribs showing, no "lean" build word */
 function sdFatTorso() {
   /* v156: a man's chest fat too */
@@ -5165,7 +5202,7 @@ function sdHourglass() {
   return sdFlanksLow() && +e.hips >= 3 && sdCi(e.chest) >= 4 && +e.fat <= 2;
 }
 var SD_CELL_FRONT = {
-  "light cellulite dimpling on the backs of the thighs and just under the glutes, faint but visible in a full-body view": "light cellulite dimpling on the front and back of the upper thighs and just under the glutes, faint but visible in a full-body view from the front as well as from behind",
+  "light cellulite on the backs of the thighs and just under the glutes: a few small, shallow dimples, clearly visible in a full-body view": "light cellulite on the front and back of the upper thighs and just under the glutes: a few small, shallow dimples, clearly visible in a full-body view from the front as well as from behind",
   "visible cellulite dimpling on the thighs and the lower glutes where the skin is uncovered": "visible cellulite dimpling on the front and back of the thighs and on the lower glutes, in the front view as well as from behind, where the skin is uncovered",
   "marked cellulite with clear dimpling on the thighs, hips and lower glutes where the skin is uncovered": "marked cellulite with clear dimpling on the front and back of the thighs, the hips and the lower glutes, in the front view as well as from behind, where the skin is uncovered",
 };
@@ -5387,7 +5424,7 @@ function sdAbs() {
             clear: ", with clear shadow lines",
             strong: ", sharply outlined with deep shadow lines",
           }[e.defAbs] || ", with clear shadow lines";
-  return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
+  return m ? "Abdomen: " + sdBellyLow(m) + (seg ? lv : "") + "." : "";
 }
 /* owner, 2026-11-19 (a photo of a lean, fit woman: « ajoute les obliques, lignes latérales, V etc etc »): the outer edges of the abs, the
    obliques, the V-line and the serratus, each "Auto" by default (nothing said, prompts unchanged), both engines, in a line of their own after
@@ -5402,6 +5439,8 @@ var SD_ABS_SIDES = {
   obliques: {
     visible: "the obliques softly visible at the sides of the waist, between the lower ribs and the hip bones",
     marked: "defined obliques at the sides of the waist, their lower edge drawn just above each hip bone",
+    /* owner, 2026-11-19 (his photo of a fit woman: « on devrait pouvoir augmenter la taille des muscles obliques ... très musclés ») */
+    strong: "thick, very muscular obliques at the sides of the waist, each a rounded ridge of muscle bulging just above the hip bone, clearly visible in the front and side views",
   },
   vLine: {
     light: "a shallow V-line running from each hip bone diagonally down toward the lower belly",
@@ -5409,6 +5448,8 @@ var SD_ABS_SIDES = {
   },
   serratus: {
     visible: "small finger-like ridges of the serratus muscles on the side of the ribcage, just below the armpit",
+    /* owner's render, 2026-11-19 (« pareil pour dentelé quand on met aucun on en voit quand même »): "Aucun" in positive words */
+    none: "the sides of the ribcage below the armpits smooth and evenly covered, one soft surface from the armpit down to the waist",
   },
 };
 function sdAbsSidesOk() {
@@ -5438,7 +5479,19 @@ function sdAbsSides() {
 }
 /* GPT's own abdomen texts already name faint side lines ("Ligne centrale") or the side grooves ("4 carreaux"): with "Lignes latérales des
    abdos" set, the setting says them, once */
+/* owner, 2026-11-19 (his photo: « le haut du ventre est super musclé avec 4 carreaux ... juste en dessous du nombril on voit un petit
+   renflement de graisse »; belly fat at "Légère" drawn as a crease, « une espèce de marque en bas du ventre ... qui ressemble à de la peau
+   flasque »): with belly fat at "Légère", the abs keep their upper segments and no longer say the lower belly flat (both engines) */
+function sdBellyLow(s) {
+  return "string" == typeof s && "person" === e.mode && !sdChild(e) && 1 === sdFatOn("fatBelly")
+    ? s
+        .replace("four segments above the navel, the lower belly smooth and flat", "four segments above the navel, the lower belly softly rounded below the navel")
+        .replace("the lower abdomen smooth and flat below them", "the lower abdomen softly rounded below them")
+        .replace("a flat stomach with a single vertical groove", "a firm upper stomach with a single vertical groove")
+    : s;
+}
 function sdAbsSideTrim(s) {
+  s = sdBellyLow(s);
   return "string" == typeof s && sdAbsSideOn("absSides")
     ? s
         .replace(", and faint lines at the sides", "")
@@ -5463,7 +5516,7 @@ function sdSoft() {
 }
 /* Musculature at "Athlétique" or less, no biceps or trapezius at "Développés" or "Massifs". */
 function sdNoBulk() {
-  return e.muscle <= 2 && ["big", "huge"].indexOf(e.biceps) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
+  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
 }
 /* v131 (user: at the top of "Épaules" with a strong build, the shoulders and the back hardly change, the deltoids should be very developed;
    and: pectorals for women, for a muscular woman). Measured on the user's two Seedream body sheets (front view, settings "Épaules : Très
@@ -5666,14 +5719,16 @@ function sdMus() {
         ? z("defAbs", { clear: "the abs only as soft shapes under the belly fat", strong: "the upper abs as soft shapes under the belly fat" })
         : z("defAbs", SD_ABS_DEF),
     );
-  "auto" !== e.biceps &&
+  sdTriSplit()
+    ? (p = p.concat(sdArmSplit()))
+    : "auto" !== e.biceps &&
     p.push(
       (sdArmFat() >= 2
-        ? { slim: "slim biceps and triceps under the arm fat", medium: "moderate biceps and triceps under the arm fat", big: "rounded biceps and triceps under the arm fat", huge: "very large biceps and triceps under the arm fat" }
-        : { slim: "slim upper arms", medium: "moderate biceps and triceps", big: "rounded biceps and triceps", huge: "very large biceps and triceps" })[e.biceps] || "",
+        ? { slim: "slim biceps and triceps under the arm fat", medium: "moderate biceps and triceps under the arm fat", big: "well-developed biceps and triceps under the arm fat", huge: "very large biceps and triceps under the arm fat" }
+        : { slim: "slim upper arms", medium: "moderate biceps and triceps", big: "well-developed, rounded biceps and triceps", huge: "very large biceps and triceps" })[e.biceps] || "",
     );
   /* v130: one soft-shape clause for the arms when their size is set */
-  sdArmFat() >= 2 && "auto" !== e.biceps && (p = p.filter(function (x) {
+  sdArmFat() >= 2 && "auto" !== sdArmTop() && (p = p.filter(function (x) {
     return x.indexOf("biceps and triceps as soft shapes under the arm fat") < 0;
   }));
   "auto" !== e.traps &&
@@ -5690,7 +5745,7 @@ function sdMus() {
   p.length
     ? (x.push("Muscles: " + p.join(", ") + "."), nz.length && x.push("No visible muscle definition on the " + sdList(nz) + "."))
     : "auto" === e.absStyle &&
-      "auto" === e.biceps &&
+      "auto" === sdArmTop() &&
       "auto" === e.traps &&
       !sdAbsSides() &&
       x.push("No visible muscle definition.");
@@ -5701,7 +5756,7 @@ function sdMus() {
   /* v130: the fat line now comes before the muscles in the Seedream body (sdBody); GPT keeps it in "Muscles and details" */
   ("strong" === r_() || "strong" === rP("defShoulders")) &&
     e.muscle <= 2 &&
-    ["big", "huge"].indexOf(e.biceps) < 0 &&
+    ["big", "huge"].indexOf(sdArmTop()) < 0 &&
     ["big", "huge"].indexOf(sdMusLv("delts")) < 0 &&
     x.push("Arm and shoulder muscles stay average-sized.");
   /* v128 review: no veins on upper arms carrying fat from "Visible" up */
@@ -5899,6 +5954,8 @@ function sdDetailMap(a) {
     ("a marked curve in the lower back" === x || "a fairly straight lower back" === x) && (y = [lb || y].concat(xb).join(", "));
     /* v157 review: "Extrême" pushes the glutes back and up, never with flat, low or drooping glutes */
     "hyper" === e.lordosis && (["flat", "low"].indexOf(e.glutesShape) >= 0 || sdGlDefOn("sag")) && (y = y.replace(", the glutes pushed back and up", "").replace("hollowing in sharply above them", "hollowing in sharply above the glutes"));
+    /* owner's render, 2026-11-19: the slit navel drawn round; said by its proportions (last, after every swap keyed on the short text) */
+    "a vertical, slit-like navel" === y && (y = "a vertical, slit-like navel, a narrow opening clearly taller than wide");
     return y;
   });
   /* v157: the calves set are said with the legs (sdLegShape), the drawn ones go */
@@ -5974,7 +6031,12 @@ function sdHipPos() {
   return sdGlDefOn("dips") ? hp + ", just below the " + (0 === sdGlSide() ? "clear hollow" : "shallow dip") + " on each side" + tp : rM() || sdGlDefOn("square") || sdHipFlare() ? hp + tp : hp + ", the outline sweeping in one curve from the waist down to the upper thighs" + tp;
 }
 /* v141 (user's render: "les fossettes sont un peu trop marquées, c'est bizarre"): faint and shallow */
-var SD_DIMPLES = { visible: "two faint, shallow dimples in the lower back, just above the glutes, one on each side of the spine" };
+var SD_DIMPLES = {
+  visible: "two faint, shallow dimples in the lower back, just above the glutes, one on each side of the spine",
+  /* owner's render, 2026-11-19 ("quand on met aucune fossette au dos il y en a quand même"): "Aucune" said in positive words, without the
+     word dimple (2026-10-11: a negated word is still a word); the old "Aucune" said nothing, it is now "Auto" */
+  smooth: "the lower back smooth and evenly filled just above the glutes, on each side of the spine",
+};
 var SD_WAISTPOS = {
   high: "the waist set high, its narrowest point just below the ribs",
   low: "the waist set low, its narrowest point close to the top of the hips",
@@ -8446,7 +8508,7 @@ function sdBody() {
         ", deliberately imperfect" +
         (e.muscle <= 2 ? ", not a fitness model" : "") +
         (sf.length && hd.length
-          ? ": soft, heavy " + sdList(sf) + ", with " + (1 === hd.length && "back" === hd[0] ? "a " : "") + "sharply defined " + sdList(hd) + "."
+          ? ": soft" + (sdHeavyFat() || sf.indexOf("bust") >= 0 || sf.indexOf("glutes") >= 0 ? ", heavy " : " ") + sdList(sf) + ", with " + (1 === hd.length && "back" === hd[0] ? "a " : "") + "sharply defined " + sdList(hd) + "."
           : ", not a 3D character.")
       : "";
   s += "\n" + t6(rS()) + ", " + e.height + " cm, about " + sdKg() + " kg" + rb() + sdLegLead() + "." + ni + " " + sdLegs(hl) + "\n\u0001";
@@ -8524,7 +8586,7 @@ function sdBody() {
     (e.fat <= 1 ? ("m" !== e.pres && e.chest >= 2 ? "Apart from the bust, a " + (sdMusBig() ? "lean " : "slim ") : sdMusBig() ? "A lean " : "A slim ") + (sdCurvy() ? (sdFatWaist() ? "upper body" : "upper body and waist") : "frame") + ": " + (function (a, l) {
       return a && l ? "slender arms and legs, " : a ? "slender arms, " : l ? "slender legs, " : "";
     })(
-      ["big", "huge"].indexOf(e.biceps) < 0 && ("auto" !== e.biceps || e.muscle <= 2) && sdArmFat() < 2,
+      ["big", "huge"].indexOf(sdArmTop()) < 0 && ("auto" !== sdArmTop() || e.muscle <= 2) && sdArmFat() < 2,
       /* v139 review: never "slender legs" next to fat on the front of the thighs from "Visible" up */
       !sdCurvy() && e.thighs <= 2 && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && e.muscle <= 2 && sdFatOn("fatThighs") < 2 && sdFatOn("fatKnees") < 2 &&
         /* v157 review: never "slender legs" next to sprinter's legs, muscular front thighs or muscular calves */

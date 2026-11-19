@@ -26,6 +26,8 @@ SAME_IN_BOTH = {
     "Cyberpunk", "Docks", "Festive", "Jungle", "Place", "Renaissance", "Tunnel", "Village",
     # sides of the torso (2026-11-19)
     "Obliques",
+    "Biceps",
+    "Triceps",
 }
 NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
@@ -788,6 +790,37 @@ with sync_playwright() as p:
             assert "tapered runner's legs" in short and not re.search(r"long, tapered|elongated", short), (model, legs, fat, short)
         avg, _ = side_body(model, "legs: 2, fat: 1, legShape: 'runner'")
         assert "long, tapered runner's legs: lean, elongated thigh muscles" in avg, (model, avg)
+    assert not errors, errors
+
+    # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
+    # at "Légère" a small smooth bulge below the navel, the upper abs kept; "Très marqués" obliques; "Triceps" apart from "Biceps" (Auto
+    # follows it, prompts unchanged); "heavy" only from "Marquée"; a light cellulite visible in a full-body view
+    SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")
+        auto_back, _ = side_body(model, "fat: 1, backDimples: 'none'")
+        assert SMOOTH_BACK in smooth and SMOOTH_BACK not in auto_back and "dimples in the lower back" not in smooth, model
+        ribs, _ = side_body(model, "fat: 1, absStyle: 'four', serratus: 'none', obliques: 'strong'")
+        line = re.search(r"Sides of the torso: [^.\n]*", ribs)
+        assert line and "sides of the ribcage below the armpits smooth" in line.group(0) and "serratus" not in line.group(0), (model, ribs)
+        assert "thick, very muscular obliques" in line.group(0), (model, ribs)
+        belly, _ = side_body(model, "fat: 1, absStyle: 'four', fatBelly: 1")
+        assert "small, smooth bulge of soft fat" in belly and "smooth and flat" not in belly and "softly rounded below" in belly, (model, belly)
+        assert "thin layer of soft fat below the navel" not in belly, model
+        split, _ = side_body(model, "fat: 1, biceps: 'medium', triceps: 'huge'")
+        assert "moderate biceps" in split and "very large triceps" in split and "biceps and triceps" not in split, (model, split)
+        for same in ("biceps: 'big'", "biceps: 'big', triceps: 'big'"):
+            both, _ = side_body(model, "fat: 1, " + same)
+            assert "biceps and triceps" in both and "very large triceps" not in both, (model, same, both)
+        cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
+        assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
+        if model == "Seedream 5.0":
+            assert "with strong, muscular arms" in side_body(model, "fat: 1, triceps: 'big'")[0], model
+            light, _ = side_body(model, "fat: 1, fatLower: 1, defShoulders: 'clear', defBack: 'clear'")
+            heavy, _ = side_body(model, "fat: 1, fatLower: 3, defShoulders: 'clear', defBack: 'clear'")
+            lead = next(ln for ln in light.split("\n") if "deliberately imperfect" in ln)
+            assert ": soft hips, thighs" in lead and "heavy" not in lead, (model, lead)
+            assert ": soft, heavy hips, thighs" in heavy, (model, heavy)
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the

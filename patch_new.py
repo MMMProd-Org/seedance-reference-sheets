@@ -2211,7 +2211,7 @@ rep(r'''[3, "Gros", "large glutes"],''', r'''[3, "Gros", "very large, round glut
 # the shoulders, and hips filled by the glutes from behind are wider than the waist), so the user's sheet keeps its "Key proportions" line
 rep(r'''[4, "Très gros", "very large glutes"],''', r'''[4, "Très gros", "extremely large, heavy glutes, out of proportion with a slim waist: in the side views the back of the glutes sits about a hand's width behind the line of the shoulder blades, a deep shelf below the lower back, and from behind they fill the whole width of the hips; naturally shaped, not surgically enhanced"],''')
 rep(r'''[4, "Très larges", "very wide hips, much wider than the waist"],''', r'''[4, "Très larges", "extremely wide hips, with a waist-to-hip ratio of about 0.6: a dramatic pear shape whose widest point is at the hips and upper thighs"],''')
-rep(r'''"slight cellulite dimpling on the backs of the thighs, visible only up close",''', r'''"light cellulite dimpling on the backs of the thighs and just under the glutes, faint but visible in a full-body view",''')
+rep(r'''"slight cellulite dimpling on the backs of the thighs, visible only up close",''', r'''"light cellulite on the backs of the thighs and just under the glutes: a few small, shallow dimples, clearly visible in a full-body view",''')
 rep(r'''{ 1: "1.2", 2: "1.35", 3: "1.5", 4: "1.6" }''', r'''(4 === e.hips ? { 1: "1.5", 2: "1.75", 3: "1.9", 4: "2" } : { 1: "1.25", 2: "1.45", 3: "1.6", 4: "1.75" })''')
 # P73 v121 (user, from two v120 sheets: the glutes grew, the hips did not): GPT takes the same upper thighs as Seedream at the top of the
 # hip scale (sdThighs, seedream_new.js), and no longer says the thighs below the hips stay slim there; the top glute text loses
@@ -2293,7 +2293,7 @@ rep('''                    options: [
 rep('''    fatLower: [
       [0, "Aucune", ""],''', '''    fatBelly: [
       [0, "Aucune", ""],
-      [1, "Légère", "a thin layer of soft fat below the navel"],
+      [1, "Légère", "just below the navel, a small, smooth bulge of soft fat that rounds the lower belly slightly forward in profile, the skin over it smooth and even"],
       [2, "Visible", "a small soft pooch below the navel, a shallow crease at the navel"],
       [3, "Marquée", "a soft, rounded belly that rounds forward in profile, a soft crease across the navel"],
       [4, "Très marquée", "a large, soft belly hanging slightly over the waistband line, a deep crease below the navel"],
@@ -3260,7 +3260,8 @@ rep('''    fatLower: [
       ["deep", "Très cambrée", ""],
     ],
     backDimples: [
-      ["none", "Aucune", ""],
+      ["none", "Auto", ""],
+      ["smooth", "Aucune", ""],
       ["visible", "Visibles", ""],
     ],
     thighGap: [
@@ -3403,7 +3404,7 @@ rep('''          k: "glutesShape",
           show: function () {
             return "person" === e.mode && !sdChild(e);
           },
-          hint: "Deux petits creux juste au-dessus des fessiers, un de chaque côté de la colonne, vus de dos.",
+          hint: "Deux petits creux juste au-dessus des fessiers, un de chaque côté de la colonne, vus de dos. Auto : rien n'est dit, le modèle en dessine souvent sur un dos mince ou musclé. Aucune : le bas du dos est demandé lisse.",
         },''')
 rep('''        { t: "bins", k: "fatThighs", l: "Graisse : cuisses (avant)", ''', '''        { t: "bins", k: "fatKnees", l: "Graisse : genoux (au-dessus)", hint: "Coussinets de gras doux juste au-dessus des genoux et sur leur face interne ; dès « Visible », des genoux doux, jamais dessinés ni saillants. Masqué en corpulence Forte, qui décrit déjà le gras de chaque zone.", show: function () { return 4 !== +e.fat; } },
         {
@@ -4434,6 +4435,7 @@ rep('''    navel: [
       ["auto", "Auto", ""],
       ["visible", "Visibles", ""],
       ["marked", "Marqués", ""],
+      ["strong", "Très marqués", ""],
     ],
     vLine: [
       ["auto", "Auto", ""],
@@ -4442,6 +4444,7 @@ rep('''    navel: [
     ],
     serratus: [
       ["auto", "Auto", ""],
+      ["none", "Aucun", ""],
       ["visible", "Visibles", ""],
     ],
     navel: [
@@ -4475,7 +4478,7 @@ rep('''        { t: "bins", k: "fatBelly", l: "Graisse : ventre",''', '''       
           k: "serratus",
           l: "Dentelés (côtés des côtes)",
           show: sdAbsSidesOk,
-          hint: "Petites crêtes en doigts de gant sur le côté des côtes, sous l'aisselle. Auto : rien n'est dit. ''' + _SIDES_HIDE + '''",
+          hint: "Petites crêtes en doigts de gant sur le côté des côtes, sous l'aisselle. Auto : rien n'est dit, le modèle en dessine souvent sur un corps sec. Aucun : les côtés des côtes sont demandés lisses. ''' + _SIDES_HIDE + '''",
         },
         { t: "bins", k: "fatBelly", l: "Graisse : ventre",''')
 rep('''      n.push(
@@ -4487,6 +4490,51 @@ rep('''          ", visible wherever the skin there is uncovered",
       ),
     sdAbsSides() && n.push("Sides of the torso: " + sdAbsSides()),
     sdForteFat(1) && n.push(sdForteFat(1)),''')
+# owner, 2026-11-19: "Triceps" apart from "Biceps" (seedream_new.js, sdTri): GPT's arm line, and its rules that asked whether the arms were
+# set or big, read the larger of the two sizes (sdArmTop); "Biceps et triceps" becomes "Biceps"
+for _a, _b in [
+    ('("auto" !== e.absStyle || "auto" !== e.biceps || "auto" !== e.traps)', '("auto" !== e.absStyle || "auto" !== sdArmTop() || "auto" !== e.traps)'),
+    ('.concat("auto" === e.biceps ? ["arms"] : [])', '.concat("auto" === sdArmTop() ? ["arms"] : [])'),
+    ('0 > ["big", "huge"].indexOf(e.biceps) &&', '0 > ["big", "huge"].indexOf(sdArmTop()) &&'),
+    ('''      e.fat <= 2 &&
+      "auto" === e.biceps &&
+      "auto" === e.traps &&
+      !sdMusBig() &&
+      (t +=
+        "; slim, dense, wiry muscles''', '''      e.fat <= 2 &&
+      "auto" === sdArmTop() &&
+      "auto" === e.traps &&
+      !sdMusBig() &&
+      (t +=
+        "; slim, dense, wiry muscles'''),
+    ('"auto" !== e.biceps && n.push("Arms: " + t1("biceps", e.biceps)),', '(sdTriSplit() ? n.push("Arms: " + sdArmSplit().join(", ")) : "auto" !== e.biceps && n.push("Arms: " + t1("biceps", e.biceps))),'),
+    ('{ t: "chips", k: "biceps", l: "Biceps et triceps" },', '''{ t: "chips", k: "biceps", l: "Biceps" },
+        {
+          t: "chips",
+          k: "triceps",
+          l: "Triceps",
+          show: function () {
+            return "person" === e.mode && !sdChild(e);
+          },
+          hint: "Le muscle de l'arrière du bras. Auto : comme le biceps.",
+        },'''),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
+assert src.count('    biceps: "auto",\n') == 1
+src = src.replace('    biceps: "auto",\n', '    biceps: "auto",\n    triceps: "auto",\n')
+assert src.count('''    biceps: [
+      ["auto", "Auto", ""],''') == 1
+src = src.replace('''    biceps: [
+      ["auto", "Auto", ""],''', '''    triceps: [
+      ["auto", "Auto", ""],
+      ["slim", "Fins", ""],
+      ["medium", "Moyens", ""],
+      ["big", "Développés", ""],
+      ["huge", "Très développés", ""],
+    ],
+    biceps: [
+      ["auto", "Auto", ""],''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1
