@@ -3696,6 +3696,32 @@ function sdGrowBustPrompt() {
     "framing, pose, shoulders and arms, waist, hips, glutes, legs, skin tone, marks, outfit (every garment exactly as in image 1, with the same cut, neckline, straps and coverage, simply following the new shape), light, backdrop and panel layout. Not surgically enhanced."
   );
 }
+/* owner, 2026-11-19 (the lower-belly pooch: three texts drew nothing on a muscular body, a free retouche of the sheet drew it at once,
+   « un peu trop sur le profil »; then « il faut adapter le html pour savoir ce qui doit être fait après et ça doit être ui friendly »):
+   the method of cards 2b to 2d for what Seedream draws from an edit but not from a description: the pooch of belly fat « Légère » and
+   the torso's depth in profile. The pooch at half the depth of his first retouche. Seedream, native adult person only. */
+function sdGrowTorsoOn(t) {
+  return (
+    "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
+    rq(t, function () {
+      return 1 === sdFatOn("fatBelly") || !!SD_DEPTH[e.torsoDepth];
+    })
+  );
+}
+function sdGrowTorsoPrompt() {
+  var a = [];
+  1 === sdFatOn("fatBelly") &&
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about a finger's width past the line of the upper abs, as on a fit woman whose upper abs stay sharp; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+  "deep" === e.torsoDepth && a.push("in the side views, a deeper torso: the ribcage and the waist thicker from back to front, the waist nearly as deep as the chest");
+  "shallow" === e.torsoDepth && a.push("in the side views, a shallower torso: the ribcage and the waist thinner from back to front");
+  return (
+    "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
+    ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
+    " The result stays a believable real body: natural flesh that settles with gravity like the rest of the body. The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +
+    "the upper abs, the bust, the shoulders and arms, the hips, the glutes, the legs, the outfit (every garment exactly as in image 1, with the same cut and coverage, simply following the new shape), the light, the backdrop, the framing, the pose and the panel layout. No text or watermark."
+  );
+}
 /* v123 (user: the buttons of the bottom bar need a tooltip on hover, Tête, Corps, Agrandir, Ma tenue..., translated): what each one copies.
    French here, English through the interface map (the title prop is translated like the labels). */
 function sdBarTip(k, off) {
@@ -3710,6 +3736,7 @@ function sdBarTip(k, off) {
   if ("growUp" === k) return "Copier le prompt de la retouche du haut du corps de ta planche corps (épaules, dos, poitrine)";
   if ("fin" === k) return "Copier le prompt de la carte 4 : finition photo de ta planche finale";
   if ("growBust" === k) return "Copier le prompt de la retouche de la poitrine de ta planche corps (moins bombée de profil, la chute gardée)";
+  if ("growTorso" === k) return sdT("Copier le prompt de la retouche du ventre et du torse de ta planche corps", "Copy the prompt of the belly and torso retouch of your body sheet");
   if ("iter" === k) {
     if (off) return "Carte 3 : choisis ou écris d'abord une retouche";
     var op = sdOp(e);
@@ -8131,7 +8158,7 @@ function sdBarItems(t) {
       return o[0] === (op || (sdFreeIter(t) ? "free" : ""));
     })[0] || [0, 0, "Retouche"])[2],
     it = ["iter", lab, sdIterOff(t)];
-  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
+  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdGrowTorsoOn(t) ? [["growTorso", "Ventre", !1]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
 }
 /* options shown inside a card, folded: what you rarely need stays out of the way */
 function sdFold(label, children, open, onToggle) {
@@ -8217,6 +8244,37 @@ function sdCardExtra(k) {
             "Pas assez ? Recommence sur la nouvelle image avec le même prompt. Trop, ou caricatural ? Garde l'image d'avant.",
             nw() ? "Garde la planche retouchée comme planche corps validée, pour la carte 3." : "Garde la planche retouchée comme planche corps validée.",
           ].map(function (x, i) {
+            return (0, l.jsx)("li", { children: x }, i);
+          }),
+        }),
+      ],
+    });
+  /* owner, 2026-11-19: the belly and torso retouche, what it is for and when */
+  if ("growTorso-pre" === k)
+    return (0, l.jsxs)("div", {
+      className: "mt-3 text-sm",
+      children: [
+        (0, l.jsx)("p", {
+          className: "text-muted-foreground",
+          children: (function () {
+            var b = 1 === sdFatOn("fatBelly"),
+              d = !!SD_DEPTH[e.torsoDepth];
+            return sdT(
+              "Seedream dessine mal " + (b ? (d ? "ce petit bidon et cette épaisseur du torse" : "ce petit bidon sous le nombril") : "cette épaisseur du torse") + " à partir du texte seul, surtout sur un corps musclé. Une retouche de ta planche corps les ajoute.",
+              "From the text alone, Seedream rarely draws " + (b ? (d ? "this small pooch and this torso depth" : "this small pooch below the navel") : "this torso depth") + ", above all on a muscular body. A retouch of your body sheet adds " + (b && d ? "them" : "it") + ".",
+            );
+          })(),
+        }),
+        (0, l.jsx)("ol", {
+          className: "mt-2",
+          style: { listStyle: "decimal", paddingLeft: "1.25rem", margin: 0 },
+          children: [
+            sdT("Génère la planche corps (carte 2) et garde la meilleure.", "Generate the body sheet (card 2) and keep the best one."),
+            sdGrowOn(t) || sdGrowUpOn(t) || sdGrowBustOn(t) ? sdT("Fais d'abord les autres retouches de la planche, celle-ci en dernier.", "Do the sheet's other retouches first, this one last.") : "",
+            sdT("Dans Seedream, ajoute ta planche en image 1, colle ce prompt et génère.", "In Seedream, add your sheet as image 1, paste this prompt and generate."),
+            sdT("Trop marqué de profil ? Relance sur l'image d'avant. Pas assez ? Relance sur la nouvelle image avec le même prompt.", "Too strong in profile? Run it again on the image before. Not enough? Run it again on the new image with the same prompt."),
+            nw() ? sdT("Garde la planche retouchée comme planche corps validée, pour la carte 3.", "Keep the retouched sheet as your approved body sheet, for card 3.") : sdT("Garde la planche retouchée comme planche corps validée.", "Keep the retouched sheet as your approved body sheet."),
+          ].filter(Boolean).map(function (x, i) {
             return (0, l.jsx)("li", { children: x }, i);
           }),
         }),
@@ -9918,6 +9976,7 @@ function sdWrap(t, m) {
   o.grow = sdGrowOn(t) ? sdGrowPrompt() : "";
   o.growUp = sdGrowUpOn(t) ? sdGrowUpPrompt() : "";
   o.growBust = sdGrowBustOn(t) ? sdGrowBustPrompt() : "";
+  o.growTorso = sdGrowTorsoOn(t) ? sdGrowTorsoPrompt() : "";
   return sdPoseM(sdNoseM(o));
 }
 function sdLen(s, sd) {
@@ -10047,6 +10106,13 @@ function sdRows(t, m, R, q) {
       ["Format", "Identique à l'image 1"],
       [N, "Même nom + _v2, _v3…"],
       ["Longueur", sdLen(m.growBust, !0)],
+    ]);
+  sdGrowTorsoOn(t) &&
+    (o.growTorso = [
+      [J, nw() ? sdT("1. ta planche corps sans tête, la dernière retouchée", "1. your headless body sheet, the last one retouched") : sdT("1. ta planche corps, la dernière retouchée", "1. your body sheet, the last one retouched")],
+      ["Format", "Identique à l'image 1"],
+      [N, "Même nom + _v2, _v3…"],
+      ["Longueur", sdLen(m.growTorso, !0)],
     ]);
   o.iter = [
     [

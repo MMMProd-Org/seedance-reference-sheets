@@ -4662,6 +4662,26 @@ for _a, _b in [
 ]:
     assert src.count(_a) == 1, (src.count(_a), _a[:80])
     src = src.replace(_a, _b)
+# owner, 2026-11-19: the belly and torso retouche (seedream_new.js, sdGrowTorsoOn), its card after the bust's, its copy message and step count
+for _a, _b in [
+    ('''                                    !sdX && sdGrowBustOn(t) && B("growBust", ["2b", "2c", "2d"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0)], "Retouche : poitrine"),''',
+     '''                                    !sdX && sdGrowBustOn(t) && B("growBust", ["2b", "2c", "2d"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0)], "Retouche : poitrine"),
+                                    !sdX && sdGrowTorsoOn(t) && B("growTorso", ["2b", "2c", "2d", "2e"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0)], "Retouche : ventre et torse"),'''),
+    ('"grow" === t || "growUp" === t || "growBust" === t ? sdGrowCopyMsg(e)', '"grow" === t || "growUp" === t || "growBust" === t || "growTorso" === t ? sdGrowCopyMsg(e)'),
+    (""""Tes six étapes, dans l'ordre", "Tes sept étapes, dans l'ordre"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0)""",
+     """"Tes six étapes, dans l'ordre", "Tes sept étapes, dans l'ordre", "Tes huit étapes, dans l'ordre"][(sdGrowOn(t) ? 1 : 0) + (sdGrowUpOn(t) ? 1 : 0) + (sdGrowBustOn(t) ? 1 : 0) + (sdGrowTorsoOn(t) ? 1 : 0)"""),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
+# owner, 2026-11-19 (« il faut adapter le html pour savoir ce qui doit être fait après »): the two settings say where their retouche is
+for _a, _b in [
+    ('''{ t: "bins", k: "fatBelly", l: "Graisse : ventre", hint: "Gras sous la peau de cette zone, en plus des muscles : dès « Visible », les muscles apparents de la zone se lisent en formes douces sous le gras.''',
+     '''{ t: "bins", k: "fatBelly", l: "Graisse : ventre", hint: "Gras sous la peau de cette zone, en plus des muscles : dès « Visible », les muscles apparents de la zone se lisent en formes douces sous le gras. Légère : un petit bidon sous le nombril ; dans Seedream, il vient surtout de la retouche « Ventre et torse » de la planche corps.'''),
+    ('''Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.",''',
+     '''Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Dans Seedream, elle vient surtout de la retouche « Ventre et torse » de la planche corps. Auto : rien n'est dit.",'''),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

@@ -802,6 +802,17 @@ with sync_playwright() as p:
     # Owner's render audit, 2026-11-19: "Aucune" back dimples and "Aucun" serratus said in positive words (Auto says nothing); belly fat
     # at "Légère" a small smooth bulge below the navel, the upper abs kept; "Très marqués" obliques; "Triceps" apart from "Biceps" (Auto
     # follows it, prompts unchanged); "heavy" only from "Marquée"; a light cellulite visible in a full-body view
+    # owner, 2026-11-19: the "Ventre et torse" retouche card (Seedream) with belly fat "Légère" or a torso depth set, never on Auto
+    for state, on in (("fatBelly: 1", True), ("torsoDepth: 'deep'", True), ("fat: 1", False)):
+        tc = clipboard_page(browser, errors)
+        tc.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, " + state + "}))")
+        tc.reload()
+        assert (tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1) == on, state
+        if on:
+            torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
+            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("deeper torso" in torso[0]) == ("deep" in state), (state, torso)
+        tc.close()
+
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
     io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset'}))")
