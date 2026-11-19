@@ -4582,6 +4582,43 @@ rep('''        {
           k: "bustSkin",
           l: "Peau de la poitrine",''')
 rep('''!!sdBustSkin() || !!sdBustPos()))) return "";''', '''!!sdBustSkin() || !!sdBustPos() || !!sdBustVeins()))) return "";''')
+# owner, 2026-11-19: "Aspect des muscles" (seedream_new.js, sdSmoothMus): "Pleins et lisses" reads every zone at « Présents » or
+# « Marqués » as « Discrets » (abs apart), on both engines; GPT also says the smooth surface in its muscle line
+for _a, _b in [
+    ('''function rP(t) {
+  return e[t] && "auto" !== e[t] ? e[t] : e.def;
+}''', '''function rP(t) {
+  var v = e[t] && "auto" !== e[t] ? e[t] : e.def;
+  return "defAbs" !== t && sdSmoothMus() && ("clear" === v || "strong" === v) ? "subtle" : v;
+}'''),
+    ('''          hint: "Valeur par défaut des zones réglées sur « Comme ci-dessus ». Une zone réglée à part n'en tient plus compte.",
+        },''', '''          hint: "Valeur par défaut des zones réglées sur « Comme ci-dessus ». Une zone réglée à part n'en tient plus compte.",
+        },
+        {
+          t: "chips",
+          k: "musLook",
+          l: "Aspect des muscles",
+          show: function () {
+            return "person" === e.mode && !sdChild(e);
+          },
+          hint: "Pleins et lisses : les muscles gardent la taille réglée (deltoïdes, biceps, triceps…), ronds et lisses sous une fine couche de graisse, sans découpe ni stries ; chaque zone sur « Présents » ou « Marqués » est lue « Discrets » (les abdos gardent leur réglage), et la lumière reste douce. Auto : rien ne change.",
+        },'''),
+    ('''    "auto" !== e.traps && n.push("Neck and shoulders: " + t1("traps", e.traps)),''', '''    "auto" !== e.traps && n.push("Neck and shoulders: " + t1("traps", e.traps)),
+    sdSmoothMus() && n.push("Muscle surface: " + SD_SMOOTH_MUS),'''),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
+assert src.count('    triceps: "auto",\n') == 1
+src = src.replace('    triceps: "auto",\n', '    triceps: "auto",\n    musLook: "auto",\n')
+assert src.count('''    triceps: [
+      ["auto", "Auto", ""],''') == 1
+src = src.replace('''    triceps: [
+      ["auto", "Auto", ""],''', '''    musLook: [
+      ["auto", "Auto", ""],
+      ["smooth", "Pleins et lisses", ""],
+    ],
+    triceps: [
+      ["auto", "Auto", ""],''')
 open('new/patched.js','w',encoding='utf-8').write(src)
 orig=open('original/Planches_de_référence_pour_Seedance.html',encoding='utf-8').read()
 assert orig.count('.bottom-24{bottom:6rem}')==1

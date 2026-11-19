@@ -5555,10 +5555,20 @@ function sdSoft() {
     };
   return n(["subtle"]) > 0 && n(["subtle"]) >= n(["clear", "strong"]);
 }
-/* Musculature at "Athlétique" or less, no biceps or trapezius at "Développés" or "Massifs". */
+/* Musculature at "Athlétique" or less, no biceps, triceps, trapezius or deltoids at "Développés" or "Massifs", muscles not "Pleins et
+   lisses" (owner, 2026-11-19: very large deltoids next to "no muscle bulk") */
 function sdNoBulk() {
-  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
+  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0 && ["big", "huge"].indexOf(sdMusLv("delts")) < 0 && !sdSmoothMus();
 }
+/* owner, 2026-11-19 (two photos of women with large, round deltoids and arms, smooth: « je n'arrive pas à avoir un bras large musclé mais
+   sans avoir les muscles qui explosent au visage »; « Muscles apparents » at « Discrets » still drew every muscle cut): "Aspect des
+   muscles", "Pleins et lisses": the muscle sizes stay; every zone set to « Présents » or « Marqués » reads « Discrets » (rP, abs apart:
+   their own style and level), so no "sharply defined" and no hard light; the zones' shared phrase says full, smooth muscles under a thin
+   layer of soft fat, in positive words (a negated word is still a word) */
+function sdSmoothMus() {
+  return "person" === e.mode && !sdChild(e) && "smooth" === e.musLook && !(e.photo && e.bodyAsIs);
+}
+var SD_SMOOTH_MUS = "full, rounded muscles under a thin, even layer of soft fat that smooths their outlines into soft, continuous curves, the skin over them smooth and even, their size read by volume and soft shading";
 /* v131 (user: at the top of "Épaules" with a strong build, the shoulders and the back hardly change, the deltoids should be very developed;
    and: pectorals for women, for a muscular woman). Measured on the user's two Seedream body sheets (front view, settings "Épaules : Très
    larges", "Musculature : Forte"): width across the deltoids / width of the hips = 1.24 and 1.20, at or below the median woman of ANSUR II
@@ -5775,7 +5785,7 @@ function sdMus() {
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
-  soft && p.unshift("barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
+  soft && p.unshift(sdSmoothMus() ? SD_SMOOTH_MUS : "barely visible muscles" + (sdNoBulk() ? ", no muscle bulk" : ""));
   p.length && "m" !== e.pres && e.chest >= 1 && "low" !== e.bustShape && !sdPecsF() && p.push("a smooth upper chest");
   var x = [],
     nz = [];

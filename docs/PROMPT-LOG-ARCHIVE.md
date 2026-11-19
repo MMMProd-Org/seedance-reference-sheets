@@ -8,11 +8,23 @@
 
 **DOES NOT WORK** in the supplied v114b, reproduced on both engines: changing only free outfit text falsely changed the copied-face signature. The integration excludes its new clothing line and logo exception from current and saved signatures, while actual identity/mark/Character changes still invalidate them. **TO TEST** in renders: the new outfit, vehicle and face-character wording. Local text/UI checks do not establish image quality or a model's filtering behavior.
 
+## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · Photo head tracking
+
+**RULE.** PR #56: the v112 clothing-only line stays in the head prompt, but is excluded from current and saved face signatures. Tests cover unchanged old saves, outfit switches and real identity changes. No render result.
+
 ## 2026-10-17 · GPT Image 2.5 and Seedream 5.0 · v111/v112 integration
 
 **RULE.** Source: the owner's v112 ZIP and [unaltered lessons](sources/lecons_prompts_planches_seedance-v112.md). A person's photo can supply the clothes, or the Outfit tab can supply both sheets. Old saved garments keep priority. Photo-only keeps the photos unchanged; body/attachment help follows the clothes, reference outfit and body-source choices. GPT photo-only no longer requests a head sheet; neutral silhouette wording changes `typical adult adult` to `typical adult person`.
 
 **TO TEST** in renders: Seedream now offers people from photos and in 3D/2D, with GPT prose adapted to numbered images and no conversation instructions; children/babies keep their dressed builder with the chosen style. Keep the adult wording at 18–20. Automatic engine choices, calibrated prompts, animal body-first flow, object triptychs/separate views and saved personal retouches stay. Long prompts retain their warning. Text, save and UI tests do not prove image quality; no new image result is claimed.
+
+## 2026-10-16 · Seedream 5.0 · Person, male Canon head · explicit brows and jaw
+
+**RULE.** PR #55 review: explicit face, forehead, eyes, brows, nose, lips and jaw already stay outside the random-trait normalization. However, the general Canon sentence still added `a clearly defined jaw, thick natural eyebrows` beside a selected `soft jawline` or `thin eyebrows`. Those two general cues now appear only when their respective control is Auto; the explicit choices keep their own wording. The all-Auto Canon text stays identical. The acceptance test covers each manual choice separately and together, in both saved face generations, and preserves the other explicit traits. **TO TEST** in a render; this is a prompt-consistency fix, not a new image result.
+
+## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · Child head · nose width and hidden adult Beauty
+
+**RULE.** PR #55 review: the child face builder used the old three-step nose dictionary, so the visible Very narrow and Very wide slider endpoints produced no nose description. They now use `very narrow nose` and `very wide nose`, matching the adult formatter. The saved adult Beauty at Plain or Homely also widened the child's nose through the shared prompt adjustment and displayed its adjustment badge. That shared rule now applies only to adults; the child keeps the chosen width, and returning to Person retains the adult Beauty value and its established adjustment. Regression cases cover both endpoints, reloads and adult-to-child-to-adult transitions on both models. **TO TEST** in a render; no image result is claimed.
 
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · v110b integration from the owner's second line
 

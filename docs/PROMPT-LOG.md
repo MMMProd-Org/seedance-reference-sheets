@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-19 · Seedream 5.0 and GPT Image 2.5 · Person, body sheet: large muscles without the cuts, « Aspect des muscles »
+
+**DOES NOT WORK** (owner's fourth render, 2026-11-19: « j'ai muscles apparents discrets et pourtant il explose au visage », « je n'arrive pas à avoir un bras large musclé mais sans avoir les muscles qui explosent »; his two photos: women with large, round deltoids and arms, smooth). « Muscles apparents : toutes les zones » at « Discrets » left the shoulders and back at their own setting (`sharply defined shoulders and back`, `defined shoulders, visible shoulder blades and spine groove`): every muscle drawn cut. **RULE**: « Aspect des muscles », Auto (nothing changes) or « Pleins et lisses »: the sizes stay; every zone at « Présents » or « Marqués » reads « Discrets » (abs apart), so no `sharply defined` and the soft light; the zones' shared phrase becomes `full, rounded muscles under a thin, even layer of soft fat that smooths their outlines into soft, continuous curves, the skin over them smooth and even, their size read by volume and soft shading` (GPT: a `Muscle surface:` line). `no muscle bulk` is no longer written next to deltoids at « Développés » or more. **TO TEST** on Seedream 5.0.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: third render, the lower-belly pooch not drawn, the line above the tanga
 
 **DOES NOT WORK** (owner's third render, 2026-11-19: « j'ai pas le petit bidon dont on a parlé », « j'ai toujours cette ligne en bas du nombril »; « Ligne centrale » at « Discrets », belly fat « Légère », deltoids and triceps at their top, obliques « Très marqués »). In profile the lower belly is flat; the body reads athletic all over (very large deltoids and triceps), the bulge said only in the fat line. A faint horizontal line just above the tanga shows on all three renders, under three different belly texts (loose skin, `a thin layer of soft fat below the navel`, `a small, smooth bulge ... the skin over it smooth and even`): not the word « Légère ». Common to the three: the low tanga and the V « Marqué». **TO TEST**, one render: the same settings, V on Auto. **RULE**: with belly fat « Légère », the Seedream lead also says `a small, soft pooch of fat just below the navel` (`with strong, muscular arms and glutes, and a small, soft pooch of fat just below the navel.`), as the muscular arms and legs. **TO TEST** with the same settings.
@@ -172,7 +176,7 @@ Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO 
 
 ## 2026-10-17 · GPT Image 2.5 / Seedream 5.0 · Photo head tracking
 
-**RULE.** PR #56: the v112 clothing-only line stays in the head prompt, but is excluded from current and saved face signatures. Tests cover unchanged old saves, outfit switches and real identity changes. No render result.
+**RULE.** PR #56: the clothing-only line stays in the head prompt, out of the face signatures. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-17--gpt-image-25--seedream-50--photo-head-tracking)
 
 ## 2026-10-17 · GPT Image 2.5 and Seedream 5.0 · v111/v112 integration
 
@@ -180,11 +184,11 @@ Every step, check (V1 to V11), threshold and stop rule of the agent stays. **TO 
 
 ## 2026-10-16 · Seedream 5.0 · Person, male Canon head · explicit brows and jaw
 
-**RULE.** PR #55 review: explicit face, forehead, eyes, brows, nose, lips and jaw already stay outside the random-trait normalization. However, the general Canon sentence still added `a clearly defined jaw, thick natural eyebrows` beside a selected `soft jawline` or `thin eyebrows`. Those two general cues now appear only when their respective control is Auto; the explicit choices keep their own wording. The all-Auto Canon text stays identical. The acceptance test covers each manual choice separately and together, in both saved face generations, and preserves the other explicit traits. **TO TEST** in a render; this is a prompt-consistency fix, not a new image result.
+**RULE.** Canon's jaw and brow cues only with those controls on Auto. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-16--seedream-50--person-male-canon-head--explicit-brows-and-jaw)
 
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · Child head · nose width and hidden adult Beauty
 
-**RULE.** PR #55 review: the child face builder used the old three-step nose dictionary, so the visible Very narrow and Very wide slider endpoints produced no nose description. They now use `very narrow nose` and `very wide nose`, matching the adult formatter. The saved adult Beauty at Plain or Homely also widened the child's nose through the shared prompt adjustment and displayed its adjustment badge. That shared rule now applies only to adults; the child keeps the chosen width, and returning to Person retains the adult Beauty value and its established adjustment. Regression cases cover both endpoints, reloads and adult-to-child-to-adult transitions on both models. **TO TEST** in a render; no image result is claimed.
+**RULE.** The child nose takes the full width scale; the adult Beauty never widens a child's nose. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-16--gpt-image-25-and-seedream-50--child-head--nose-width-and-hidden-adult-beauty)
 
 ## 2026-10-16 · GPT Image 2.5 and Seedream 5.0 · v110b integration from the owner's second line
 

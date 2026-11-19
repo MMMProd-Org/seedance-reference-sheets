@@ -821,6 +821,15 @@ with sync_playwright() as p:
         for same in ("biceps: 'big'", "biceps: 'big', triceps: 'big'"):
             both, _ = side_body(model, "fat: 1, " + same)
             assert "biceps and triceps" in both and "very large triceps" not in both, (model, same, both)
+        # "Aspect des muscles" at "Pleins et lisses": the sizes stay, no sharp definition, no hard light; very large deltoids never next to
+        # "no muscle bulk"
+        smooth_mus, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big', musLook: 'smooth'")
+        assert "full, rounded muscles under a thin, even layer of soft fat" in smooth_mus and "very large, round deltoids" in smooth_mus, (model, smooth_mus)
+        assert not re.search(r"sharply|crisp shadows|deep groove", smooth_mus), (model, smooth_mus)
+        sharp, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big'")
+        assert "full, rounded muscles under a thin" not in sharp and re.search(r"sharply|crisp shadows", sharp), (model, sharp)
+        delts_only, _ = side_body(model, "fat: 1, def: 'subtle', delts: 'huge'")
+        assert "no muscle bulk" not in delts_only, (model, delts_only)
         cell, _ = side_body(model, "fat: 1, cellulite: 'light'")
         assert "a few small, shallow dimples, clearly visible in a full-body view" in cell, (model, cell)
         if model == "Seedream 5.0":
