@@ -3704,7 +3704,8 @@ function sdGrowTorsoOn(t) {
   return (
     "seedream" === t.model && "person" === t.mode && !sdChild(t) && sdNative(t) && !sdOff(t) &&
     rq(t, function () {
-      /* owner's eighth render, 2026-11-19 (belly fat « Visible », no pooch drawn): the pooch from « Légère » or « Visible » */
+      /* owner's eighth render, 2026-11-19 (belly fat « Visible », no pooch drawn): the pooch from « Légère » or « Visible »; with « Visible »
+         the abs are soft shapes under the fat, kept soft (PR #77 review) */
       return [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 || !!SD_DEPTH[e.torsoDepth];
     })
   );
@@ -3712,7 +3713,7 @@ function sdGrowTorsoOn(t) {
 function sdGrowTorsoPrompt() {
   var a = [];
   [1, 2].indexOf(sdFatOn("fatBelly")) >= 0 &&
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs, as on a fit woman whose upper abs stay sharp; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat that brings the lower belly only slightly forward in the side views, about " + (2 === sdFatOn("fatBelly") ? "two fingers'" : "a finger's") + " width past the line of the upper abs, " + (2 === sdFatOn("fatBelly") ? "the upper abs kept exactly as soft as they are" : "as on a fit woman whose upper abs stay sharp") + "; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   "deep" === e.torsoDepth && a.push("in the side views, a deeper torso: the ribcage and the waist thicker from back to front, the waist nearly as deep as the chest");
   "shallow" === e.torsoDepth && a.push("in the side views, a shallower torso: the ribcage and the waist thinner from back to front");
   return (

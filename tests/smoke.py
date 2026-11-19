@@ -812,6 +812,7 @@ with sync_playwright() as p:
             torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
             assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("deeper torso" in torso[0]) == ("deep" in state), (state, torso)
             assert ("two fingers'" in torso[0]) == ("fatBelly: 2" in state), (state, torso)
+            assert ("upper abs stay sharp" in torso[0]) == ("fatBelly: 1" in state), (state, torso)
         tc.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
