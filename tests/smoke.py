@@ -29,7 +29,8 @@ SAME_IN_BOTH = {
     "Biceps",
     "Triceps",
 }
-NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
+# the header stamp (semver, "-pre" on a local build, and an ISO date) reads the same in both languages
+NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|v\d+\.\d+\.\d+(-pre)? · \d{4}-\d{2}-\d{2}|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
   const out = new Set(), skip = new Set(["PRE", "CODE", "TEXTAREA", "SCRIPT", "STYLE"]);
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
