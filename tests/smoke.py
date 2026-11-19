@@ -805,7 +805,7 @@ with sync_playwright() as p:
         assert line and "sides of the ribcage below the armpits smooth" in line.group(0) and "serratus" not in line.group(0), (model, ribs)
         assert "thick, very muscular obliques" in line.group(0), (model, ribs)
         belly, _ = side_body(model, "fat: 1, absStyle: 'four', fatBelly: 1")
-        assert "small, smooth bulge of soft fat" in belly and "smooth and flat" not in belly and "softly rounded below" in belly, (model, belly)
+        assert "small, smooth bulge of soft fat" in belly and "smooth and flat" not in belly and "softly rounded" in belly, (model, belly)
         assert "thin layer of soft fat below the navel" not in belly, model
         split, _ = side_body(model, "fat: 1, biceps: 'medium', triceps: 'huge'")
         assert "moderate biceps" in split and "very large triceps" in split and "biceps and triceps" not in split, (model, split)

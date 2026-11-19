@@ -5487,6 +5487,7 @@ function sdBellyLow(s) {
     ? s
         .replace("four segments above the navel, the lower belly smooth and flat", "four segments above the navel, the lower belly softly rounded below the navel")
         .replace("the lower abdomen smooth and flat below them", "the lower abdomen softly rounded below them")
+        .replace("below them the lower abdomen stays smooth and flat", "below them the lower abdomen is softly rounded")
         .replace("a flat stomach with a single vertical groove", "a firm upper stomach with a single vertical groove")
     : s;
 }
