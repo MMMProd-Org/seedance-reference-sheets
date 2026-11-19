@@ -3410,6 +3410,9 @@ function sdLegShape() {
   /* v157 review: "Forte" or soft knees: no lean muscles, slim knees or slim ankles said with the shape */
   (+e.fat >= 3 || sdFatOn("fatKnees") >= 2) && (t = t.split("to slim knees").join("to the knees"));
   +e.fat >= 3 && (t = t.split("lean, elongated").join("elongated").split(" and slim ankles").join(""));
+  /* owner's render, 2026-11-19 (Seedream 5.0, "Courtes" with "Coureur"): the crotch at about 44% down for 48% asked, as on 2026-10-28
+     (40%); the runner's legs said "long" and "elongated" in the prompt that asks for short legs: with short legs, the taper only */
+  +e.legs <= 1 && (t = t.replace("long, tapered runner's", "tapered runner's").replace("lean, elongated", "lean").replace("elongated thigh", "thigh"));
   return [t, sdThighFront(), sdCalvesTxt()].filter(Boolean).join("; ");
 }
 function sdCalvesTxt() {
@@ -5386,6 +5389,62 @@ function sdAbs() {
           }[e.defAbs] || ", with clear shadow lines";
   return m ? "Abdomen: " + m + (seg ? lv : "") + "." : "";
 }
+/* owner, 2026-11-19 (a photo of a lean, fit woman: « ajoute les obliques, lignes latérales, V etc etc »): the outer edges of the abs, the
+   obliques, the V-line and the serratus, each "Auto" by default (nothing said, prompts unchanged), both engines, in a line of their own after
+   the abdomen. Said in positive words where they are (a negated word is still a word). Hidden and ignored where the prompt already says a
+   soft or fat belly: "Ventre doux", "Plat, sillon au milieu", "Bas du ventre arrondi", "Dad bod", belly or flank fat from "Visible", build
+   "Forte", a child, a body kept as in the photo. Not muscle-definition zones (rA): the body light does not read them. */
+var SD_ABS_SIDES = {
+  absSides: {
+    visible: "a shallow vertical line along each outer edge of the abs, from the lower ribs down toward the hip bones",
+    marked: "a clear, slightly curved vertical groove along each outer edge of the abs, from the lower ribs down to the hip bones",
+  },
+  obliques: {
+    visible: "the obliques softly visible at the sides of the waist, between the lower ribs and the hip bones",
+    marked: "defined obliques at the sides of the waist, their lower edge drawn just above each hip bone",
+  },
+  vLine: {
+    light: "a shallow V-line running from each hip bone diagonally down toward the lower belly",
+    marked: "a clear V-line running from each hip bone diagonally down toward the lower belly",
+  },
+  serratus: {
+    visible: "small finger-like ridges of the serratus muscles on the side of the ribcage, just below the armpit",
+  },
+};
+function sdAbsSidesOk() {
+  return (
+    "person" === e.mode &&
+    !sdChild(e) &&
+    !(e.photo && e.bodyAsIs) &&
+    4 !== +e.fat &&
+    ["soft", "groove", "belly", "dadbod"].indexOf(e.absStyle) < 0 &&
+    sdFatOn("fatBelly") < 2 &&
+    sdFatOn("fatFlanks") < 2
+  );
+}
+/* PR #75 review: a reference outfit that covers a part never asks for it (the fitted top with bike shorts covers the lower belly; the
+   one-piece the whole torso but the sides below the armpits); an outfit of the user's own may bare it, so it is said */
+var SD_ABS_SIDES_HID = { sport: ["vLine"], fitted: ["vLine"], onepiece: ["absSides", "obliques", "vLine"] };
+function sdAbsSideOn(k) {
+  return sdAbsSidesOk() && !!SD_ABS_SIDES[k][e[k]] && (SD_ABS_SIDES_HID[nv() ? sdShownCover(e) : ""] || []).indexOf(k) < 0;
+}
+function sdAbsSides() {
+  return ["absSides", "obliques", "vLine", "serratus"]
+    .filter(sdAbsSideOn)
+    .map(function (k) {
+      return SD_ABS_SIDES[k][e[k]];
+    })
+    .join("; ");
+}
+/* GPT's own abdomen texts already name faint side lines ("Ligne centrale") or the side grooves ("4 carreaux"): with "Lignes latérales des
+   abdos" set, the setting says them, once */
+function sdAbsSideTrim(s) {
+  return "string" == typeof s && sdAbsSideOn("absSides")
+    ? s
+        .replace(", and faint lines at the sides", "")
+        .replace(" and a curved groove runs down each side from the lower ribs, at the outer edges of the abdominal muscles", "")
+    : s;
+}
 /* The Muscles line's zones at "Discrets" share one phrase when they are at least as many as its zones at "Présents" or
    "Marqués": listed one by one, they were among the cues that made a slim body athletic (docs/PROMPT-LOG.md). Abs with a
    chosen style have their own line (sdAbs) and do not count. */
@@ -5633,9 +5692,11 @@ function sdMus() {
     : "auto" === e.absStyle &&
       "auto" === e.biceps &&
       "auto" === e.traps &&
+      !sdAbsSides() &&
       x.push("No visible muscle definition.");
   var ab = sdAbs();
   ab && x.push(ab);
+  sdAbsSides() && x.push("Sides of the torso: " + sdAbsSides() + ".");
   /* v128: the soft fat of each zone, over the muscles */
   /* v130: the fat line now comes before the muscles in the Seedream body (sdBody); GPT keeps it in "Muscles and details" */
   ("strong" === r_() || "strong" === rP("defShoulders")) &&

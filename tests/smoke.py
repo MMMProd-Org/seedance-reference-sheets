@@ -24,6 +24,8 @@ SAME_IN_BOTH = {
     "III", "Pseudo", "Rectangle", "Triangle",
     # v137 and v156 place helpers and moods ("Place" is the French chip for a town square and the English for "Lieu")
     "Cyberpunk", "Docks", "Festive", "Jungle", "Place", "Renaissance", "Tunnel", "Village",
+    # sides of the torso (2026-11-19)
+    "Obliques",
 }
 NEUTRAL = re.compile(r"^(GPT Image 2\.5|Seedream 5\.0|Seedance 2\.5|Auto|Photo|3D|2D|Animal|Français|English|Sources|\?|[\d\s.,:/%×+\-–—()·]+)$")
 TEXTS = """() => {
@@ -723,6 +725,69 @@ with sync_playwright() as p:
         plain = [t for t in prompts(bare) if re.search(r"(?i)plain, everyday face", t)]
         assert plain and not any(re.search(r":\s*,", t) for t in plain), (model, [t[:200] for t in plain])
         bare.close()
+    assert not errors, errors
+
+    # Sides of the torso (owner, 2026-11-19): "Side lines of the abs", "Obliques", "Lower-belly V" and "Serratus" add one line after
+    # the abdomen on both engines; on Auto the body prompt is unchanged; the side grooves GPT's own "4 carreaux" text names are said
+    # once; the body light is unchanged; hidden and ignored with a soft belly, belly fat from "Visible" or the "Strong" build; with
+    # every zone at "Non" and abs on Auto, no "No visible muscle definition." next to them.
+    SIDE_NAMES = ("Side lines of the abs", "Obliques", "Lower-belly V", "Serratus (sides of the ribs)")
+    SIDES_SET = "absSides: 'marked', obliques: 'marked', vLine: 'marked', serratus: 'visible'"
+    GPT_SIDE_GROOVE = " and a curved groove runs down each side from the lower ribs, at the outer edges of the abdominal muscles"
+
+    def side_body(model, state):
+        """The body prompt and the number of side controls shown, for a saved state on a model (fixed seed: the same drawn details)."""
+        pg = clipboard_page(browser, errors)
+        pg.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, faceSeed: 7, faceGen: 2, " + state + "}))")
+        pg.reload()
+        pg.get_by_role("radio", name=model, exact=True).click()
+        pg.get_by_role("tab", name=re.compile(r"^Body")).click()
+        shown = sum(pg.locator(f'fieldset:has(legend:text-is("{n}")), [role=radiogroup][aria-label="{n}"]').count() for n in SIDE_NAMES)
+        body = [t for t in prompts(pg) if "navel" in t]
+        pg.close()
+        assert body, (model, state)
+        return body[0], shown
+
+    def light_of(t):
+        return re.findall(r"Seamless[^\n]*", t)
+
+    for model in ("GPT Image 2.5", "Seedream 5.0"):
+        base, shown = side_body(model, "fat: 1, absStyle: 'four'")
+        assert shown == 4 and "Sides of the torso" not in base, (model, shown)
+        sides, _ = side_body(model, "fat: 1, absStyle: 'four', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", sides)
+        assert line and all(w in line.group(0) for w in ("outer edge of the abs", "defined obliques", "clear V-line", "serratus")), (model, sides)
+        assert GPT_SIDE_GROOVE not in sides and "faint lines at the sides" not in sides, model
+        assert light_of(sides) == light_of(base), model
+        assert re.sub(r" ?Sides of the torso: [^.\n]*\.?", "", sides) == base.replace(GPT_SIDE_GROOVE, ""), model
+        for hide in ("absStyle: 'soft'", "absStyle: 'groove'", "fat: 4", "fatBelly: 2", "fatFlanks: 2"):
+            hidden, shown = side_body(model, hide + ", " + SIDES_SET)
+            assert shown == 0 and "Sides of the torso" not in hidden, (model, hide)
+        none, _ = side_body(model, "def: 'none', absStyle: 'auto'")
+        none_sides, _ = side_body(model, "def: 'none', absStyle: 'auto', " + SIDES_SET)
+        assert "Sides of the torso" in none_sides and "No visible muscle definition." not in none_sides, model
+        if model == "Seedream 5.0":
+            assert "No visible muscle definition." in none, "the sentence the sides replace is still written without them"
+        # PR #75 review: the line comes after the abdomen's; "Ligne centrale" loses its own "faint lines at the sides" to the side
+        # lines; a part the reference outfit covers is not asked for (the one-piece covers the torso but the serratus, the top with
+        # bike shorts the lower belly; the GPT shorts leave it bare)
+        assert sides.index("segments") < sides.index("Sides of the torso"), (model, sides)
+        mid, _ = side_body(model, "fat: 1, absStyle: 'line', " + SIDES_SET)
+        assert "vertical groove down the middle" in mid and "faint lines at the sides" not in mid and "outer edge of the abs" in mid, (model, mid)
+        piece, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'onepiece', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", piece)
+        assert line and "serratus" in line.group(0) and not any(w in line.group(0) for w in ("V-line", "outer edge", "obliques")), (model, piece)
+        shorts, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: true, refCover: 'sport', " + SIDES_SET)
+        line = re.search(r"Sides of the torso: [^.\n]*", shorts)
+        assert line and "outer edge of the abs" in line.group(0) and ("V-line" in line.group(0)) == (model == "GPT Image 2.5"), (model, shorts)
+        own, _ = side_body(model, "fat: 1, absStyle: 'four', bodyRef: false, refCover: 'onepiece', " + SIDES_SET)
+        assert "clear V-line" in own, (model, "the user's own outfit may bare it")
+        # owner's render, 2026-11-19: short legs never get the runner's "long" and "elongated" legs; average legs keep them
+        for legs, fat in ((1, 1), (0, 3)):
+            short, _ = side_body(model, f"legs: {legs}, fat: {fat}, legShape: 'runner'")
+            assert "tapered runner's legs" in short and not re.search(r"long, tapered|elongated", short), (model, legs, fat, short)
+        avg, _ = side_body(model, "legs: 2, fat: 1, legShape: 'runner'")
+        assert "long, tapered runner's legs: lean, elongated thigh muscles" in avg, (model, avg)
     assert not errors, errors
 
     # Seedream, the very slim body the owner tested (docs/PROMPT-LOG-ARCHIVE.md, 2026-10-11), with the settings that shape the
