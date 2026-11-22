@@ -1,5 +1,19 @@
 # Prompt log archive
 
+## 2026-10-29 · Seedream 5.0 · Person, step 4 "Final photo pass" on a bare body sheet
+
+**DOES NOT WORK** (owner, 2026-10-29, Seedream 5.0, a bare headless body sheet edited with the step 4 text): « la finition photo ça ne marche absolument pas … je suis sûr que tu vas être incapable de savoir quel est quel ». Measured on his two images (1920 × 1080): luma correlation 0.987, 2.2% of the pixels changed by more than 20 levels, the pubic hair the only area redrawn, the rest a white-balance shift from warm to neutral and 5% more fine detail (grain). The text asks for that: `Edit image 1 ... Change only the photographic rendering`, the same light and shadows, a contrast no stronger, a long keep list; and at this scale (four bodies about 1,000 px tall) a pore is under one pixel. **LEAD** (owner's renders, 2026-10-29, Seedream 5.0, a prompt asking for a new photograph rather than an edit and keeping only the geometry, sent to him, not in the app). One view (the back) cut from the sheet, three renders in 16:9 from a portrait crop: the third kept the silhouette (the crease at 470 px against 473, hips, thighs and knees within 1 to 5% of the leg length) and looks like a real photograph (grain, light falloff, backdrop), its fine detail unchanged at the same 1,060 px body height; the first two re-framed (cut at the upper back, at the waist) and widened the hips by 7 to 10%.
+
+**DOES NOT WORK** on the whole sheet, the same prompt adapted, three renders: two near-identity (luma correlation 0.99, silhouettes 96 to 98% the same, fine detail +2 to 6%), one with the right profile changed (overlap 83%) and no gain.
+
+Then the back view with `in the same portrait format` and an 18% neutral grey backdrop asked: the tool still gave 16:9; two renders rebuilt a sheet (four panels, three backs: the crop's edges kept the sheet's thin gaps and the text named the sheet), one re-framed; the backdrop unchanged (B - R +10 to +12, luminance 0.10, as image 1).
+
+**WORKS** (three renders out of three): the same view centred in a 16:9 frame, its backdrop extended on both sides and the gap lines trimmed, and a text naming one woman and one view, no sheet: the same place (centre within 1 px, crease and heels within 5 px), silhouette overlap 0.94 to 0.96, hips +1 to +2%, knees and shoulders within 1%, thighs +3 to +13%; a neutral backdrop (B - R +3 to +4, luminance 0.13 to 0.19 against 0.105); fine detail +3 to +8%.
+
+**TO TEST**: the front view and a profile (each "real skin" pass so far brought the bust back to an average one); then a view-by-view finish in the app.
+
+**DOES NOT WORK**, refused by the platform (owner, 2026-10-29): the bare front view and left profile, same text, « ça passe pas la génération NSFW activée ». **RULE** (already in the lessons of v76 to v95): the prompt or the image is never reworked to get past the filter. Each "real skin" pass so far brought the bust back to an average one (entry of the domed areola).
+
 ## 2026-10-28 · Blender agent and Seedream 5.0 · Person, "Agent 3D": the prompt within 10,000 characters
 
 **RULE.** Owner: « attention pour le prompt 3D Cannot exceed 10000 characters » (the prompt box of the image tool he pastes it into), then « je veux un prompt à 10 000 caractères ». Before: 12,238 characters in French with the four nipple and areola choices on Auto (v158 was already over), 17,096 with Saillants, Moyennes and Bombée, about 17,400 at most. Now at most about 9,760 characters (9,785 with the tuberous shape of PR #64), French being the longer language, on a grid of 112 settings and on the longest settings found (androgynous, slender, very high, outward, asymmetric, relaxed skin, fitted top, the four choices set); `tests/smoke.py` checks length plus one per line break ≤ 10,000 on the longest settings, in both languages. How:
