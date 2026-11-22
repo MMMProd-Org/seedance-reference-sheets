@@ -4352,48 +4352,81 @@ function sdMirrorImage(f, keepLeft, done) {
       for (i0 = 0; i0 < W; i0++) F.push(fr(i0));
       /* the panels: the gaps found by sdPanelCuts; none found (no visible gap, unequal panels on some renders): the middles between the
          four widest runs of body columns */
-      var pan;
-      if (C.every(function (z) {
-        return z[1] > z[0];
-      }))
-        pan = [
+      /* the figures: the four widest runs of body columns, in order */
+      var runs = [], st = -1, gapMax = Math.round(W * 0.015);
+      for (i0 = 0; i0 <= W; i0++) {
+        var on = i0 < W && F[i0] > 0.02;
+        on && st < 0 && (st = i0);
+        if (!on && st >= 0) {
+          runs.length && st - runs[runs.length - 1][1] <= gapMax ? (runs[runs.length - 1][1] = i0 - 1) : runs.push([st, i0 - 1]);
+          st = -1;
+        }
+      }
+      runs = runs
+        .slice()
+        .sort(function (m, n) {
+          return n[1] - n[0] - (m[1] - m[0]);
+        })
+        .slice(0, 4)
+        .sort(function (m, n) {
+          return m[0] - n[0];
+        });
+      if (4 > runs.length) {
+        free();
+        return done("planche");
+      }
+      /* the panels: the gaps found by sdPanelCuts when each panel then holds its own figure whole; else (no visible gap, unequal panels
+         on some renders, or a cut through a figure: PR #82 review) from the figures */
+      var pan = [
           [0, Math.round(C[0][0])],
           [Math.round(C[0][1]) + 1, Math.round(C[1][0])],
           [Math.round(C[1][1]) + 1, Math.round(C[2][0])],
           [Math.round(C[2][1]) + 1, W],
-        ];
-      else {
-        var runs = [], st = -1, gapMax = Math.round(W * 0.015);
-        for (i0 = 0; i0 <= W; i0++) {
-          var on = i0 < W && F[i0] > 0.02;
-          on && st < 0 && (st = i0);
-          if (!on && st >= 0) {
-            runs.length && st - runs[runs.length - 1][1] <= gapMax ? (runs[runs.length - 1][1] = i0 - 1) : runs.push([st, i0 - 1]);
-            st = -1;
-          }
-        }
-        runs = runs
-          .slice()
-          .sort(function (m, n) {
-            return n[1] - n[0] - (m[1] - m[0]);
-          })
-          .slice(0, 4)
-          .sort(function (m, n) {
-            return m[0] - n[0];
+        ],
+        cut =
+          C.every(function (z) {
+            return z[1] > z[0];
+          }) &&
+          pan.every(function (q, k) {
+            return runs[k][0] >= q[0] && runs[k][1] < q[1];
           });
-        if (4 > runs.length) {
-          free();
-          return done("planche");
-        }
+      if (!cut) {
+        /* between two figures, the panel boundary: the strongest step of the backdrop's brightness (column medians), and when a second
+           step stands within 3% of the width, the strip between them is a panel gap, kept out of both panels (PR #82 review, Copilot);
+           no step: the middle */
+        var M = [], lumC = function (i) {
+            var v = ys.map(function (y) {
+              var o = 4 * (y * W + i);
+              return 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
+            });
+            v.sort(function (m, n) {
+              return m - n;
+            });
+            return v[v.length >> 1] || 0;
+          },
+          stepAt = function (i) {
+            return 2 <= i && i < W - 2 ? Math.abs(M[i + 2] - M[i - 2]) : 0;
+          },
+          gaps = [0, 1, 2].map(function (k) {
+            var a = runs[k][1] + 1, b = runs[k + 1][0] - 1, i, x1 = -1, x2 = -1, best = 0, w = Math.round(W * 0.03);
+            for (i = a; i <= b; i++) M[i] === undefined && (M[i] = lumC(i));
+            for (i = Math.max(a - 2, 0); i <= Math.min(b + 2, W - 1); i++) M[i] === undefined && (M[i] = lumC(i));
+            /* the steps between the figures only: a step read across a figure's edge is the figure, not a gap */
+            for (i = a + 2; i <= b - 2; i++) stepAt(i) > best && ((best = stepAt(i)), (x1 = i));
+            if (8 > best) return [Math.round((a + b) / 2), Math.round((a + b) / 2) - 1];
+            best = 0;
+            for (i = Math.max(a + 2, x1 - w); i <= Math.min(b - 2, x1 + w); i++) Math.abs(i - x1) > 4 && stepAt(i) > best && ((best = stepAt(i)), (x2 = i));
+            return 8 > best ? [x1, x1] : [Math.min(x1, x2) - 2, Math.max(x1, x2) + 2];
+          });
         pan = [0, 1, 2, 3].map(function (k) {
-          return [k ? Math.round((runs[k - 1][1] + runs[k][0]) / 2) + 1 : 0, 3 > k ? Math.round((runs[k][1] + runs[k + 1][0]) / 2) : W];
+          return [k ? gaps[k - 1][1] + 1 : 0, 3 > k ? gaps[k][0] : W];
         });
       }
       var fig = function (k) {
           /* the figure of a panel: its body columns; ok when there is one and it does not fill the panel */
           var a = pan[k][0], b = pan[k][1], lo = -1, hi = -1, i;
           for (i = a; i < b; i++) F[i] > 0.02 && (lo < 0 && (lo = i), (hi = i));
-          return { a: a, b: b, m: (lo + hi) / 2, ok: lo >= 0 && hi - lo < (b - a) * 0.9 };
+          return { a: a, b: b, lo: lo, hi: hi, m: (lo + hi) / 2, ok: lo >= 0 && hi - lo < (b - a) * 0.9 };
         },
         sk = keepLeft ? 1 : 3,
         tk = keepLeft ? 3 : 1,
@@ -4408,12 +4441,20 @@ function sdMirrorImage(f, keepLeft, done) {
         s0 = S.a, s1 = S.b, t0 = T.a, t1 = T.b,
         /* in the flipped source, column u holds source column s1 - 1 - u; its figure's middle moves to s0 + s1 - 1 - S.m */
         shift = Math.round(T.m - (s0 + s1 - 1 - S.m)),
+        /* the whole panel changes (a narrower band left backdrop seams inside it on the owner's renders); the gaps are outside the panels */
+        mg = W,
+        nlo = Math.round(T.m - (S.hi - S.m)),
+        nhi = Math.round(T.m + (S.m - S.lo)),
+        X0 = Math.max(t0, Math.min(T.lo, nlo) - mg),
+        X1 = Math.min(t1, Math.max(T.hi, nhi) + mg + 1),
+        r0 = Math.max(s0, S.lo - mg),
+        r1 = Math.min(s1 - 1, S.hi + mg),
         src = new Uint8ClampedArray(d),
         X, y, o, oi;
-      for (X = t0; X < t1; X++) {
+      for (X = X0; X < X1; X++) {
         /* the target column takes the flipped source column at the same place relative to the figure */
         var u = Math.min(s1 - 1 - s0, Math.max(0, X - shift - s0)),
-          sx = s1 - 1 - u;
+          sx = Math.min(r1, Math.max(r0, s1 - 1 - u));
         for (y = 0; y < H; y++) {
           o = 4 * (y * W + X);
           oi = 4 * (y * W + sx);

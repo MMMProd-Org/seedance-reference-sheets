@@ -933,6 +933,23 @@ with sync_playwright() as p:
     # PR #82 review (Sourcery): the old, wider left figure is gone where the new one does not reach
     assert got["was"] == list(BG), got
     assert "Sheet downloaded" in box.inner_text()
+    # PR #82 review (Copilot): an off-centre left profile (125 to 154, next to the gap at 98 to 101): the gaps stay where they are both ways
+    def sheet2(x, y):
+        if 125 <= x < 155 and 20 <= y < 180 and not (x in range(98, 102)):
+            return MARK if x >= 150 and 50 <= y < 60 else SKIN
+        return BG if 135 <= x < 165 else sheet(x, y)
+    tmp2 = pathlib.Path(tempfile.mkdtemp()) / "sheet2.png"
+    tmp2.write_bytes(png(400, 200, sheet2))
+    for keep in ("Keep the left profile", "Keep the right profile"):
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(tmp2))
+        data = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        gaps = mi.evaluate("""(b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          ok([99, 199, 299].map((a) => [10, 100, 190].map((b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3))))); };
+          im.src = 'data:image/png;base64,' + b64; })""", data)
+        assert all(p == list(GAP) for col in gaps for p in col), (keep, gaps)
     # PR #82 review (Sourcery): an image without the two profiles is refused, nothing downloaded
     plain = pathlib.Path(tempfile.mkdtemp()) / "plain.png"
     plain.write_bytes(png(400, 200, lambda x, y: BG))
