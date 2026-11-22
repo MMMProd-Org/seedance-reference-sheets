@@ -4659,7 +4659,8 @@ for _a, _b in [
           k: "sdTorsoPooch",
           l: "Bidon sous le nombril (retouche)",
           show: function () {
-            return "seedream" === e.model && "person" === e.mode && !sdChild(e);
+            /* PR #83 review: shown only where the card can use them (no source photo, the Photo style) */
+            return "seedream" === e.model && "person" === e.mode && !sdChild(e) && sdNative(e) && !sdOff(e);
           },
           hint: "Le même réglage que dans la carte « Retouche : ventre et torse » (colonne des prompts), qu'il fait apparaître : de profil, ce que le bidon dépasse la ligne des abdos du haut, un demi-doigt (Très léger), un doigt (Léger) ou deux doigts (Marqué). Auto : suit « Graisse : ventre ».",
         },
@@ -4668,7 +4669,8 @@ for _a, _b in [
           k: "sdTorsoDeep",
           l: "Épaisseur de profil (retouche)",
           show: function () {
-            return "seedream" === e.model && "person" === e.mode && !sdChild(e);
+            /* PR #83 review: shown only where the card can use them (no source photo, the Photo style) */
+            return "seedream" === e.model && "person" === e.mode && !sdChild(e) && sdNative(e) && !sdOff(e);
           },
           hint: "Le même réglage que dans la carte « Retouche : ventre et torse » : le torse plus épais du dos au ventre, vu de profil, par rapport à ta planche. Auto : suit « Épaisseur du torse (de profil) ».",
         },'''),

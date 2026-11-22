@@ -875,13 +875,16 @@ with sync_playwright() as p:
 
     # owner, 2026-11-22 (« concernant le petit bidon il est où le curseur ? », « je ne le vois pas sur la planche html »): the card's two
     # settings are also in the Body tab, under « Taille et ventre », on Seedream only; setting one there shows the card
-    for model, shown in (("seedream", True), ("gpt", False)):
+    # PR #83 review: not where the card cannot use them (GPT, the 3D style, a source photo); visible in the Body tab where shown
+    for model, style, shown in (("seedream", "photo", True), ("gpt", "photo", False), ("seedream", "3d", False)):
         bt = clipboard_page(browser, errors)
-        bt.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: '" + model + "', faceSeed: 7, faceGen: 2}))")
+        bt.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: '" + style + "', photo: false, pres: 'f', headless: true, model: '" + model + "', faceSeed: 7, faceGen: 2}))")
         bt.reload()
         bt.get_by_role("tab", name=re.compile(r"^Body")).first.click()
         fs = bt.locator("fieldset", has=bt.get_by_text("Pooch below the navel (retouch)", exact=True))
-        assert fs.count() == (1 if shown else 0) and bt.get_by_text("Depth in profile (retouch)", exact=True).count() == (1 if shown else 0), model
+        dp = bt.get_by_text("Depth in profile (retouch)", exact=True)
+        assert fs.count() == (1 if shown else 0) and dp.count() == (1 if shown else 0), (model, style)
+        assert not shown or (fs.is_visible() and dp.is_visible()), (model, style)
         if shown:
             assert bt.locator("#sd-card-growTorso").count() == 0
             fs.get_by_text("Very light", exact=True).click()
