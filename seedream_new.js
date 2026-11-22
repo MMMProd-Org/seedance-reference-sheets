@@ -4350,9 +4350,7 @@ function sdMirrorImage(f, keepLeft, done) {
         i0;
       for (yy = Math.round(H * 0.05); yy < Math.round(H * 0.95); yy += 4) ys.push(yy);
       for (i0 = 0; i0 < W; i0++) F.push(fr(i0));
-      /* the panels: the gaps found by sdPanelCuts; none found (no visible gap, unequal panels on some renders): the middles between the
-         four widest runs of body columns */
-      /* the figures: the four widest runs of body columns, in order */
+      /* the runs of body columns, gaps of up to 1.5% of the width bridged */
       var runs = [], st = -1, gapMax = Math.round(W * 0.015);
       for (i0 = 0; i0 <= W; i0++) {
         var on = i0 < W && F[i0] > 0.02;
@@ -4362,61 +4360,88 @@ function sdMirrorImage(f, keepLeft, done) {
           st = -1;
         }
       }
-      runs = runs
-        .slice()
-        .sort(function (m, n) {
-          return n[1] - n[0] - (m[1] - m[0]);
-        })
-        .slice(0, 4)
-        .sort(function (m, n) {
-          return m[0] - n[0];
-        });
-      if (4 > runs.length) {
-        free();
-        return done("planche");
-      }
-      /* the panels: the gaps found by sdPanelCuts when each panel then holds its own figure whole; else (no visible gap, unequal panels
-         on some renders, or a cut through a figure: PR #82 review) from the figures */
+      /* PR #82 review (Copilot): one figure can split into several runs (skin apart from a neutral garment), so the runs are not the
+         figures: a run narrower than 0.5% of the width is noise; the gaps' cuts hold when every other run lies whole in one panel and
+         each panel holds at least one; without them, exactly four runs or the sheet is refused, never a guess */
+      var minW = Math.max(3, W * 0.005);
+      runs = runs.filter(function (r) {
+        return r[1] - r[0] + 1 >= minW;
+      });
       var pan = [
           [0, Math.round(C[0][0])],
           [Math.round(C[0][1]) + 1, Math.round(C[1][0])],
           [Math.round(C[1][1]) + 1, Math.round(C[2][0])],
           [Math.round(C[2][1]) + 1, W],
         ],
+        inPan = function (r) {
+          for (var k = 0; k < 4; k++) if (r[0] >= pan[k][0] && r[1] < pan[k][1]) return k;
+          return -1;
+        },
         cut =
           C.every(function (z) {
             return z[1] > z[0];
           }) &&
-          pan.every(function (q, k) {
-            return runs[k][0] >= q[0] && runs[k][1] < q[1];
+          runs.every(function (r) {
+            return inPan(r) >= 0;
+          }) &&
+          [0, 1, 2, 3].every(function (k) {
+            return runs.some(function (r) {
+              return inPan(r) === k;
+            });
           });
+      /* the backdrop's brightness by column (medians of the sampled rows) and its steps, for the panel boundaries between figures */
+      var M = [], lumC = function (i) {
+          var v = ys.map(function (y) {
+            var o = 4 * (y * W + i);
+            return 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
+          });
+          v.sort(function (m, n) {
+            return m - n;
+          });
+          return v[v.length >> 1] || 0;
+        },
+        stepAt = function (i) {
+          return 2 <= i && i < W - 2 ? M[i + 2] - M[i - 2] : 0;
+        },
+        between = function (a, b) {
+          for (var i = Math.max(a - 2, 0); i <= Math.min(b + 2, W - 1); i++) M[i] === undefined && (M[i] = lumC(i));
+        };
+      /* more than four runs without the gaps' cuts: two runs with no step of the backdrop between them are one figure (PR #82 review,
+         Copilot) */
+      if (!cut && 4 < runs.length)
+        runs = runs.reduce(function (g, r) {
+          var q = g[g.length - 1], i, st = 0;
+          if (q) {
+            between(q[1] + 1, r[0] - 1);
+            for (i = q[1] + 3; i <= r[0] - 3; i++) st = Math.max(st, Math.abs(stepAt(i)));
+          }
+          q && 8 > st ? (q[1] = r[1]) : g.push(r.slice());
+          return g;
+        }, []);
+      if (!cut && 4 !== runs.length) {
+        free();
+        return done("planche");
+      }
       if (!cut) {
-        /* between two figures, the panel boundary: the strongest step of the backdrop's brightness (column medians), and when a second
-           step stands within 3% of the width, the strip between them is a panel gap, kept out of both panels (PR #82 review, Copilot);
-           no step: the middle */
-        var M = [], lumC = function (i) {
-            var v = ys.map(function (y) {
-              var o = 4 * (y * W + i);
-              return 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
-            });
-            v.sort(function (m, n) {
-              return m - n;
-            });
-            return v[v.length >> 1] || 0;
-          },
-          stepAt = function (i) {
-            return 2 <= i && i < W - 2 ? Math.abs(M[i + 2] - M[i - 2]) : 0;
-          },
+        /* between two figures, the panel boundary: the strongest step of the backdrop's brightness, and when a second step stands
+           within 3% of the width, the strip between them is a panel gap, kept out of both panels (PR #82 review, Copilot); no step: the
+           middle */
+        var
           gaps = [0, 1, 2].map(function (k) {
-            var a = runs[k][1] + 1, b = runs[k + 1][0] - 1, i, x1 = -1, x2 = -1, best = 0, w = Math.round(W * 0.03);
-            for (i = a; i <= b; i++) M[i] === undefined && (M[i] = lumC(i));
-            for (i = Math.max(a - 2, 0); i <= Math.min(b + 2, W - 1); i++) M[i] === undefined && (M[i] = lumC(i));
+            var a = runs[k][1] + 1, b = runs[k + 1][0] - 1, i, x1 = -1, x2 = -1, best = 0, w = Math.round(W * 0.03), r0, r1, sg;
+            between(a, b);
             /* the steps between the figures only: a step read across a figure's edge is the figure, not a gap */
-            for (i = a + 2; i <= b - 2; i++) stepAt(i) > best && ((best = stepAt(i)), (x1 = i));
+            for (i = a + 2; i <= b - 2; i++) Math.abs(stepAt(i)) > best && ((best = Math.abs(stepAt(i))), (x1 = i));
             if (8 > best) return [Math.round((a + b) / 2), Math.round((a + b) / 2) - 1];
+            /* the first edge: the steps of its sign, at least half as strong, around it (4 columns for a sharp edge, more when blurred or
+               when two edges of one sign touch); the second edge: the strongest step outside it, within 3% of the width; a one-pixel
+               separator gives its two edges 4 columns apart (PR #82 review, Copilot) */
+            sg = stepAt(x1) > 0;
+            for (r0 = x1; r0 - 1 >= a + 2 && stepAt(r0 - 1) > 0 === sg && Math.abs(stepAt(r0 - 1)) >= best / 2; r0--);
+            for (r1 = x1; r1 + 1 <= b - 2 && stepAt(r1 + 1) > 0 === sg && Math.abs(stepAt(r1 + 1)) >= best / 2; r1++);
             best = 0;
-            for (i = Math.max(a + 2, x1 - w); i <= Math.min(b - 2, x1 + w); i++) Math.abs(i - x1) > 4 && stepAt(i) > best && ((best = stepAt(i)), (x2 = i));
-            return 8 > best ? [x1, x1] : [Math.min(x1, x2) - 2, Math.max(x1, x2) + 2];
+            for (i = Math.max(a + 2, x1 - w); i <= Math.min(b - 2, x1 + w); i++) (i < r0 || i > r1) && Math.abs(stepAt(i)) > best && ((best = Math.abs(stepAt(i))), (x2 = i));
+            return 8 > best ? [r0, r1] : [Math.min(r0, x2) - 2, Math.max(r1, x2) + 2];
           });
         pan = [0, 1, 2, 3].map(function (k) {
           return [k ? gaps[k - 1][1] + 1 : 0, 3 > k ? gaps[k][0] : W];

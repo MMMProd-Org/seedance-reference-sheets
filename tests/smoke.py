@@ -950,6 +950,35 @@ with sync_playwright() as p:
           ok([99, 199, 299].map((a) => [10, 100, 190].map((b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3))))); };
           im.src = 'data:image/png;base64,' + b64; })""", data)
         assert all(p == list(GAP) for col in gaps for p in col), (keep, gaps)
+    # PR #82 review (Copilot): the columns a mirror changes, read on the whole image
+    def changed(fn, keep, name):
+        src = pathlib.Path(tempfile.mkdtemp()) / name
+        src.write_bytes(png(400, 200, fn))
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(src))
+        out = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        return mi.evaluate("""(pair) => Promise.all(pair.map((b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          ok(x.getImageData(0, 0, im.width, im.height).data); }; im.src = 'data:image/png;base64,' + b64; }))).then(([a, b]) => {
+          const cols = new Set(); for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) cols.add((i / 4) % 400);
+          return [...cols].sort((m, n) => m - n); })""", [base64.b64encode(src.read_bytes()).decode(), out])
+    # a one-pixel gap at 100 next to the off-centre left profile, four-pixel gaps elsewhere: only the target profile's panel changes, both ways
+    def sheet3(x, y):
+        if x in (98, 99, 101):
+            return BG
+        return GAP if x == 100 else sheet2(x, y)
+    # a front view in two runs of skin (30 to 45 and 56 to 70, a neutral garment between them): the gaps place it, the back view stays
+    def sheet4(x, y):
+        return BG if 46 <= x < 56 else sheet(x, y)
+    # the same front view without the gaps: five runs for four views, refused rather than guessed
+    def sheet5(x, y):
+        return BG if sheet4(x, y) == GAP else sheet4(x, y)
+    for fn, name, panels in ((sheet3, "sheet3.png", {"Keep the left profile": (302, 400), "Keep the right profile": (102, 198)}),
+                             (sheet4, "sheet4.png", {"Keep the left profile": (302, 400), "Keep the right profile": (102, 198)})):
+        for keep, (lo, hi) in panels.items():
+            cols = changed(fn, keep, name)
+            assert cols is not None and cols and all(lo <= c < hi for c in cols), (name, keep, cols)
     # PR #82 review (Sourcery): an image without the two profiles is refused, nothing downloaded
     plain = pathlib.Path(tempfile.mkdtemp()) / "plain.png"
     plain.write_bytes(png(400, 200, lambda x, y: BG))
@@ -957,6 +986,13 @@ with sync_playwright() as p:
     mi.locator("#sd-mirror-file").set_input_files(str(plain))
     box.get_by_text("This is not a four-view sheet").wait_for(timeout=5000)
     assert mi.evaluate("window.sdDl") == 0
+    # PR #82 review (Copilot): the front view in two runs without the gaps is refused, nothing downloaded
+    five = pathlib.Path(tempfile.mkdtemp()) / "sheet5.png"
+    five.write_bytes(png(400, 200, sheet5))
+    box.get_by_role("radio", name="Keep the left profile", exact=True).click()
+    mi.locator("#sd-mirror-file").set_input_files(str(five))
+    mi.wait_for_timeout(1500)
+    assert mi.evaluate("window.sdDl") == 0 and "This is not a four-view sheet" in box.inner_text()
     mi.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
