@@ -921,7 +921,7 @@ with sync_playwright() as p:
         data = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
         return dl.value.suggested_filename, mi.evaluate("""(b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
           const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
-          const px = (a, b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3)); ok({mark: px(337, 55), body: px(362, 100), old: px(345, 100), left: px(162, 55), src: px(150, 100)}); };
+          const px = (a, b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3)); ok({mark: px(337, 55), body: px(362, 100), old: px(345, 100), left: px(162, 55), src: px(150, 100), was: px(137, 100)}); };
           im.src = 'data:image/png;base64,' + b64; })""", data)
     name, got = mirrored("Keep the left profile")
     # the left profile (center 150) flipped onto the right one (center 350): its mark comes to the left edge, the body spans 335 to 365
@@ -930,7 +930,16 @@ with sync_playwright() as p:
     name, got = mirrored("Keep the right profile")
     # the right profile (20 px wide, no mark) flipped onto the left one: the mark is gone, the right profile kept
     assert name == "sheet_profils-droite.png" and got["left"] == list(BG) and got["src"] == list(SKIN) and got["old"] == list(SKIN), (name, got)
+    # PR #82 review (Sourcery): the old, wider left figure is gone where the new one does not reach
+    assert got["was"] == list(BG), got
     assert "Sheet downloaded" in box.inner_text()
+    # PR #82 review (Sourcery): an image without the two profiles is refused, nothing downloaded
+    plain = pathlib.Path(tempfile.mkdtemp()) / "plain.png"
+    plain.write_bytes(png(400, 200, lambda x, y: BG))
+    mi.evaluate("window.sdDl = 0; document.addEventListener('click', (e) => e.target.download && window.sdDl++, true)")
+    mi.locator("#sd-mirror-file").set_input_files(str(plain))
+    box.get_by_text("This is not a four-view sheet").wait_for(timeout=5000)
+    assert mi.evaluate("window.sdDl") == 0
     mi.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it

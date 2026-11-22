@@ -4314,10 +4314,16 @@ function sdPrepImage(f, done) {
 /* owner, 2026-11-22 (his render of the « Ventre et torse » card: one profile 20% deeper, the other unchanged; « oui un bouton pour qu'on
    puisse l'enlever si besoin si je veux qu'elle ait une cicatrice sur la jambe gauche mais pas droite je dois le pouvoir »): a button, never
    applied by itself, that replaces one profile panel with the other one flipped, so both profiles show the same body. The panels as found on
-   the image (sdPanelCuts), the figure of each profile found against its own backdrop, the flipped figure put where the replaced one stood;
-   the columns past the source panel's edges repeat its edge columns (backdrop). Sides as seen on the screen. */
+   the image (sdPanelCuts, else from the figures), the figure of each profile found by its colour against the grey backdrop, the flipped
+   figure put where the replaced one stood; the columns past the source panel's edges repeat its edge columns (backdrop). Sides as seen on
+   the screen. */
 function sdMirrorImage(f, keepLeft, done) {
   sdDecodeImage(f, function (im, W, H, free) {
+    /* PR #82 review (Sourcery): a sheet is a few megapixels; past 40, say so rather than fill the tab's memory */
+    if (W * H > 4e7) {
+      free();
+      return done("taille");
+    }
     try {
       var c = document.createElement("canvas");
       c.width = W;
@@ -4327,53 +4333,78 @@ function sdMirrorImage(f, keepLeft, done) {
       var img = x.getImageData(0, 0, W, H),
         d = img.data,
         C = sdPanelCuts(d, W, H),
+        ys = [],
+        yy,
+        /* a body column: skin or a garment in at least 2% of the sampled rows; the backdrop is a neutral grey (the sheet prompts ask for
+           one), so colour tells body from backdrop whatever its shading from top to floor (one backdrop value per panel counted that
+           shading as body on the owner's renders) */
+        fr = function (i) {
+          var n = 0;
+          ys.forEach(function (y) {
+            var o = 4 * (y * W + i);
+            Math.max(d[o], d[o + 1], d[o + 2]) - Math.min(d[o], d[o + 1], d[o + 2]) > 18 && n++;
+          });
+          return ys.length ? n / ys.length : 0;
+        },
+        F = [],
+        i0;
+      for (yy = Math.round(H * 0.05); yy < Math.round(H * 0.95); yy += 4) ys.push(yy);
+      for (i0 = 0; i0 < W; i0++) F.push(fr(i0));
+      /* the panels: the gaps found by sdPanelCuts; none found (no visible gap, unequal panels on some renders): the middles between the
+         four widest runs of body columns */
+      var pan;
+      if (C.every(function (z) {
+        return z[1] > z[0];
+      }))
         pan = [
           [0, Math.round(C[0][0])],
           [Math.round(C[0][1]) + 1, Math.round(C[1][0])],
           [Math.round(C[1][1]) + 1, Math.round(C[2][0])],
           [Math.round(C[2][1]) + 1, W],
-        ],
-        fig = function (k) {
-          /* the figure: the columns where 3% to 97% of the sampled rows differ from the panel's backdrop (grey samples near its edges, as in
-             sdPrepImage); a column that differs in nearly every row is a panel gap, trimmed from the panel's edges so it is neither copied
-             nor replaced */
-          var x0 = pan[k][0], x1 = pan[k][1], pw = Math.max(1, x1 - x0), rs = [], gs = [], bs = [], y, i, ys = [];
-          for (y = Math.round(H * 0.05); y < Math.round(H * 0.95); y += 4) ys.push(y);
-          [[x0 + pw * 0.02, x0 + pw * 0.08], [x1 - pw * 0.08, x1 - pw * 0.02]].forEach(function (r) {
-            for (i = Math.round(r[0]); i < Math.round(r[1]); i++)
-              ys.forEach(function (y) {
-                var o = 4 * (y * W + i);
-                Math.max(d[o], d[o + 1], d[o + 2]) - Math.min(d[o], d[o + 1], d[o + 2]) < 22 && (rs.push(d[o]), gs.push(d[o + 1]), bs.push(d[o + 2]));
-              });
-          });
-          var med = function (a) {
-              a.sort(function (m, n) {
-                return m - n;
-              });
-              return a[a.length >> 1] || 0;
-            },
-            bg = [med(rs), med(gs), med(bs)],
-            fr = function (i) {
-              var n = 0;
-              ys.forEach(function (y) {
-                var o = 4 * (y * W + i);
-                Math.hypot(d[o] - bg[0], d[o + 1] - bg[1], d[o + 2] - bg[2]) > 24 && n++;
-              });
-              return ys.length ? n / ys.length : 0;
-            },
-            edge = Math.round(W * 0.03), a = x0, b = x1, lo = -1, hi = -1;
-          while (a < x0 + edge && a < b - 1 && fr(a) > 0.97) a++;
-          while (b > x1 - edge && b > a + 1 && fr(b - 1) > 0.97) b--;
-          for (i = a; i < b; i++) {
-            var q = fr(i);
-            q > 0.03 && q <= 0.97 && (lo < 0 && (lo = i), (hi = i));
+        ];
+      else {
+        var runs = [], st = -1, gapMax = Math.round(W * 0.015);
+        for (i0 = 0; i0 <= W; i0++) {
+          var on = i0 < W && F[i0] > 0.02;
+          on && st < 0 && (st = i0);
+          if (!on && st >= 0) {
+            runs.length && st - runs[runs.length - 1][1] <= gapMax ? (runs[runs.length - 1][1] = i0 - 1) : runs.push([st, i0 - 1]);
+            st = -1;
           }
-          return { a: a, b: b, m: lo < 0 ? (a + b) / 2 : (lo + hi) / 2 };
+        }
+        runs = runs
+          .slice()
+          .sort(function (m, n) {
+            return n[1] - n[0] - (m[1] - m[0]);
+          })
+          .slice(0, 4)
+          .sort(function (m, n) {
+            return m[0] - n[0];
+          });
+        if (4 > runs.length) {
+          free();
+          return done("planche");
+        }
+        pan = [0, 1, 2, 3].map(function (k) {
+          return [k ? Math.round((runs[k - 1][1] + runs[k][0]) / 2) + 1 : 0, 3 > k ? Math.round((runs[k][1] + runs[k + 1][0]) / 2) : W];
+        });
+      }
+      var fig = function (k) {
+          /* the figure of a panel: its body columns; ok when there is one and it does not fill the panel */
+          var a = pan[k][0], b = pan[k][1], lo = -1, hi = -1, i;
+          for (i = a; i < b; i++) F[i] > 0.02 && (lo < 0 && (lo = i), (hi = i));
+          return { a: a, b: b, m: (lo + hi) / 2, ok: lo >= 0 && hi - lo < (b - a) * 0.9 };
         },
         sk = keepLeft ? 1 : 3,
         tk = keepLeft ? 3 : 1,
         S = fig(sk),
-        T = fig(tk),
+        T = fig(tk);
+      /* PR #82 review (Sourcery): not a four-view sheet (no figure found in a profile panel, or one filling it): say so, change nothing */
+      if (!S.ok || !T.ok) {
+        free();
+        return done("planche");
+      }
+      var
         s0 = S.a, s1 = S.b, t0 = T.a, t1 = T.b,
         /* in the flipped source, column u holds source column s1 - 1 - u; its figure's middle moves to s0 + s1 - 1 - S.m */
         shift = Math.round(T.m - (s0 + s1 - 1 - S.m)),
@@ -4400,18 +4431,25 @@ function sdMirrorImage(f, keepLeft, done) {
       c.toBlob(
         function (bl) {
           if (!bl) return done("toBlob");
-          bl.type && bl.type !== ty && (nm = nm.replace(/\.[a-z0-9]+$/i, "." + (bl.type.split("/")[1] || "png").replace("jpeg", "jpg")));
-          var a = document.createElement("a"),
+          /* PR #82 review (Sourcery): a failure here, after the outer try, still reaches the status line */
+          var v = "";
+          try {
+            bl.type && bl.type !== ty && (nm = nm.replace(/\.[a-z0-9]+$/i, "." + (bl.type.split("/")[1] || "png").replace("jpeg", "jpg")));
+            var a = document.createElement("a");
             v = URL.createObjectURL(bl);
-          a.href = v;
-          a.download = nm;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(function () {
-            URL.revokeObjectURL(v);
-          }, 4e3);
-          done(null, nm, W, H);
+            a.href = v;
+            a.download = nm;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+              URL.revokeObjectURL(v);
+            }, 4e3);
+            done(null, nm, W, H);
+          } catch (z) {
+            v && URL.revokeObjectURL(v);
+            done(String((z && z.name) || "erreur"));
+          }
         },
         ty,
         1,
@@ -4479,7 +4517,11 @@ function SdMirror() {
           f &&
             sdMirrorImage(f, "left" === keep, function (err, n, w, h) {
               set(
-                "string" == typeof err
+                "planche" === err
+                  ? sdT("Ce n'est pas une planche à quatre vues : je n'y trouve pas les deux profils. Rien n'a été modifié.", "This is not a four-view sheet: I cannot find both profiles in it. Nothing was changed.")
+                  : "taille" === err
+                  ? sdT("Image trop grande (plus de 40 mégapixels). Rien n'a été modifié.", "Image too large (over 40 megapixels). Nothing was changed.")
+                  : "string" == typeof err
                   ? sdT("L'image est lue, mais l'opération a échoué dans cette page (" + err + "). Ouvre le fichier HTML de l'outil directement dans Chrome, Firefox ou Edge.", "The image was read, but the operation failed in this page (" + err + "). Open the tool's HTML file directly in Chrome, Firefox or Edge.")
                   : err
                   ? sdT("Image illisible : choisis un PNG, un JPEG (.jpg ou .jpeg) ou un WebP.", "Unreadable image: choose a PNG, a JPEG (.jpg or .jpeg) or a WebP.")
