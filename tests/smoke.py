@@ -891,6 +891,48 @@ with sync_playwright() as p:
     assert abs(room[0] - room[1]) < 1 and room[2] >= room[0] + 16 - 1, room
     ro.close()
 
+    # owner, 2026-11-22 (« oui un bouton ... si je veux qu'elle ait une cicatrice sur la jambe gauche mais pas droite je dois le pouvoir »):
+    # the mirror button replaces one profile with the other one flipped, only when used, on the side chosen
+    import base64, struct, tempfile, zlib
+    def png(w, h, px):
+        raw = b"".join(b"\x00" + bytes(c for x in range(w) for c in px(x, y)) for y in range(h))
+        ch = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+        return b"\x89PNG\r\n\x1a\n" + ch(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + ch(b"IDAT", zlib.compress(raw)) + ch(b"IEND", b"")
+    SKIN, MARK, BG, GAP = (200, 150, 120), (40, 60, 220), (118, 118, 118), (160, 160, 160)
+    def sheet(x, y):
+        if x in range(98, 102) or x in range(198, 202) or x in range(298, 302):
+            return GAP
+        if 135 <= x < 165 and 20 <= y < 180:  # left profile, a mark on its right edge
+            return MARK if x >= 160 and 50 <= y < 60 else SKIN
+        if 30 <= x < 70 or 230 <= x < 270 or (340 <= x < 360 and 20 <= y < 180):
+            return SKIN if 20 <= y < 180 else BG
+        return BG
+    tmp = pathlib.Path(tempfile.mkdtemp()) / "sheet.png"
+    tmp.write_bytes(png(400, 200, sheet))
+    mi = clipboard_page(browser, errors)
+    mi.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, fatBelly: 1}))")
+    mi.reload()
+    box = mi.locator("[data-sd-mirror]")
+    assert box.count() == 1 and "scar, tattoo, birthmark" in box.inner_text()
+    def mirrored(keep):
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(tmp))
+        data = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        return dl.value.suggested_filename, mi.evaluate("""(b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          const px = (a, b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3)); ok({mark: px(337, 55), body: px(362, 100), old: px(345, 100), left: px(162, 55), src: px(150, 100)}); };
+          im.src = 'data:image/png;base64,' + b64; })""", data)
+    name, got = mirrored("Keep the left profile")
+    # the left profile (center 150) flipped onto the right one (center 350): its mark comes to the left edge, the body spans 335 to 365
+    assert name == "sheet_profils-gauche.png" and got["mark"] == list(MARK) and got["body"] == list(SKIN) and got["old"] == list(SKIN), (name, got)
+    assert got["left"] == list(MARK) and got["src"] == list(SKIN), got
+    name, got = mirrored("Keep the right profile")
+    # the right profile (20 px wide, no mark) flipped onto the left one: the mark is gone, the right profile kept
+    assert name == "sheet_profils-droite.png" and got["left"] == list(BG) and got["src"] == list(SKIN) and got["old"] == list(SKIN), (name, got)
+    assert "Sheet downloaded" in box.inner_text()
+    mi.close()
+
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
     io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', chest: 3, bustHigh: 'lowset', sdTorsoPooch: '1', sdTorsoDeep: '33'}))")

@@ -4311,6 +4311,187 @@ function sdPrepImage(f, done) {
     done(!0);
   });
 }
+/* owner, 2026-11-22 (his render of the « Ventre et torse » card: one profile 20% deeper, the other unchanged; « oui un bouton pour qu'on
+   puisse l'enlever si besoin si je veux qu'elle ait une cicatrice sur la jambe gauche mais pas droite je dois le pouvoir »): a button, never
+   applied by itself, that replaces one profile panel with the other one flipped, so both profiles show the same body. The panels as found on
+   the image (sdPanelCuts), the figure of each profile found against its own backdrop, the flipped figure put where the replaced one stood;
+   the columns past the source panel's edges repeat its edge columns (backdrop). Sides as seen on the screen. */
+function sdMirrorImage(f, keepLeft, done) {
+  sdDecodeImage(f, function (im, W, H, free) {
+    try {
+      var c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      var x = c.getContext("2d");
+      x.drawImage(im, 0, 0);
+      var img = x.getImageData(0, 0, W, H),
+        d = img.data,
+        C = sdPanelCuts(d, W, H),
+        pan = [
+          [0, Math.round(C[0][0])],
+          [Math.round(C[0][1]) + 1, Math.round(C[1][0])],
+          [Math.round(C[1][1]) + 1, Math.round(C[2][0])],
+          [Math.round(C[2][1]) + 1, W],
+        ],
+        fig = function (k) {
+          /* the figure: the columns where 3% to 97% of the sampled rows differ from the panel's backdrop (grey samples near its edges, as in
+             sdPrepImage); a column that differs in nearly every row is a panel gap, trimmed from the panel's edges so it is neither copied
+             nor replaced */
+          var x0 = pan[k][0], x1 = pan[k][1], pw = Math.max(1, x1 - x0), rs = [], gs = [], bs = [], y, i, ys = [];
+          for (y = Math.round(H * 0.05); y < Math.round(H * 0.95); y += 4) ys.push(y);
+          [[x0 + pw * 0.02, x0 + pw * 0.08], [x1 - pw * 0.08, x1 - pw * 0.02]].forEach(function (r) {
+            for (i = Math.round(r[0]); i < Math.round(r[1]); i++)
+              ys.forEach(function (y) {
+                var o = 4 * (y * W + i);
+                Math.max(d[o], d[o + 1], d[o + 2]) - Math.min(d[o], d[o + 1], d[o + 2]) < 22 && (rs.push(d[o]), gs.push(d[o + 1]), bs.push(d[o + 2]));
+              });
+          });
+          var med = function (a) {
+              a.sort(function (m, n) {
+                return m - n;
+              });
+              return a[a.length >> 1] || 0;
+            },
+            bg = [med(rs), med(gs), med(bs)],
+            fr = function (i) {
+              var n = 0;
+              ys.forEach(function (y) {
+                var o = 4 * (y * W + i);
+                Math.hypot(d[o] - bg[0], d[o + 1] - bg[1], d[o + 2] - bg[2]) > 24 && n++;
+              });
+              return ys.length ? n / ys.length : 0;
+            },
+            edge = Math.round(W * 0.03), a = x0, b = x1, lo = -1, hi = -1;
+          while (a < x0 + edge && a < b - 1 && fr(a) > 0.97) a++;
+          while (b > x1 - edge && b > a + 1 && fr(b - 1) > 0.97) b--;
+          for (i = a; i < b; i++) {
+            var q = fr(i);
+            q > 0.03 && q <= 0.97 && (lo < 0 && (lo = i), (hi = i));
+          }
+          return { a: a, b: b, m: lo < 0 ? (a + b) / 2 : (lo + hi) / 2 };
+        },
+        sk = keepLeft ? 1 : 3,
+        tk = keepLeft ? 3 : 1,
+        S = fig(sk),
+        T = fig(tk),
+        s0 = S.a, s1 = S.b, t0 = T.a, t1 = T.b,
+        /* in the flipped source, column u holds source column s1 - 1 - u; its figure's middle moves to s0 + s1 - 1 - S.m */
+        shift = Math.round(T.m - (s0 + s1 - 1 - S.m)),
+        src = new Uint8ClampedArray(d),
+        X, y, o, oi;
+      for (X = t0; X < t1; X++) {
+        /* the target column takes the flipped source column at the same place relative to the figure */
+        var u = Math.min(s1 - 1 - s0, Math.max(0, X - shift - s0)),
+          sx = s1 - 1 - u;
+        for (y = 0; y < H; y++) {
+          o = 4 * (y * W + X);
+          oi = 4 * (y * W + sx);
+          d[o] = src[oi];
+          d[o + 1] = src[oi + 1];
+          d[o + 2] = src[oi + 2];
+          d[o + 3] = src[oi + 3];
+        }
+      }
+      x.putImageData(img, 0, 0);
+      var ty = /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/png",
+        ext = (/\.(jpe?g|png|webp)$/i.exec(f.name || "") || [0, "image/jpeg" === ty ? "jpg" : "image/webp" === ty ? "webp" : "png"])[1],
+        nm = String(f.name || "planche").replace(/\.[a-z0-9]+$/i, "") + (keepLeft ? "_profils-gauche" : "_profils-droite") + "." + ("image/png" === ty ? "png" : ext);
+      free();
+      c.toBlob(
+        function (bl) {
+          if (!bl) return done("toBlob");
+          bl.type && bl.type !== ty && (nm = nm.replace(/\.[a-z0-9]+$/i, "." + (bl.type.split("/")[1] || "png").replace("jpeg", "jpg")));
+          var a = document.createElement("a"),
+            v = URL.createObjectURL(bl);
+          a.href = v;
+          a.download = nm;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () {
+            URL.revokeObjectURL(v);
+          }, 4e3);
+          done(null, nm, W, H);
+        },
+        ty,
+        1,
+      );
+    } catch (z) {
+      free();
+      done(String((z && z.name) || "erreur"));
+    }
+  }, function () {
+    done(!0);
+  });
+}
+function SdMirror() {
+  var st = (0, s.useState)(""),
+    msg = st[0],
+    set = st[1],
+    kp = (0, s.useState)("left"),
+    keep = kp[0],
+    setKeep = kp[1];
+  return (0, l.jsxs)("div", {
+    className: "mt-3 rounded-xl border px-3 py-2",
+    "data-sd-mirror": "",
+    children: [
+      (0, l.jsx)("p", { className: "font-semibold", children: sdT("Un seul profil a changé ? Rendre les deux profils identiques", "Only one profile changed? Make both profiles match") }),
+      (0, l.jsx)("p", {
+        className: "mt-1 text-muted-foreground",
+        children: sdT(
+          "Le bouton remplace un profil par l'autre, retourné comme dans un miroir, sur l'image que tu choisis ; rien ne se fait sans toi. Ne t'en sers pas si ton personnage a une marque d'un seul côté (cicatrice, tatouage, tache de naissance) : elle passerait de l'autre côté. Côtés vus de l'écran. Rien n'est envoyé : tout se fait dans ton navigateur.",
+          "The button replaces one profile with the other one, flipped as in a mirror, on the image you choose; nothing happens without you. Do not use it if your character has a mark on one side only (scar, tattoo, birthmark): it would move to the other side. Sides as seen on the screen. Nothing is sent: it all happens in your browser.",
+        ),
+      }),
+      (0, l.jsx)("div", {
+        className: "mt-2",
+        children: (0, l.jsx)(ab, {
+          label: "Profil à garder",
+          value: keep,
+          onChange: setKeep,
+          wrap: !0,
+          options: [
+            ["left", "Garder le profil gauche"],
+            ["right", "Garder le profil droit"],
+          ],
+        }),
+      }),
+      (0, l.jsx)("button", {
+        type: "button",
+        className:
+          "mt-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        style: { background: "hsl(var(--ok))" },
+        onClick: function () {
+          var i = document.getElementById("sd-mirror-file");
+          i && i.click();
+        },
+        children: sdT("Choisir ma planche et rendre les profils identiques", "Choose my sheet and make the profiles match"),
+      }),
+      (0, l.jsx)("input", {
+        id: "sd-mirror-file",
+        type: "file",
+        accept: "image/*,.png,.jpg,.jpeg,.webp",
+        "aria-label": sdT("Planche dont les profils sont à rendre identiques", "Sheet whose profiles to match"),
+        style: { display: "none" },
+        onChange: function (ev) {
+          var f = ev.target.files && ev.target.files[0];
+          ev.target.value = "";
+          f &&
+            sdMirrorImage(f, "left" === keep, function (err, n, w, h) {
+              set(
+                "string" == typeof err
+                  ? sdT("L'image est lue, mais l'opération a échoué dans cette page (" + err + "). Ouvre le fichier HTML de l'outil directement dans Chrome, Firefox ou Edge.", "The image was read, but the operation failed in this page (" + err + "). Open the tool's HTML file directly in Chrome, Firefox or Edge.")
+                  : err
+                  ? sdT("Image illisible : choisis un PNG, un JPEG (.jpg ou .jpeg) ou un WebP.", "Unreadable image: choose a PNG, a JPEG (.jpg or .jpeg) or a WebP.")
+                  : sdT("Planche téléchargée : " + n + " (" + w + " × " + h + " px). Vérifie les deux profils avant de t'en servir.", "Sheet downloaded: " + n + " (" + w + " × " + h + " px). Check both profiles before using it."),
+              );
+            });
+        },
+      }),
+      msg && (0, l.jsx)("p", { role: "status", className: "mt-2 font-semibold", children: msg }),
+    ],
+  });
+}
 function SdPrep(pr) {
   var st = (0, s.useState)(""),
     msg = st[0],
@@ -8335,6 +8516,7 @@ function sdCardExtra(k) {
             return (0, l.jsx)("li", { children: x }, i);
           }),
         }),
+        (0, l.jsx)(SdMirror, {}),
       ],
     });
   /* v147: the bust retouch, its small effect said as measured */
