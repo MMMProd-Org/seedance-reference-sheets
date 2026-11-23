@@ -16,6 +16,10 @@ Read it before any change (`AGENTS.md`).
 
 **RULE** (owner, 2026-11-23, his edit of the start: « attends autre chose pour le bas, j'ai changé une partie juste le début, ça par ça, fais le changement »). The context line now breaks after the bottom (`Il porte un bas de maillot tanga ou un string.`) and the goal reads `Objectif : version enlever le bas, au repos, debout, …` instead of `Objectif : version nue des fesses, …`, his words as written; English `Goal: the version with the bottom removed, …`. **TO TEST**.
 
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Cuisses : Fines » says narrow thighs, only the thighs
+
+**RULE** (owner's two renders, the same settings but « Cuisses » on « Fines » then « Moyennes »: « quand je mets jambe mince ça fait mincir tout le corps »). With « Fines », the shoulders, arms and bust came out smaller as well, while the only clause that changed was `average, proportionate thighs that taper clearly to the knees, not bulky` → `slim thighs, clearly narrower than the hips`. One pair of renders: the cause may also be the draw; the 2026-10-28 entry already saw `slim` said in one place slim the whole body. On Seedream, « Fines » and « Très fines » now say `narrow thighs` and `very narrow thighs`, never `slim` or `lean`, followed by `only the thighs are narrow: the shoulders, arms, bust and waist keep the size set above`. The « Key proportions » line says `narrow thighs` and `very narrow thighs` too. GPT unchanged. **TO TEST**: the same pair again.
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card's pooch as one curve, at « Très léger » (PR #87 build)
 
 **LEAD** (owner's two renders on his sheet with « Graisse : ventre » on « Légère »: « un tout petit peu pendouillant »). Against that sheet, in profile: the front line 14 to 18 px forward below the navel (left, about 2 cm, for about 1 cm asked), 11 to 15 px and 5 to 8 px (right); it now rises from the navel and its top is spread, and the step back in at the waistband is 5 to 13 px over about 2 cm of height, against 19 to 23 px at once before. The shape is better and the fold over the waistband smaller, still there; the amount is still about twice the one asked. Agreed stop: no further wording; the last of the fold by hand on the better render.
@@ -177,7 +181,7 @@ With the reference outfit, a part it covers is not asked for (Sourcery, PR #75):
 
 ## 2026-10-28 · Seedream 5.0 and Blender agent · Person, "Agent 3D": the bottom kept
 
-**DOES NOT WORK** (owner, 2026-10-28, Seedream 5.0, the edits of the entries below): « il ne faut pas que le prompt change le tanga il faut qu'il le garde c important » (already seen in the entry of v158: a regular brief instead of the Brazilian cut). **RULE.** With any top but a one-piece, the context line now says `Seul le haut est retiré : le bas garde exactement sa coupe, sa couleur et son tissu, et tout le reste reste tel quel.`, and the Blender agent's step 1 hides the top only (`haut masqué ..., pas supprimé ; bas inchangé`), no longer the whole swimsuit. To fit, the light-top sentence no longer repeats the top's description, the name check and the P/W reference are shorter, and the nipple sentence no longer says `(réglés à la main)`. The longest prompt stays under 10,000 characters with each line break counted twice. **TO TEST** on Seedream 5.0: the same edit.
+**DOES NOT WORK / RULE.** The edit changed the bottom; the context line now says only the top is removed and the Blender agent hides the top only. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-28--seedream-50-and-blender-agent--person-agent-3d-the-bottom-kept)
 
 ## 2026-10-28 · Seedream 5.0 · Person, the "Agent 3D" text as an edit prompt: the domed areola, a guide image, then the puffy-areola wording
 

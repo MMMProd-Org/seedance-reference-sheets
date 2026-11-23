@@ -1206,8 +1206,14 @@ with sync_playwright() as p:
                 refCover: 'tanga', {extra}}}))""")
             soft.reload()
             text = "\n".join(prompts(soft))
-            assert ("slim, lean thighs, clearly narrower than the hips" in text) == lean, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
-            assert lean or "slim thighs, clearly narrower than the hips" in text, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            if model == "seedream":
+                # owner's render, 2026-11-23 (« Cuisses : Fines ça fait mincir tout le corps »): on Seedream, thin thighs are "narrow", never
+                # "slim" or "lean", and only the thighs
+                assert "narrow thighs, clearly narrower than the hips; only the thighs are narrow: the shoulders, arms, bust and waist keep the size set above" in text, (extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+                assert not re.search(r"(slim|lean),? (lean )?thighs", text), (extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+            else:
+                assert ("slim, lean thighs, clearly narrower than the hips" in text) == lean, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
+                assert lean or "slim thighs, clearly narrower than the hips" in text, (model, extra, re.findall(r"[^.;]*thighs[^.;]*", text))
             soft.close()
     assert not errors, errors
 
