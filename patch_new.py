@@ -3816,6 +3816,20 @@ rep('''    children: t.map(([t, r]) =>
           type: "button",
           role: "radio",
           title: sdTt,''')
+# owner, 2026-11-23 (« mettre en rouge 33% pour dire que ça peut faire des trucs négatifs »): an option of the segmented control may carry
+# a fourth element, "warn": drawn in red, like the outfit radio's warned option (P51); every other control has none and is unchanged
+rep('''    children: t.map(([t, r, sdTt]) =>''', '''    children: t.map(([t, r, sdTt, sdWarn]) =>''')
+rep('''            (e === t
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"),
+          children: r,''', '''            ("warn" === sdWarn
+              ? e === t
+                ? "bg-destructive text-destructive-foreground"
+                : "text-destructive hover:text-destructive"
+              : e === t
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"),
+          children: r,''')
 # P112 (v155, user: "une flèche … on clique et on va direct en bas ou direct en haut, comme sur ChatGPT ou Claude"): the two scroll arrows
 # (SdScrollNav), rendered once, just before the phone's bottom bar
 rep('''          (0, l.jsx)("div", {
