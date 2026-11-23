@@ -3773,7 +3773,7 @@ function sdGrowTorsoPrompt() {
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
-    " The result stays a believable real body: " + (po > 0 ? "natural, firm flesh that holds its shape, no sag" : "natural flesh that settles with gravity like the rest of the body") + ". The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    " The result stays a believable real body: " + (po > 0 ? "the rounder lower belly is natural, firm flesh that holds its shape, no sag, and every other part keeps its own shape and drop from image 1" : "natural flesh that settles with gravity like the rest of the body") + ". The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
     /* owner's render of this card, 2026-11-19: the whole body came out softer, shoulders, arms and back lost their definition */
     " Every muscle keeps exactly its size and definition from image 1: the shoulders, arms, back and upper abs as large and as sharp as they are; no other part gains fat." +
     " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +

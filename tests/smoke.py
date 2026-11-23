@@ -830,6 +830,8 @@ with sync_playwright() as p:
             # alone keeps the flesh that settles with gravity
             pooch = "fatBelly" in state
             assert ("nothing hanging over the waistband" in torso[0]) == pooch and ("no sag" in torso[0]) == pooch, (state, torso)
+            # PR #87 review (Sourcery): the firmness is the belly's only; the bust and glutes keep their own drop
+            assert ("every other part keeps its own shape and drop from image 1" in torso[0]) == pooch, (state, torso)
             assert ("settles with gravity" in torso[0]) != pooch and "halfway between the navel" not in torso[0], (state, torso)
             assert ("all of the extra depth at the back" in torso[0]) == ("deep" in state) and "nearly as deep as the chest" not in torso[0], (state, torso)
             assert (", apart from the rounder lower belly" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
