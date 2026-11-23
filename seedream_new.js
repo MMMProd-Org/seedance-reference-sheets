@@ -3755,7 +3755,10 @@ function sdGrowTorsoPrompt() {
   po > 0 &&
     /* owner's render of this card, 2026-11-19 (v1.6.1-pre, « c déjà mieux »): the belly came out fullest at the navel, a round belly from
        under the ribs and not a lower-belly pooch: its fullest point and the line above it are now set */
-    a.push("just below the navel, a small, soft, rounded pooch of lower-belly fat, its fullest point halfway between the navel and the bottom's waistband, about " + SD_TORSO_POOCH[po] + " width past the line of the upper abs in the side views, " + (sdFatOn("fatBelly") >= 2 ? "the upper abs kept exactly as soft as they are" : "as on a fit " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + " whose upper abs stay sharp") + "; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
+    /* owner's two renders of this card, 2026-11-23 (« on dirait une langue qui pendouille »): fullest just above the waistband, then a step of
+       0.07 to 0.08 L back in at the waistband, a fold hanging over it; "halfway" and "settles with gravity" pulled it down. The pooch is now
+       one shallow curve from the navel into the waistband, fullest a third of the way down, with nothing hanging over the waistband */
+    a.push("just below the navel, the lower belly slightly rounder: one smooth, shallow curve of soft fat that starts at the navel and runs down into the bottom's waistband, its fullest point about a third of the way from the navel to the waistband, about " + SD_TORSO_POOCH[po] + " width past the line of the upper abs in the side views, " + (sdFatOn("fatBelly") >= 2 ? "the upper abs kept exactly as soft as they are" : "as on a fit " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") + " whose upper abs stay sharp") + "; the waistband sits on the curve without cutting into it: no fold, no crease, no overhang, nothing hanging over the waistband; at and above the navel the belly line keeps its place from image 1; in the front view it shows as a soft fullness between the navel and the bottom's waistband, the skin over it smooth and even");
   /* owner, 2026-11-19 (« pour le moment je ne vois pas beaucoup de différence »): an edit follows an amount relative to image 1 better
      than an absolute shape; the front width kept, so only the depth changes */
   dp > 0 &&
@@ -3763,14 +3766,14 @@ function sdGrowTorsoPrompt() {
        finger's width, and the hanging arm hides most of the back line in profile: the extra depth now goes mostly behind */
     /* owner's render of this card, 2026-11-19 (v1.6.1-pre): « mostly at the back » still put about two thirds of the extra waist depth in
        front (measured in profile); the front line is now held in place and "the waist nearly as deep as the chest" dropped */
-    a.push("in the side views, the torso about " + SD_TORSO_DEEP[dp] + " deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + (po > 0 ? ", apart from the pooch" : "") + "; the front and back views keep their width");
+    a.push("in the side views, the torso about " + SD_TORSO_DEEP[dp] + " deeper from back to front than in image 1, all of the extra depth at the back: the back of the ribcage rounder and the lower back fuller, the back line further out above and below the hanging arm; the chest and the belly line in front stay where they are in image 1" + (po > 0 ? ", apart from the rounder lower belly" : "") + "; the front and back views keep their width");
   dp < 0 &&
     a.push("in the side views, the torso about a fifth shallower from back to front than in image 1: the ribcage and the waist thinner; the front and back views keep their width");
   if (!a.length) return sdT("Choisis un bidon ou une épaisseur dans la carte pour obtenir ce prompt.", "Pick a pooch or a depth in the card to get this prompt.");
   return (
     "Edit image 1, a four-view body reference sheet of one adult " + ("m" === e.pres ? "man" : "f" === e.pres ? "woman" : "person") +
     ": retouch the torso only, a small step, by the same amount in every view: " + a.join("; ") + "." +
-    " The result stays a believable real body: natural flesh that settles with gravity like the rest of the body. The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
+    " The result stays a believable real body: " + (po > 0 ? "natural, firm flesh that holds its shape, no sag" : "natural flesh that settles with gravity like the rest of the body") + ". The skin, its texture and every mark of image 1 stay exactly as they are, at the same strength." +
     /* owner's render of this card, 2026-11-19: the whole body came out softer, shoulders, arms and back lost their definition */
     " Every muscle keeps exactly its size and definition from image 1: the shoulders, arms, back and upper abs as large and as sharp as they are; no other part gains fat." +
     " Keep everything else exactly as in image 1: " + (nw() ? "" : "the head and face, ") +

@@ -12,6 +12,14 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the pooch as one curve into the waistband, no sag
+
+**RULE** (the owner's renders below). The card's pooch is now `one smooth, shallow curve of soft fat that starts at the navel and runs down into the bottom's waistband, its fullest point about a third of the way from the navel to the waistband`, and `the waistband sits on the curve without cutting into it: no fold, no crease, no overhang, nothing hanging over the waistband`. With a pooch, `natural flesh that settles with gravity like the rest of the body` becomes `natural, firm flesh that holds its shape, no sag`; depth alone keeps it. The depth's `, apart from the pooch` becomes `, apart from the rounder lower belly`. **TO TEST**. The owner is first trying the pooch in the body sheet itself (« Graisse : ventre » on « Légère », the card's pooch on « Aucun »).
+
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card at « Très léger » without depth (v1.12.0)
+
+**DOES NOT WORK** (owner's two renders on his 63 kg sheet: « l'histoire du ventre c'est vraiment bizarre », « on dirait une langue qui pendouille »). Asked `about half a finger's width` (about 1 cm). Measured in L (281 px): render 1, the left profile's front line 0.09 to 0.11 L forward from the navel down (25 to 30 px, about 3.5 cm), the right 0.04 to 0.06 L; render 2, 0.05 to 0.09 L (left), up to 0.07 L (right). In all four profiles the fullest point sits just above the waistband, then the line steps 0.07 to 0.08 L back in at the waistband: a fold hanging over it. The amount is two to three times the one asked, so a smaller word does not give a smaller pooch.
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card at « Léger » and +33 % on the 63 kg sheet (test build)
 
 **DOES NOT WORK** (owner's render: « le ventre plus gros ça fait ridicule pourtant j'ai mis léger »). On his 63 kg sheet (« Moyenne », biceps « Développés »), the card with `about a finger's width` and `about a third deeper`, measured in L (285 px): the front line 0.06 to 0.09 L forward around the navel in the left profile, up to 0.06 L in the right; the back 0.03 to 0.05 L out (left), 0.01 to 0.03 L (right). Fifth render where the depth goes mostly to the belly. **RULE** (owner: « mettre en rouge … au lieu de régler les problèmes par le delete »): the card's added depths are drawn in red with a warning (PR #86).
