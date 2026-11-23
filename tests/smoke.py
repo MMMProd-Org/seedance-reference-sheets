@@ -821,13 +821,20 @@ with sync_playwright() as p:
         assert (tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1) == on, state
         if on:
             torso = [x for x in prompts(tc) if x.startswith("Edit image 1") and "retouch the torso only" in x]
-            assert torso and ("pooch" in torso[0]) == ("fatBelly" in state) and ("a quarter deeper" in torso[0]) == ("deep" in state), (state, torso)
+            assert torso and ("the lower belly slightly rounder" in torso[0]) == ("fatBelly" in state) and ("a quarter deeper" in torso[0]) == ("deep" in state), (state, torso)
             assert ("two fingers'" in torso[0]) == ("fatBelly: 2" in state), (state, torso)
             assert ("upper abs stay sharp" in torso[0]) == ("fatBelly: 1" in state), (state, torso)
             assert "Every muscle keeps exactly its size and definition" in torso[0] and "belly line both further out" not in torso[0], (state, torso)
-            assert ("fullest point halfway between the navel" in torso[0]) == ("fatBelly" in state), (state, torso)
+            assert ("fullest point about a third of the way from the navel" in torso[0]) == ("fatBelly" in state), (state, torso)
+            # owner's renders, 2026-11-23 (« une langue qui pendouille »): with a pooch, nothing hangs over the waistband and no sag; depth
+            # alone keeps the flesh that settles with gravity
+            pooch = "fatBelly" in state
+            assert ("nothing hanging over the waistband" in torso[0]) == pooch and ("no sag" in torso[0]) == pooch, (state, torso)
+            # PR #87 review (Sourcery): the firmness is the belly's only; the bust and glutes keep their own drop
+            assert ("every other part keeps its own shape and drop from image 1" in torso[0]) == pooch, (state, torso)
+            assert ("settles with gravity" in torso[0]) != pooch and "halfway between the navel" not in torso[0], (state, torso)
             assert ("all of the extra depth at the back" in torso[0]) == ("deep" in state) and "nearly as deep as the chest" not in torso[0], (state, torso)
-            assert (", apart from the pooch" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
+            assert (", apart from the rounder lower belly" in torso[0]) == ("deep" in state and "fatBelly" in state), (state, torso)
         tc.close()
 
     # owner, 2026-11-19 (« plusieurs curseurs »): the card's own settings, the pooch and the depth, over the body settings
@@ -841,7 +848,7 @@ with sync_playwright() as p:
         ("fatBelly: 2, sdTorsoPooch: '2'", "about a finger's width", "two fingers'"),
         ("sdTorsoPooch: '3'", "about two fingers' width past the line of the upper abs in the side views, as on a fit woman whose upper abs stay sharp", "deeper from back to front"),
         ("torsoDepth: 'deep', sdTorsoDeep: '10'", "the torso about a tenth deeper", "a quarter"),
-        ("sdTorsoDeep: '33', sdTorsoPooch: '1'", "the torso about a third deeper", "nothing"),
+        ("sdTorsoDeep: '33', sdTorsoPooch: '1'", "the torso about a third deeper", "Pick a pooch or a depth"),
         ("fatBelly: 1, torsoDepth: 'deep', sdTorsoPooch: '0', sdTorsoDeep: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
         # PR #80 review (Sourcery): an explicit none keeps the card with no body setting behind it
         ("sdTorsoPooch: '0'", "Pick a pooch or a depth in the card to get this prompt.", "retouch the torso only"),
@@ -851,7 +858,7 @@ with sync_playwright() as p:
         tc, torso = torso_of(state)
         assert tc.get_by_text("Retouch: belly and torso", exact=True).count() == 1 and len(torso) == 1, (state, torso)
         assert want in torso[0] and absent not in torso[0], (state, torso)
-        assert (", apart from the pooch" in torso[0]) == ("deeper" in torso[0] and "pooch of lower-belly fat" in torso[0]), (state, torso)
+        assert (", apart from the rounder lower belly" in torso[0]) == ("deeper" in torso[0] and "the lower belly slightly rounder" in torso[0]), (state, torso)
         # PR #80 review (Copilot): nothing to retouch, nothing to copy; the bar button leads to the card instead
         off = "Pick a pooch" in torso[0]
         assert tc.locator("#sd-card-growTorso button:has-text('Copy')").first.is_disabled() == off, state
