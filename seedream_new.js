@@ -4315,6 +4315,295 @@ function sdPrepImage(f, done) {
     done(!0);
   });
 }
+/* owner, 2026-11-22 (his render of the « Ventre et torse » card: one profile 20% deeper, the other unchanged; « oui un bouton pour qu'on
+   puisse l'enlever si besoin si je veux qu'elle ait une cicatrice sur la jambe gauche mais pas droite je dois le pouvoir »): a button, never
+   applied by itself, that replaces one profile panel with the other one flipped, so both profiles show the same body. The panels as found on
+   the image (sdPanelCuts, else from the figures), the figure of each profile found by its colour against the grey backdrop, the flipped
+   figure put where the replaced one stood; the columns past the source panel's edges repeat its edge columns (backdrop). Sides as seen on
+   the screen. */
+function sdMirrorImage(f, keepLeft, done) {
+  sdDecodeImage(f, function (im, W, H, free) {
+    /* PR #82 review (Sourcery): a sheet is a few megapixels; past 40, say so rather than fill the tab's memory */
+    if (W * H > 4e7) {
+      free();
+      return done("taille");
+    }
+    try {
+      var c = document.createElement("canvas");
+      c.width = W;
+      c.height = H;
+      var x = c.getContext("2d");
+      x.drawImage(im, 0, 0);
+      var img = x.getImageData(0, 0, W, H),
+        d = img.data,
+        C = sdPanelCuts(d, W, H),
+        ys = [],
+        yy,
+        /* a body column: skin or a garment in at least 2% of the sampled rows; the backdrop is a neutral grey (the sheet prompts ask for
+           one), so colour tells body from backdrop whatever its shading from top to floor (one backdrop value per panel counted that
+           shading as body on the owner's renders) */
+        fr = function (i) {
+          var n = 0;
+          ys.forEach(function (y) {
+            var o = 4 * (y * W + i);
+            Math.max(d[o], d[o + 1], d[o + 2]) - Math.min(d[o], d[o + 1], d[o + 2]) > 18 && n++;
+          });
+          return ys.length ? n / ys.length : 0;
+        },
+        F = [],
+        i0;
+      for (yy = Math.round(H * 0.05); yy < Math.round(H * 0.95); yy += 4) ys.push(yy);
+      for (i0 = 0; i0 < W; i0++) F.push(fr(i0));
+      /* the runs of body columns, gaps of up to 1.5% of the width bridged */
+      var runs = [], st = -1, gapMax = Math.round(W * 0.015);
+      for (i0 = 0; i0 <= W; i0++) {
+        var on = i0 < W && F[i0] > 0.02;
+        on && st < 0 && (st = i0);
+        if (!on && st >= 0) {
+          runs.length && st - runs[runs.length - 1][1] <= gapMax ? (runs[runs.length - 1][1] = i0 - 1) : runs.push([st, i0 - 1]);
+          st = -1;
+        }
+      }
+      /* PR #82 review (Copilot): one figure can split into several runs (skin apart from a neutral garment), so the runs are not the
+         figures: a run narrower than 0.5% of the width is noise; the gaps' cuts hold when every other run lies whole in one panel and
+         each panel holds at least one; without them, exactly four runs or the sheet is refused, never a guess */
+      var minW = Math.max(3, W * 0.005);
+      runs = runs.filter(function (r) {
+        return r[1] - r[0] + 1 >= minW;
+      });
+      var pan = [
+          [0, Math.round(C[0][0])],
+          [Math.round(C[0][1]) + 1, Math.round(C[1][0])],
+          [Math.round(C[1][1]) + 1, Math.round(C[2][0])],
+          [Math.round(C[2][1]) + 1, W],
+        ],
+        inPan = function (r) {
+          for (var k = 0; k < 4; k++) if (r[0] >= pan[k][0] && r[1] < pan[k][1]) return k;
+          return -1;
+        },
+        cut =
+          C.every(function (z) {
+            return z[1] > z[0];
+          }) &&
+          runs.every(function (r) {
+            return inPan(r) >= 0;
+          }) &&
+          [0, 1, 2, 3].every(function (k) {
+            return runs.some(function (r) {
+              return inPan(r) === k;
+            });
+          });
+      /* the backdrop's brightness by column (medians of the sampled rows) and its steps, for the panel boundaries between figures */
+      var M = [], lumC = function (i) {
+          var v = ys.map(function (y) {
+            var o = 4 * (y * W + i);
+            return 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
+          });
+          v.sort(function (m, n) {
+            return m - n;
+          });
+          return v[v.length >> 1] || 0;
+        },
+        stepAt = function (i) {
+          return 2 <= i && i < W - 2 ? M[i + 2] - M[i - 2] : 0;
+        },
+        between = function (a, b) {
+          for (var i = Math.max(a - 2, 0); i <= Math.min(b + 2, W - 1); i++) M[i] === undefined && (M[i] = lumC(i));
+        };
+      /* more than four runs without the gaps' cuts: two runs with no step of the backdrop between them are one figure (PR #82 review,
+         Copilot) */
+      if (!cut && 4 < runs.length)
+        runs = runs.reduce(function (g, r) {
+          var q = g[g.length - 1], i, st = 0;
+          if (q) {
+            between(q[1] + 1, r[0] - 1);
+            for (i = q[1] + 3; i <= r[0] - 3; i++) st = Math.max(st, Math.abs(stepAt(i)));
+          }
+          q && 8 > st ? (q[1] = r[1]) : g.push(r.slice());
+          return g;
+        }, []);
+      if (!cut && 4 !== runs.length) {
+        free();
+        return done("planche");
+      }
+      if (!cut) {
+        /* between two figures, the panel boundary: the strongest step of the backdrop's brightness, and when a second step stands
+           within 3% of the width, the strip between them is a panel gap, kept out of both panels (PR #82 review, Copilot); no step: the
+           middle */
+        var
+          gaps = [0, 1, 2].map(function (k) {
+            var a = runs[k][1] + 1, b = runs[k + 1][0] - 1, i, x1 = -1, x2 = -1, best = 0, w = Math.round(W * 0.03), r0, r1, sg;
+            between(a, b);
+            /* the steps between the figures only: a step read across a figure's edge is the figure, not a gap */
+            for (i = a + 2; i <= b - 2; i++) Math.abs(stepAt(i)) > best && ((best = Math.abs(stepAt(i))), (x1 = i));
+            if (8 > best) return [Math.round((a + b) / 2), Math.round((a + b) / 2) - 1];
+            /* the first edge: the steps of its sign, at least half as strong, around it (4 columns for a sharp edge, more when blurred or
+               when two edges of one sign touch); the second edge: the strongest step outside it, within 3% of the width; a one-pixel
+               separator gives its two edges 4 columns apart (PR #82 review, Copilot) */
+            sg = stepAt(x1) > 0;
+            for (r0 = x1; r0 - 1 >= a + 2 && stepAt(r0 - 1) > 0 === sg && Math.abs(stepAt(r0 - 1)) >= best / 2; r0--);
+            for (r1 = x1; r1 + 1 <= b - 2 && stepAt(r1 + 1) > 0 === sg && Math.abs(stepAt(r1 + 1)) >= best / 2; r1++);
+            best = 0;
+            for (i = Math.max(a + 2, x1 - w); i <= Math.min(b - 2, x1 + w); i++) (i < r0 || i > r1) && Math.abs(stepAt(i)) > best && ((best = Math.abs(stepAt(i))), (x2 = i));
+            return 8 > best ? [r0, r1] : [Math.min(r0, x2) - 2, Math.max(r1, x2) + 2];
+          });
+        pan = [0, 1, 2, 3].map(function (k) {
+          return [k ? gaps[k - 1][1] + 1 : 0, 3 > k ? gaps[k][0] : W];
+        });
+      }
+      var fig = function (k) {
+          /* the figure of a panel: its body columns; ok when there is one and it does not fill the panel */
+          var a = pan[k][0], b = pan[k][1], lo = -1, hi = -1, i;
+          for (i = a; i < b; i++) F[i] > 0.02 && (lo < 0 && (lo = i), (hi = i));
+          return { a: a, b: b, lo: lo, hi: hi, m: (lo + hi) / 2, ok: lo >= 0 && hi - lo < (b - a) * 0.9 };
+        },
+        sk = keepLeft ? 1 : 3,
+        tk = keepLeft ? 3 : 1,
+        S = fig(sk),
+        T = fig(tk);
+      /* PR #82 review (Sourcery): not a four-view sheet (no figure found in a profile panel, or one filling it): say so, change nothing */
+      if (!S.ok || !T.ok) {
+        free();
+        return done("planche");
+      }
+      var
+        s0 = S.a, s1 = S.b, t0 = T.a, t1 = T.b,
+        /* in the flipped source, column u holds source column s1 - 1 - u; its figure's middle moves to s0 + s1 - 1 - S.m */
+        shift = Math.round(T.m - (s0 + s1 - 1 - S.m)),
+        /* the whole panel changes (a narrower band left backdrop seams inside it on the owner's renders); the gaps are outside the panels */
+        mg = W,
+        nlo = Math.round(T.m - (S.hi - S.m)),
+        nhi = Math.round(T.m + (S.m - S.lo)),
+        X0 = Math.max(t0, Math.min(T.lo, nlo) - mg),
+        X1 = Math.min(t1, Math.max(T.hi, nhi) + mg + 1),
+        r0 = Math.max(s0, S.lo - mg),
+        r1 = Math.min(s1 - 1, S.hi + mg),
+        src = new Uint8ClampedArray(d),
+        X, y, o, oi;
+      for (X = X0; X < X1; X++) {
+        /* the target column takes the flipped source column at the same place relative to the figure */
+        var u = Math.min(s1 - 1 - s0, Math.max(0, X - shift - s0)),
+          sx = Math.min(r1, Math.max(r0, s1 - 1 - u));
+        for (y = 0; y < H; y++) {
+          o = 4 * (y * W + X);
+          oi = 4 * (y * W + sx);
+          d[o] = src[oi];
+          d[o + 1] = src[oi + 1];
+          d[o + 2] = src[oi + 2];
+          d[o + 3] = src[oi + 3];
+        }
+      }
+      x.putImageData(img, 0, 0);
+      var ty = /^image\/(jpeg|png|webp)$/.test(f.type) ? f.type : "image/png",
+        ext = (/\.(jpe?g|png|webp)$/i.exec(f.name || "") || [0, "image/jpeg" === ty ? "jpg" : "image/webp" === ty ? "webp" : "png"])[1],
+        nm = String(f.name || "planche").replace(/\.[a-z0-9]+$/i, "") + (keepLeft ? "_profils-gauche" : "_profils-droite") + "." + ("image/png" === ty ? "png" : ext);
+      free();
+      c.toBlob(
+        function (bl) {
+          if (!bl) return done("toBlob");
+          /* PR #82 review (Sourcery): a failure here, after the outer try, still reaches the status line */
+          var v = "";
+          try {
+            bl.type && bl.type !== ty && (nm = nm.replace(/\.[a-z0-9]+$/i, "." + (bl.type.split("/")[1] || "png").replace("jpeg", "jpg")));
+            var a = document.createElement("a");
+            v = URL.createObjectURL(bl);
+            a.href = v;
+            a.download = nm;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+              URL.revokeObjectURL(v);
+            }, 4e3);
+            done(null, nm, W, H);
+          } catch (z) {
+            v && URL.revokeObjectURL(v);
+            done(String((z && z.name) || "erreur"));
+          }
+        },
+        ty,
+        1,
+      );
+    } catch (z) {
+      free();
+      done(String((z && z.name) || "erreur"));
+    }
+  }, function () {
+    done(!0);
+  });
+}
+function SdMirror() {
+  var st = (0, s.useState)(""),
+    msg = st[0],
+    set = st[1],
+    kp = (0, s.useState)("left"),
+    keep = kp[0],
+    setKeep = kp[1];
+  return (0, l.jsxs)("div", {
+    className: "mt-3 rounded-xl border px-3 py-2",
+    "data-sd-mirror": "",
+    children: [
+      (0, l.jsx)("p", { className: "font-semibold", children: sdT("Un seul profil a changé ? Rendre les deux profils identiques", "Only one profile changed? Make both profiles match") }),
+      (0, l.jsx)("p", {
+        className: "mt-1 text-muted-foreground",
+        children: sdT(
+          "Le bouton remplace un profil par l'autre, retourné comme dans un miroir, sur l'image que tu choisis ; rien ne se fait sans toi. Ne t'en sers pas si ton personnage a une marque d'un seul côté (cicatrice, tatouage, tache de naissance) : elle passerait de l'autre côté. Côtés vus de l'écran. Rien n'est envoyé : tout se fait dans ton navigateur.",
+          "The button replaces one profile with the other one, flipped as in a mirror, on the image you choose; nothing happens without you. Do not use it if your character has a mark on one side only (scar, tattoo, birthmark): it would move to the other side. Sides as seen on the screen. Nothing is sent: it all happens in your browser.",
+        ),
+      }),
+      (0, l.jsx)("div", {
+        className: "mt-2",
+        children: (0, l.jsx)(ab, {
+          label: "Profil à garder",
+          value: keep,
+          onChange: setKeep,
+          wrap: !0,
+          options: [
+            ["left", "Garder le profil gauche"],
+            ["right", "Garder le profil droit"],
+          ],
+        }),
+      }),
+      (0, l.jsx)("button", {
+        type: "button",
+        className:
+          "mt-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        style: { background: "hsl(var(--ok))" },
+        onClick: function () {
+          var i = document.getElementById("sd-mirror-file");
+          i && i.click();
+        },
+        children: sdT("Choisir ma planche et rendre les profils identiques", "Choose my sheet and make the profiles match"),
+      }),
+      (0, l.jsx)("input", {
+        id: "sd-mirror-file",
+        type: "file",
+        accept: "image/*,.png,.jpg,.jpeg,.webp",
+        "aria-label": sdT("Planche dont les profils sont à rendre identiques", "Sheet whose profiles to match"),
+        style: { display: "none" },
+        onChange: function (ev) {
+          var f = ev.target.files && ev.target.files[0];
+          ev.target.value = "";
+          f &&
+            sdMirrorImage(f, "left" === keep, function (err, n, w, h) {
+              set(
+                "planche" === err
+                  ? sdT("Ce n'est pas une planche à quatre vues : je n'y trouve pas les deux profils. Rien n'a été modifié.", "This is not a four-view sheet: I cannot find both profiles in it. Nothing was changed.")
+                  : "taille" === err
+                  ? sdT("Image trop grande (plus de 40 mégapixels). Rien n'a été modifié.", "Image too large (over 40 megapixels). Nothing was changed.")
+                  : "string" == typeof err
+                  ? sdT("L'image est lue, mais l'opération a échoué dans cette page (" + err + "). Ouvre le fichier HTML de l'outil directement dans Chrome, Firefox ou Edge.", "The image was read, but the operation failed in this page (" + err + "). Open the tool's HTML file directly in Chrome, Firefox or Edge.")
+                  : err
+                  ? sdT("Image illisible : choisis un PNG, un JPEG (.jpg ou .jpeg) ou un WebP.", "Unreadable image: choose a PNG, a JPEG (.jpg or .jpeg) or a WebP.")
+                  : sdT("Planche téléchargée : " + n + " (" + w + " × " + h + " px). Vérifie les deux profils avant de t'en servir.", "Sheet downloaded: " + n + " (" + w + " × " + h + " px). Check both profiles before using it."),
+              );
+            });
+        },
+      }),
+      msg && (0, l.jsx)("p", { role: "status", className: "mt-2 font-semibold", children: msg }),
+    ],
+  });
+}
 function SdPrep(pr) {
   var st = (0, s.useState)(""),
     msg = st[0],
@@ -8357,6 +8646,7 @@ function sdCardExtra(k) {
             return (0, l.jsx)("li", { children: x }, i);
           }),
         }),
+        (0, l.jsx)(SdMirror, {}),
       ],
     });
   /* v147: the bust retouch, its small effect said as measured */

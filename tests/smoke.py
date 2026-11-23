@@ -876,6 +876,27 @@ with sync_playwright() as p:
     assert "about a finger's width" in torso[0], torso
     tc.close()
 
+    # owner, 2026-11-22 (« concernant le petit bidon il est où le curseur ? », « je ne le vois pas sur la planche html »): the card's two
+    # settings are also in the Body tab, under « Taille et ventre », on Seedream only; setting one there shows the card
+    # PR #83 review: not where the card cannot use them (GPT, the 3D style, a source photo); visible in the Body tab where shown
+    for model, style, shown in (("seedream", "photo", True), ("gpt", "photo", False), ("seedream", "3d", False)):
+        bt = clipboard_page(browser, errors)
+        bt.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: '" + style + "', photo: false, pres: 'f', headless: true, model: '" + model + "', faceSeed: 7, faceGen: 2}))")
+        bt.reload()
+        bt.get_by_role("tab", name=re.compile(r"^Body")).first.click()
+        fs = bt.locator("fieldset", has=bt.get_by_text("Pooch below the navel (retouch)", exact=True))
+        dp = bt.get_by_text("Depth in profile (retouch)", exact=True)
+        assert fs.count() == (1 if shown else 0) and dp.count() == (1 if shown else 0), (model, style)
+        assert not shown or (fs.is_visible() and dp.is_visible()), (model, style)
+        if shown:
+            assert bt.locator("#sd-card-growTorso").count() == 0
+            fs.get_by_text("Very light", exact=True).click()
+            bt.wait_for_function("JSON.parse(localStorage.getItem('fiche-perso-seedance-v1') || '{}').sdTorsoPooch === '1'", timeout=5000)
+            assert bt.locator("#sd-card-growTorso").count() == 1
+            torso = [x for x in prompts(bt) if "retouch the torso only" in x]
+            assert len(torso) == 1 and "about half a finger's width" in torso[0], torso
+        bt.close()
+
     # owner, 2026-11-19 (« Uncaught Error: ResizeObserver loop completed with undelivered notifications » in the preview): the copy bar
     # with five buttons, 121 px tall, shown and hidden across the lg breakpoint, never resizes the page inside an observer callback
     ro = clipboard_page(browser, errors)
@@ -893,6 +914,110 @@ with sync_playwright() as p:
       return [bar.getBoundingClientRect().height, parseFloat(p.style.getPropertyValue('--sd-copy-bar-height')), parseFloat(getComputedStyle(p).paddingBottom)]; }""")
     assert abs(room[0] - room[1]) < 1 and room[2] >= room[0] + 16 - 1, room
     ro.close()
+
+    # owner, 2026-11-22 (« oui un bouton ... si je veux qu'elle ait une cicatrice sur la jambe gauche mais pas droite je dois le pouvoir »):
+    # the mirror button replaces one profile with the other one flipped, only when used, on the side chosen
+    import base64, struct, tempfile, zlib
+    def png(w, h, px):
+        raw = b"".join(b"\x00" + bytes(c for x in range(w) for c in px(x, y)) for y in range(h))
+        ch = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+        return b"\x89PNG\r\n\x1a\n" + ch(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + ch(b"IDAT", zlib.compress(raw)) + ch(b"IEND", b"")
+    SKIN, MARK, BG, GAP = (200, 150, 120), (40, 60, 220), (118, 118, 118), (160, 160, 160)
+    def sheet(x, y):
+        if x in range(98, 102) or x in range(198, 202) or x in range(298, 302):
+            return GAP
+        if 135 <= x < 165 and 20 <= y < 180:  # left profile, a mark on its right edge
+            return MARK if x >= 160 and 50 <= y < 60 else SKIN
+        if 30 <= x < 70 or 230 <= x < 270 or (340 <= x < 360 and 20 <= y < 180):
+            return SKIN if 20 <= y < 180 else BG
+        return BG
+    tmp = pathlib.Path(tempfile.mkdtemp()) / "sheet.png"
+    tmp.write_bytes(png(400, 200, sheet))
+    mi = clipboard_page(browser, errors)
+    mi.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', style: 'photo', photo: false, pres: 'f', headless: true, model: 'seedream', faceSeed: 7, faceGen: 2, fatBelly: 1}))")
+    mi.reload()
+    box = mi.locator("[data-sd-mirror]")
+    assert box.count() == 1 and "scar, tattoo, birthmark" in box.inner_text()
+    def mirrored(keep):
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(tmp))
+        data = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        return dl.value.suggested_filename, mi.evaluate("""(b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          const px = (a, b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3)); ok({mark: px(337, 55), body: px(362, 100), old: px(345, 100), left: px(162, 55), src: px(150, 100), was: px(137, 100)}); };
+          im.src = 'data:image/png;base64,' + b64; })""", data)
+    name, got = mirrored("Keep the left profile")
+    # the left profile (center 150) flipped onto the right one (center 350): its mark comes to the left edge, the body spans 335 to 365
+    assert name == "sheet_profils-gauche.png" and got["mark"] == list(MARK) and got["body"] == list(SKIN) and got["old"] == list(SKIN), (name, got)
+    assert got["left"] == list(MARK) and got["src"] == list(SKIN), got
+    name, got = mirrored("Keep the right profile")
+    # the right profile (20 px wide, no mark) flipped onto the left one: the mark is gone, the right profile kept
+    assert name == "sheet_profils-droite.png" and got["left"] == list(BG) and got["src"] == list(SKIN) and got["old"] == list(SKIN), (name, got)
+    # PR #82 review (Sourcery): the old, wider left figure is gone where the new one does not reach
+    assert got["was"] == list(BG), got
+    assert "Sheet downloaded" in box.inner_text()
+    # PR #82 review (Copilot): an off-centre left profile (125 to 154, next to the gap at 98 to 101): the gaps stay where they are both ways
+    def sheet2(x, y):
+        if 125 <= x < 155 and 20 <= y < 180 and not (x in range(98, 102)):
+            return MARK if x >= 150 and 50 <= y < 60 else SKIN
+        return BG if 135 <= x < 165 else sheet(x, y)
+    tmp2 = pathlib.Path(tempfile.mkdtemp()) / "sheet2.png"
+    tmp2.write_bytes(png(400, 200, sheet2))
+    for keep in ("Keep the left profile", "Keep the right profile"):
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(tmp2))
+        data = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        gaps = mi.evaluate("""(b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          ok([99, 199, 299].map((a) => [10, 100, 190].map((b) => Array.from(x.getImageData(a, b, 1, 1).data.slice(0, 3))))); };
+          im.src = 'data:image/png;base64,' + b64; })""", data)
+        assert all(p == list(GAP) for col in gaps for p in col), (keep, gaps)
+    # PR #82 review (Copilot): the columns a mirror changes, read on the whole image
+    def changed(fn, keep, name):
+        src = pathlib.Path(tempfile.mkdtemp()) / name
+        src.write_bytes(png(400, 200, fn))
+        box.get_by_role("radio", name=keep, exact=True).click()
+        with mi.expect_download() as dl:
+            mi.locator("#sd-mirror-file").set_input_files(str(src))
+        out = base64.b64encode(pathlib.Path(dl.value.path()).read_bytes()).decode()
+        return mi.evaluate("""(pair) => Promise.all(pair.map((b64) => new Promise((ok) => { const im = new Image(); im.onload = () => {
+          const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+          ok(x.getImageData(0, 0, im.width, im.height).data); }; im.src = 'data:image/png;base64,' + b64; }))).then(([a, b]) => {
+          const cols = new Set(); for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) cols.add((i / 4) % 400);
+          return [...cols].sort((m, n) => m - n); })""", [base64.b64encode(src.read_bytes()).decode(), out])
+    # a one-pixel gap at 100 next to the off-centre left profile, four-pixel gaps elsewhere: only the target profile's panel changes, both ways
+    def sheet3(x, y):
+        if x in (98, 99, 101):
+            return BG
+        return GAP if x == 100 else sheet2(x, y)
+    # a front view in two runs of skin (30 to 45 and 56 to 70, a neutral garment between them): the gaps place it, the back view stays
+    def sheet4(x, y):
+        return BG if 46 <= x < 56 else sheet(x, y)
+    # the same front view without the gaps: five runs for four views, refused rather than guessed
+    def sheet5(x, y):
+        return BG if sheet4(x, y) == GAP else sheet4(x, y)
+    for fn, name, panels in ((sheet3, "sheet3.png", {"Keep the left profile": (302, 400), "Keep the right profile": (102, 198)}),
+                             (sheet4, "sheet4.png", {"Keep the left profile": (302, 400), "Keep the right profile": (102, 198)})):
+        for keep, (lo, hi) in panels.items():
+            cols = changed(fn, keep, name)
+            assert cols is not None and cols and all(lo <= c < hi for c in cols), (name, keep, cols)
+    # PR #82 review (Sourcery): an image without the two profiles is refused, nothing downloaded
+    plain = pathlib.Path(tempfile.mkdtemp()) / "plain.png"
+    plain.write_bytes(png(400, 200, lambda x, y: BG))
+    mi.evaluate("window.sdDl = 0; document.addEventListener('click', (e) => e.target.download && window.sdDl++, true)")
+    mi.locator("#sd-mirror-file").set_input_files(str(plain))
+    box.get_by_text("This is not a four-view sheet").wait_for(timeout=5000)
+    assert mi.evaluate("window.sdDl") == 0
+    # PR #82 review (Copilot): the front view in two runs without the gaps is refused, nothing downloaded
+    five = pathlib.Path(tempfile.mkdtemp()) / "sheet5.png"
+    five.write_bytes(png(400, 200, sheet5))
+    box.get_by_role("radio", name="Keep the left profile", exact=True).click()
+    mi.locator("#sd-mirror-file").set_input_files(str(five))
+    mi.wait_for_timeout(1500)
+    assert mi.evaluate("window.sdDl") == 0 and "This is not a four-view sheet" in box.inner_text()
+    mi.close()
 
     # PR #76 review (Codex): an export with the bust set "Basse" (lowset) imports with it
     io = clipboard_page(browser, errors)
