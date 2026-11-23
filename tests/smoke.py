@@ -757,6 +757,9 @@ with sync_playwright() as p:
         assert body, (model, state)
         return body[0], shown
 
+    def assert_lead(t):
+        assert re.search(r"kg[^.]*(, with|,? and) thick forearms", t), t
+
     def light_of(t):
         return re.findall(r"Seamless[^\n]*", t)
 
@@ -1051,6 +1054,18 @@ with sync_playwright() as p:
         for same in ("biceps: 'big'", "biceps: 'big', triceps: 'big'"):
             both, _ = side_body(model, "fat: 1, " + same)
             assert "biceps and triceps" in both and "very large triceps" not in both, (model, same, both)
+        # owner, 2026-11-23 (« juste avant le poignet, celui qui sert à serrer la main »): « Avant-bras », nothing said on Auto; from
+        # « Développés » up, never "not bulky", "slender arms", "average-sized", "no muscle bulk", leanness or every forearm tendon next to them
+        fore, _ = side_body(model, "fat: 1, defArms: 'strong', forearms: 'big'")
+        assert "strong, full, smooth forearms" in fore and "the wrists slim" in fore, (model, fore)
+        # owner's render, 2026-11-23 (« avant bras vide »): on Seedream, big forearms are said in the first sentence too
+        if model == "Seedream 5.0":
+            assert_lead(fore)
+        assert not re.search(r"slender arms|Arm and shoulder muscles stay average-sized|dry and wiry|no muscle bulk|tendon visible|clearly separated forearm muscles|Definition from leanness|upper arms[^.;]*not bulky", fore), (model, fore)
+        no_fore, _ = side_body(model, "fat: 1, defArms: 'strong'")
+        assert "smooth forearms" not in no_fore and "Forearms:" not in no_fore, (model, no_fore)
+        # PR #85 review (Sourcery): the marked arms keep their forearm detail without the setting
+        assert re.search(r"tendon visible|clearly separated forearm muscles", no_fore), (model, no_fore)
         # "Aspect des muscles" at "Pleins et lisses": the sizes stay, no sharp definition, no hard light; very large deltoids never next to
         # "no muscle bulk"
         smooth_mus, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big', musLook: 'smooth'")
