@@ -1752,7 +1752,8 @@ with sync_playwright() as p:
     line = text.split("\n\n")[0]
     assert line.endswith(" Glutes: at their current height and in their current shape, with no sag added; the same size, the same skin and"
                          " grain; the marks left by the bottom's edges erased."), line
-    assert "the natural sag its size and muscle tone give it, never lifted." in line, line
+    assert ("a thong.\nGoal: the version with the bottom removed, at rest, standing, true to THIS character: volume unchanged, the natural"
+            " sag its size and muscle tone give it, never lifted." in line), line
     assert len(line.split()) < 600 and not re.search(r"\b[A-Z]{3,}_[A-Z_]+\b", line), line
     # every choice has its tooltip; a grade set by hand is saved, said "by hand", and its drop asked in the steps
     assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3g [data-a3d]')].every((b) => b.title)")
