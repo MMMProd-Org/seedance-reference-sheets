@@ -10702,6 +10702,17 @@ function sdTorsoChips(t, g) {
             "Seedream puts this depth mostly at the front, on the belly, hardly in the back (5 measured renders)" + (sdTorsoPooch() > 0 ? ": it adds to the pooch, and the belly grows clearly bigger. For a pooch alone, pick “None”." : "."),
           ),
         }),
+      /* owner's two renders, 2026-11-23 (« Graisse : ventre » on « Légère », this card's pooch on « Aucun »): the pooch asked in the body sheet
+         came out 0 to 3 px in profile, as on his sheet with none; three texts on 2026-11-19 drew none either on a muscular body (PROMPT-LOG) */
+      sdTorsoPooch() <= 0 && sdFatOn("fatBelly") >= 1 &&
+        (0, l.jsx)("p", {
+          className: "text-sm font-semibold text-destructive",
+          "data-sd-pooch-warn": "",
+          children: sdT(
+            "Sans bidon dans cette retouche, Seedream n'en dessine presque pas : « Graisse : ventre » seule a donné 0 à 3 px de profil (2 rendus mesurés), comme sans bidon. Pour un petit bidon, mets « Très léger ».",
+            "With no pooch in this retouch, Seedream draws almost none: “Fat: belly” alone gave 0 to 3 px in profile (2 measured renders), as with no pooch. For a small pooch, pick “Very light”.",
+          ),
+        }),
     ],
   });
 }
