@@ -932,6 +932,13 @@ with sync_playwright() as p:
         assert "full, rounded muscles under a thin, even layer of soft fat" in smooth_mus and "very large, round deltoids" in smooth_mus, (model, smooth_mus)
         assert not re.search(r"sharply|crisp shadows|deep groove", smooth_mus), (model, smooth_mus)
         sharp, _ = side_body(model, "fat: 2, defShoulders: 'strong', defBack: 'strong', delts: 'huge', biceps: 'big'")
+        # owner's render, 2026-11-23 (« Pleins et lisses » at 52 kg, slim build: « le muscle gros et lisse est pas présent »): on a slim
+        # build the smooth muscles never come with a "lean" frame, the hip bones or the ribs; without them the slim frame keeps its words
+        if model == "Seedream 5.0":
+            slim_smooth, _ = side_body(model, "fat: 1, chest: 3, delts: 'big', musLook: 'smooth'")
+            slim_dry, _ = side_body(model, "fat: 1, chest: 3, delts: 'big'")
+            assert "Apart from the bust, a slim frame" in slim_smooth and "hip bones" not in slim_smooth, slim_smooth
+            assert "Apart from the bust, a lean frame" in slim_dry and "hip bones" in slim_dry, slim_dry
         assert "full, rounded muscles under a thin" not in sharp and re.search(r"sharply|crisp shadows", sharp), (model, sharp)
         delts_only, _ = side_body(model, "fat: 1, def: 'subtle', delts: 'huge'")
         assert "no muscle bulk" not in delts_only, (model, delts_only)

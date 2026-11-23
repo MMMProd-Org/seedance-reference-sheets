@@ -8763,7 +8763,7 @@ function sdBody() {
     /* v131: with the deltoids or the lats said, the items read apart */
     sil.join(sdShoulders() !== t1("shoulders", e.shoulders) ? "; " : ", ") +
     ". " +
-    (e.fat <= 1 ? ("m" !== e.pres && e.chest >= 2 ? "Apart from the bust, a " + (sdMusBig() ? "lean " : "slim ") : sdMusBig() ? "A lean " : "A slim ") + (sdCurvy() ? (sdFatWaist() ? "upper body" : "upper body and waist") : "frame") + ": " + (function (a, l) {
+    (e.fat <= 1 ? ("m" !== e.pres && e.chest >= 2 ? "Apart from the bust, a " + (sdMusBig() && !sdSmoothMus() ? "lean " : "slim ") : sdMusBig() && !sdSmoothMus() ? "A lean " : "A slim ") + (sdCurvy() ? (sdFatWaist() ? "upper body" : "upper body and waist") : "frame") + ": " + (function (a, l) {
       return a && l ? "slender arms and legs, " : a ? "slender arms, " : l ? "slender legs, " : "";
     })(
       ["big", "huge"].indexOf(sdArmTop()) < 0 && ("auto" !== sdArmTop() || e.muscle <= 2) && sdArmFat() < 2,
@@ -8771,7 +8771,9 @@ function sdBody() {
       !sdCurvy() && e.thighs <= 2 && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && e.muscle <= 2 && sdFatOn("fatThighs") < 2 && sdFatOn("fatKnees") < 2 &&
         /* v157 review: never "slender legs" next to sprinter's legs, muscular front thighs or muscular calves */
         "sprinter" !== e.legShape && !(+e.thighFront >= 3) && !(+e.calves >= 3),
-    ) + sdClavSlim(!sdCurvy() && !sdFatOn("fatFlanks") && !sdFatOn("fatBelly") && (nw() || !nv())) + (0 === e.fat ? sdRibs() : "") + (!sdCurvy() && !sdFatZones().length && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && !/(?<!not )\bhigh and round|very round, projecting/.test(gl) && !sdClavFlesh() ? ", no extra padding" : "") + (sdCurvy() && !sdCurvyMax() ? "; the " + sdCurvyWhat() + " carry real volume" : "") + ". " : 2 === e.fat && e.muscle <= 2 ? "A normal, healthy layer of soft body fat: no visible ribs or hip bones" + (sdFatOn("fatFlanks") || sdArmFat() ? ". " : sdFlanksLow() ? ", a slight softness at the top of the hips and on the upper arms. " : ", a slight softness at the sides of the waist and on the upper arms. ") : 4 === e.fat ? sdForteFat() + ". " : "") +
+    /* owner's render, 2026-11-23 (« Pleins et lisses » at 52 kg: « le muscle gros et lisse est pas présent », a dry body with sharp abs, back
+       and forearms): the smooth muscles need their layer of fat, so "Pleins et lisses" never comes with "lean", the hip bones or the ribs */
+    ) + sdClavSlim(!sdCurvy() && !sdFatOn("fatFlanks") && !sdFatOn("fatBelly") && (nw() || !nv()) && !sdSmoothMus()) + (0 === e.fat && !sdSmoothMus() ? sdRibs() : "") + (!sdCurvy() && !sdFatZones().length && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && !/(?<!not )\bhigh and round|very round, projecting/.test(gl) && !sdClavFlesh() ? ", no extra padding" : "") + (sdCurvy() && !sdCurvyMax() ? "; the " + sdCurvyWhat() + " carry real volume" : "") + ". " : 2 === e.fat && e.muscle <= 2 ? "A normal, healthy layer of soft body fat: no visible ribs or hip bones" + (sdFatOn("fatFlanks") || sdArmFat() ? ". " : sdFlanksLow() ? ", a slight softness at the top of the hips and on the upper arms. " : ", a slight softness at the sides of the waist and on the upper arms. ") : 4 === e.fat ? sdForteFat() + ". " : "") +
     t6(
       hl
         ? sdBust()
