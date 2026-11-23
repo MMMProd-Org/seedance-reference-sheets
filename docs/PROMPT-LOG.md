@@ -12,6 +12,26 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card at « Léger » and +33 % on the 63 kg sheet (test build)
+
+**DOES NOT WORK** (owner's render: « le ventre plus gros ça fait ridicule pourtant j'ai mis léger »). On his 63 kg sheet (« Moyenne », biceps « Développés »), the card with `about a finger's width` and `about a third deeper`, measured in L (285 px): the front line 0.06 to 0.09 L forward around the navel in the left profile, up to 0.06 L in the right; the back 0.03 to 0.05 L out (left), 0.01 to 0.03 L (right). Fifth render where the depth goes mostly to the belly. **RULE** (owner: « mettre en rouge … au lieu de régler les problèmes par le delete »): the card's added depths are drawn in red with a warning (PR #86).
+
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Pleins et lisses » without « lean frame », at 52 kg (test build)
+
+**DOES NOT WORK** at 52 kg (owner's two renders with the change: `Apart from the bust, a slim frame: slender legs, visible collarbones.`). The body came out drier still: eight abs where four are asked, striated deltoids, veins on the forearms and hands (no vein line). The rest of the sheet still asks for definition (`Slim and toned`, `clear shadow lines`, `thick, very muscular obliques`, `a clear V-line`). **TO TEST**: « Moyenne » at 64 kg, « Veines : Aucune », obliques and V on Auto.
+
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Pleins et lisses » never with a lean frame
+
+**RULE** (the owner's body sheet below, « Pleins et lisses » at 52 kg). Smooth muscles need their layer of fat, so with « Pleins et lisses » a slim build (« Mince », « Très mince ») no longer says `lean`, the hip bones or the ribs. Before: `Apart from the bust, a lean frame: slender legs, visible collarbones and hip bones.`; after: `Apart from the bust, a slim frame: slender legs, visible collarbones.` Without « Pleins et lisses » nothing changes. **TO TEST**, with « Moyenne » at 60 to 64 kg, biceps and triceps « Développés », « Veines : Aucune »: large, smooth arms.
+
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the « Ventre et torse » card at « Léger » and +33 % (v1.8.0)
+
+**DOES NOT WORK** (owner's render, 2026-11-23: « le bidon léger on dirait marqué »). The card on the body sheet of the entry below, `about a finger's width` and `about a third deeper`, measured in L (284 px, underband to crotch): below the navel the front line 0.11 L forward in the left profile (31 px, about 4 cm), 0.08 L in the right; above the navel 0.06 to 0.08 L forward (left), 0.02 to 0.07 L (right), against `at and above the navel the belly line keeps its place`; the back 0.03 L further in at the ribs and 0.03 to 0.04 L further out at the waistband (left), unchanged (right). Depth at the navel +25 % (left), +17 % (right), mostly at the front: the depth added to the pooch, so « Léger » looks « Marqué ». Fourth render where the depth goes to the front. **LEAD**: the pooch alone, without depth.
+
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Pleins et lisses » at 52 kg (v1.8.0)
+
+**DOES NOT WORK** (owner's render, 2026-11-23: « je trouve que ça ne marche pas du tout », « le muscle gros et lisse est pas présent »). The sheet: 163 cm, about 52 kg, « Mince » (`Slim and toned`, `Apart from the bust, a lean frame: slender legs, visible collarbones and hip bones`), « Pleins et lisses », biceps « Moyens », triceps « Développés », no vein line: a dry body, the abs, the back and the forearm tendons sharp, the arms not large.
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Avant-bras » at « Développés » and « Très développés » (test build)
 
 **LEAD** (owner's two renders, 52 kg, « Mince », « Pleins et lisses »: « j'ai essayé avec développés je vois pas de différence notable »). Front view, screen-left arm: just below the elbow 71 to 75 px against 64 to 69 px on his earlier render without the setting (+8 to 10 %), the wrist 35 to 36 px in all; the two levels within 5 px of each other. Then at 63 kg, « Moyenne », biceps « Développés » (owner: « avant bras vide »): the forearms still thin next to the biceps. **RULE**: on Seedream, big forearms are now also said in the first sentence, after the muscular arms (`with strong, muscular arms and thick forearms`; « Très développés »: `very thick forearms`). **TO TEST**.
@@ -129,7 +149,7 @@ With the reference outfit, a part it covers is not asked for (Sourcery, PR #75):
 
 ## 2026-10-29 · Seedream 5.0 · Person, step 4 "Final photo pass" on a bare body sheet
 
-**DOES NOT WORK / LEAD.** An edit asking only for a photographic finish changed almost nothing (luma correlation 0.987); a new photograph of one view kept the silhouette in one render of three. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-29--seedream-50--person-step-4-final-photo-pass-on-a-bare-body-sheet)
+**DOES NOT WORK / WORKS for one view.** An edit asking only for a photographic finish changed almost nothing (luma correlation 0.987), and the whole sheet asked as a new photograph no better; the back view alone, centred in a 16:9 frame, worked in three renders of three; the front view and a profile were refused by the platform. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-29--seedream-50--person-step-4-final-photo-pass-on-a-bare-body-sheet)
 
 ## 2026-10-28 · Seedream 5.0 · Person, body sheet: fat zones at « Légère », and soft thighs never "lean"
 
@@ -141,9 +161,7 @@ With the reference outfit, a part it covers is not asked for (Sourcery, PR #75):
 
 ## 2026-10-28 · Seedream 5.0 · Person, the "Agent 3D" text as an edit prompt: the domed areola, a guide image, then the puffy-areola wording
 
-**LEAD** (owner's renders, 2026-10-28, Seedream 5.0, the sheet and settings of the entries below). A clay render of a domed areola (profile and three-quarter close-ups, drawn from geometry, no person) attached as image 2, with `Image 2 : guide de forme seulement. Donne aux aréoles de l'image 1 ce relief : un petit dôme distinct qui dépasse de la courbe du sein, le mamelon au sommet, un pli net à sa base. N'en copie ni la taille du sein, ni la couleur, ni la lumière.` above the Agent 3D text: the dome and its crease show in every view, but the areolas take the clay's color and smooth look, the edge a sharp ring, the nipples the guide's shape; on one of the two renders the bust also grows rounder and the right-hand panel turns into a three-quarter view. A realism pass on the other render, without the guide (`aréoles rose-brun, nettement plus foncées que la peau ... le bord du dôme devient un pli de peau doux`): real skin, but the dome mostly flattened, and areolas darker than the owner's example (« quand on compare avec l'image original ça ne fait pas réaliste »). A second realism pass (`aréoles pâles, à peine plus rosées que la peau ... mamelon court et petit ... sans arête ni anneau`): the closest look to the example, the dome flattened again. Each pass that asks for real skin brings the bust back to an average one.
-
-**RULE.** Owner: « il réussisse à faire ça quand je clique le bon prompt sans forcément avoir besoin de lui donner des images en plus ». "Bombée" now says what the example and the guide test showed, with the usual English term: `aréoles bombées (puffy areolas) : chaque aréole entière forme un petit cône arrondi et souple qui prolonge la pointe du sein ; de profil, la pointe a deux étages, la courbe du sein puis le cône de l'aréole, le mamelon au sommet ; à sa base, un léger étranglement qui se fond dans la peau, sans arête ni anneau ; même peau et même grain que le sein`. To fit, the report's anomaly list is shortened and the P/W benchmark sentence too; the longest prompt stays under 10,000 characters with each line break counted twice. A short nipple ("Plats" or "Moyens") matches the owner's example better than "Saillants". **TO TEST** on Seedream 5.0, the sheet alone, one edit.
+**LEAD.** A clay guide image gave the areola dome but its color and look; each realism pass flattened it again. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-28--seedream-50--person-the-agent-3d-text-as-an-edit-prompt-the-domed-areola-a-guide-image-then-the-puffy-areola-wording)
 
 ## 2026-10-28 · Seedream 5.0 · Person, the "Agent 3D" text as an edit prompt: the domed areola, third try
 
