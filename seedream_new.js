@@ -3791,9 +3791,27 @@ function sdBarTip(k, off) {
   if ("head" === k) return sdBaby(e) ? "Copier le prompt de la planche bébé (carte 1)" : "Copier le prompt de la planche tête (carte 1)";
   if ("body" === k) return nw() || sdChildHl(e) ? "Copier le prompt de la planche corps sans tête (carte 2)" : "Copier le prompt de la planche corps (carte 2)";
   if ("grow" === k) return sdHourglass() ? (4 === +e.glutes ? "Copier le prompt de la carte 2b : affiner la taille, élargir les hanches et agrandir les fessiers de ta planche corps" : "Copier le prompt de la carte 2b : affiner la taille et élargir les hanches de ta planche corps") : "Copier le prompt de la carte 2b : agrandir hanches et fessiers de ta planche corps";
-  if ("growUp" === k) return "Copier le prompt de la retouche du haut du corps de ta planche corps (épaules, dos, poitrine)";
+  /* owner, 2026-11-23 (« c vraiment pas clair le bouton ventre et haut du corps, va falloir un tooltip plus explicite, personne ne peut
+     savoir ce que c'est »): each retouch button says what it changes on the sheet, from the settings that call it, and how to use it */
+  if ("growUp" === k) {
+    var gu = sdGrowUpParts(),
+      wf = [gu.sh && (gu.big ? "épaules plus larges, deltoïdes plus gros" : "épaules plus larges"), gu.la && "dos plus large sous les aisselles", gu.fl && "poitrine aplatie"].filter(Boolean),
+      we = [gu.sh && (gu.big ? "broader shoulders, larger deltoids" : "broader shoulders"), gu.la && "a wider back below the armpits", gu.fl && "a flattened chest"].filter(Boolean);
+    return sdT(
+      "Retouche facultative, après ta planche corps : " + wf.join(", ") + ", le reste du corps inchangé. Copie le prompt de la carte « Retouche : haut du corps » ; colle-le dans Seedream avec ta planche corps en image 1.",
+      "Optional retouch, after your body sheet: " + we.join(", ") + ", the rest of the body unchanged. Copies the prompt of the “Retouch: upper body” card; paste it into Seedream with your body sheet as image 1.",
+    );
+  }
   if ("fin" === k) return "Copier le prompt de la carte 4 : finition photo de ta planche finale";
   if ("growBust" === k) return "Copier le prompt de la retouche de la poitrine de ta planche corps (moins bombée de profil, la chute gardée)";
+  if ("growTorso" === k && !off) {
+    var tf = [sdTorsoPooch() > 0 && "un petit bidon sous le nombril", sdTorsoDeep() > 0 && "le torse plus épais de profil", sdTorsoDeep() < 0 && "le torse plus fin de profil"].filter(Boolean),
+      te = [sdTorsoPooch() > 0 && "a small pooch below the navel", sdTorsoDeep() > 0 && "a deeper torso in profile", sdTorsoDeep() < 0 && "a shallower torso in profile"].filter(Boolean);
+    return sdT(
+      "Retouche facultative, après ta planche corps : " + tf.join(", ") + ", le reste du corps inchangé. Copie le prompt de la carte « Retouche : ventre et torse » ; colle-le dans Seedream avec ta planche corps en image 1.",
+      "Optional retouch, after your body sheet: " + te.join(", ") + ", the rest of the body unchanged. Copies the prompt of the “Retouch: belly and torso” card; paste it into Seedream with your body sheet as image 1.",
+    );
+  }
   if ("growTorso" === k) return off ? sdT("Rien à retoucher : choisis un bidon ou une épaisseur dans la carte « Retouche : ventre et torse »", "Nothing to retouch: pick a pooch or a depth in the “Retouch: belly and torso” card") : sdT("Copier le prompt de la retouche du ventre et du torse de ta planche corps", "Copy the prompt of the belly and torso retouch of your body sheet");
   if ("iter" === k) {
     if (off) return "Carte 3 : choisis ou écris d'abord une retouche";
@@ -8527,7 +8545,7 @@ function sdBarItems(t) {
       return o[0] === (op || (sdFreeIter(t) ? "free" : ""));
     })[0] || [0, 0, "Retouche"])[2],
     it = ["iter", lab, sdIterOff(t)];
-  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdGrowTorsoOn(t) ? [["growTorso", "Ventre", sdTorsoNone(t)]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
+  return [["head", "Tête", !1], ["body", "Corps", !1]].concat(sdGrowOn(t) ? [["grow", "Agrandir", !1]] : [], sdGrowUpOn(t) ? [["growUp", "Retouche haut du corps", !1]] : [], sdGrowBustOn(t) ? [["growBust", "Poitrine", !1]] : [], sdGrowTorsoOn(t) ? [["growTorso", "Retouche ventre", sdTorsoNone(t)]] : [], sdHlRaw(t) || !sdIterOff(t) ? [it] : [], sdFinOn(t) && t.sdFinTg ? [["fin", "Finition", !1]] : []);
 }
 /* options shown inside a card, folded: what you rarely need stays out of the way */
 function sdFold(label, children, open, onToggle) {

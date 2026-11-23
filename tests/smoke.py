@@ -866,10 +866,18 @@ with sync_playwright() as p:
             assert tc.locator("#sd-card-growTorso", has_text="Nothing to retouch yet").count() == 1, state
             tc.set_viewport_size({"width": 900, "height": 900})
             tc.evaluate(HOLD_CLIPBOARD)
-            tc.locator("#sd-mobile-copy-bar button", has_text="Belly").click()
+            tc.locator("#sd-mobile-copy-bar button", has_text="Retouch belly").click()
             tc.wait_for_timeout(300)
             assert tc.evaluate("window.writes.length") == 0, state
         tc.close()
+    # owner, 2026-11-23 (« c vraiment pas clair le bouton ventre et haut du corps »): the retouch buttons are named as retouches and their
+    # tooltips say what they change on the sheet and how to use them
+    tc, _ = torso_of("delts: 'big', sdTorsoPooch: '1'")
+    tb = tc.locator("button", has_text="Retouch belly").first.get_attribute("title") or ""
+    tu = tc.locator("button", has_text="Retouch upper body").first.get_attribute("title") or ""
+    assert "a small pooch below the navel" in tb and "image 1" in tb and "deeper torso" not in tb, tb
+    assert "broader shoulders, larger deltoids" in tu and "image 1" in tu, tu
+    tc.close()
     # the chips of the card set it, Auto follows the body settings again
     tc, torso = torso_of("fatBelly: 1")
     chips = tc.locator("[data-sd-torso-chips]")
