@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card's pooch as one curve, at « Très léger » (PR #87 build)
+
+**LEAD** (owner's two renders on his sheet with « Graisse : ventre » on « Légère »: « un tout petit peu pendouillant »). Against that sheet, in profile: the front line 14 to 18 px forward below the navel (left, about 2 cm, for about 1 cm asked), 11 to 15 px and 5 to 8 px (right); it now rises from the navel and its top is spread, and the step back in at the waistband is 5 to 13 px over about 2 cm of height, against 19 to 23 px at once before. The shape is better and the fold over the waistband smaller, still there; the amount is still about twice the one asked. Agreed stop: no further wording; the last of the fold by hand on the better render.
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: the pooch drawn in the sheet, « Graisse : ventre » on « Légère » (v1.12.0)
 
 **DOES NOT WORK** (owner's two renders, the card's pooch on « Aucun »). The prompt said `and a small, soft pooch of fat just below the navel` in its first sentence and `a small, smooth bulge of soft fat that rounds the lower belly slightly forward in profile`; the rest of the sheet asks for sharp abs (`clear shadow lines`, the outer grooves « Marquées »). Measured in profile, the lower belly past the line of the upper abs: 0 to 3 px (up to 0.01 L), as on his sheet without any pooch (0 to 1 px); the card at « Très léger » had given 14 to 19 px. « Visible » would trade the sharp upper abs for the pooch (`only as soft shapes under the belly fat`). **LEAD**: the card with the curve of the entry below, at « Très léger », on this sheet.
@@ -177,7 +181,7 @@ With the reference outfit, a part it covers is not asked for (Sourcery, PR #75):
 
 ## 2026-10-28 · Seedream 5.0 · Person, the "Agent 3D" text as an edit prompt: the domed areola, third try
 
-**DOES NOT WORK** for the dome, a small change (owner's renders, 2026-10-28, Seedream 5.0, the sheet and settings of the entries below, edited after the 10,000-character test build, whose "Bombée" phrase says the dome view by view). Owner: « voilà le résultat je ne sais pas quoi penser ». Two renders, the same pixels as the earlier ones except the bust: on the second, the areola in the right-hand profile panel looks slightly swollen, with a shaded ring; no distinct dome and no crease at its base in any view; the nipples projecting and the areola size as asked. As the second try's entry says, the text has reached its ceiling for this detail; at this sheet's scale a relief of a few millimetres spans 2 or 3 px. **TO TEST**: a guide image, or a render where the bust fills more of the frame.
+**DOES NOT WORK.** The third wording gave no distinct areola dome; at this sheet's scale the relief spans 2 or 3 px, so the text has reached its ceiling. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-28--seedream-50--person-the-agent-3d-text-as-an-edit-prompt-the-domed-areola-third-try)
 
 ## 2026-10-28 · Blender agent and Seedream 5.0 · Person, "Agent 3D": the prompt within 10,000 characters
 
