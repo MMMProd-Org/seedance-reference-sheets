@@ -3459,8 +3459,12 @@ function sdLegLead() {
     /* owner's render, 2026-11-19 (« j'ai mis aussi bras développés et pourtant ils sont fins »): "Développés" and "Très développés" arms
        were said only in the muscle line, after the build ("Average build"); said here too, where Seedream weights most */
     a = "person" === e.mode && !sdChild(e) && ["big", "huge"].indexOf(sdArmTop()) >= 0,
-    w = [l && "legs", a && "arms", g && "glutes"].filter(Boolean);
-  return w.length ? ", with strong, muscular " + sdList(w) : "";
+    w = [l && "legs", a && "arms", g && "glutes"].filter(Boolean),
+    r = w.length ? ", with strong, muscular " + sdList(w) : "";
+  /* owner's render, 2026-11-23 (« avant bras vide »: « Avant-bras » said only in the muscle line, thin next to large biceps): big
+     forearms are said here too */
+  sdForeBig() && (r += (r ? (w.length > 1 ? ", and " : " and ") : ", with ") + ("huge" === sdFore() ? "very thick forearms" : "thick forearms"));
+  return r;
 }
 /* the shape names the ankles (runner, shapely), "Mollets" left on Auto: the drawn ankles go */
 function sdLegAnkles() {

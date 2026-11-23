@@ -757,6 +757,9 @@ with sync_playwright() as p:
         assert body, (model, state)
         return body[0], shown
 
+    def assert_lead(t):
+        assert re.search(r"kg[^.]*(, with|,? and) thick forearms", t), t
+
     def light_of(t):
         return re.findall(r"Seamless[^\n]*", t)
 
@@ -930,6 +933,9 @@ with sync_playwright() as p:
         # « Développés » up, never "not bulky", "slender arms", "average-sized", "no muscle bulk", leanness or every forearm tendon next to them
         fore, _ = side_body(model, "fat: 1, defArms: 'strong', forearms: 'big'")
         assert "strong, full, smooth forearms" in fore and "the wrists slim" in fore, (model, fore)
+        # owner's render, 2026-11-23 (« avant bras vide »): on Seedream, big forearms are said in the first sentence too
+        if model == "Seedream 5.0":
+            assert_lead(fore)
         assert not re.search(r"slender arms|Arm and shoulder muscles stay average-sized|dry and wiry|no muscle bulk|tendon visible|clearly separated forearm muscles|Definition from leanness|upper arms[^.;]*not bulky", fore), (model, fore)
         no_fore, _ = side_body(model, "fat: 1, defArms: 'strong'")
         assert "smooth forearms" not in no_fore and "Forearms:" not in no_fore, (model, no_fore)
