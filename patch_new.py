@@ -4574,7 +4574,7 @@ for _a, _b in [
     ('''      "auto" === sdArmTop() &&
       "auto" === e.traps &&
       !sdMusBig() &&''', '''      "auto" === sdArmTop() &&
-      !sdFore() &&
+      !sdForeBig() &&
       "auto" === e.traps &&
       !sdMusBig() &&'''),
     ('''          hint: "Le muscle de l'arrière du bras. Auto : comme le biceps.",
@@ -4590,6 +4590,8 @@ for _a, _b in [
           hint: "Les muscles qui serrent la main (fléchisseurs des doigts, face intérieure) et le long supinateur, côté pouce. Leur volume est sous le coude, le poignet reste fin : de gros avant-bras ne font pas ressortir les tendons ni les veines du poignet. Auto : rien n'est dit.",
         },'''),
     ('    triceps: "auto",\n', '    triceps: "auto",\n    forearms: "auto",\n'),
+    ('''                  "deep grooves between the biceps and triceps that visibly hollow the upper arms, clearly separated forearm muscles",''',
+     '''                  "deep grooves between the biceps and triceps that visibly hollow the upper arms" + (sdForeBig() ? "" : ", clearly separated forearm muscles"),'''),
     ('''    triceps: [
       ["auto", "Auto", ""],''', '''    forearms: [
       ["auto", "Auto", ""],

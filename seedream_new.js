@@ -5850,11 +5850,12 @@ function sdMus() {
         strong: "a sharply defined back with clear lats and a deep groove along the spine",
       }),
       sdArmFat() >= 2
-        ? z("defArms", { subtle: "softly toned arms", clear: "biceps and triceps as soft shapes under the arm fat", strong: "biceps and triceps as soft shapes under the arm fat, every forearm muscle and tendon visible" })
+        ? z("defArms", { subtle: "softly toned arms", clear: "biceps and triceps as soft shapes under the arm fat", strong: "biceps and triceps as soft shapes under the arm fat" + (sdForeBig() ? "" : ", every forearm muscle and tendon visible") })
         : z("defArms", {
         subtle: "softly toned arms",
         clear: "a visible groove between biceps and triceps",
-        strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 && !sdForeBig() && e.muscle <= 2 ? ", not bulky" : ""),
+        /* PR #85 review (Sourcery): big forearms are said full and smooth by « Avant-bras », never with every forearm tendon */
+        strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms" + ("none" !== rP("defShoulders") ? ", the shoulder cap clearly separated" : "") + (sdForeBig() ? "" : ", every forearm muscle and tendon visible") + (["big", "huge"].indexOf(e.biceps) < 0 && !sdForeBig() && e.muscle <= 2 ? ", not bulky" : ""),
       }),
       z("defLegs", leg),
     ];
@@ -5948,7 +5949,7 @@ function sdMus() {
     "low" !== e.glutesShape &&
     x.push("The " + sdList(so) + (so.length > 1 || /s$/.test(so[0]) ? " stay" : " stays") + " soft, shaped by gravity.");
   /* v157 (his render): never "not from muscle size" next to muscular legs or glutes set by their sliders */
-  d && e.muscle <= 2 && "low" !== e.glutesShape && "low" !== e.bustShape && !sdFatList().length && !sdMusBig() && !sdLegLead() && x.push("Definition from leanness, not from muscle size.");
+  d && e.muscle <= 2 && "low" !== e.glutesShape && "low" !== e.bustShape && !sdFatList().length && !sdMusBig() && !sdForeBig() && !sdLegLead() && x.push("Definition from leanness, not from muscle size.");
   var sk = [];
   "m" !== e.pres && e.chest >= 1 && sk.push("breasts");
   ["low", "flat"].indexOf(e.glutesShape) >= 0 && sk.push("glutes");
