@@ -5654,6 +5654,10 @@ function sdOptFix(k, x) {
     (sdFatOn("fatThighs") >= 2 || ("m" !== e.pres && (e.fatLower >= 3 || "visible" === e.saddle || "marked" === e.saddle))) && "person" === e.mode && !sdChild(e) && (x = x.replace(", not bulky", ""));
     /* v157: never "not bulky" next to muscular front thighs */
     sdThighFront() && +e.thighFront >= 3 && (x = x.replace(", not bulky", ""));
+    /* owner's render, 2026-11-23 (« quand je mets Cuisses : Fines ça fait mincir tout le corps »: the shoulders, arms and bust smaller with
+       only this clause changed): on Seedream, thin thighs are said "narrow", never "slim" or "lean", and only the thighs */
+    "seedream" === e.model && "person" === e.mode && !sdChild(e) && +e.thighs <= 1 &&
+      (x = x.replace(/^very slim(, lean)? thighs/, "very narrow thighs").replace(/^slim(, lean)? thighs/, "narrow thighs") + "; only the thighs are narrow: the shoulders, arms, bust and waist keep the size set above");
     return x;
   }
   if ("fatFlanks" === k) return sdFlanksLow() && SD_FLANKS_NW[x] ? SD_FLANKS_NW[x].replace("%w", 0 === +e.waist ? "very narrow" : "narrow") : x;
@@ -9181,7 +9185,8 @@ function sdBody() {
     "m" === e.pres ? "" : 4 === e.hips ? "extremely wide hips" : 4 === e.fat ? t1("hips", e.hips).replace(/, (clearly|much) wider than the waist/, "") : t1("hips", e.hips),
     "m" === e.pres ? "" : ["a flat chest", "a small bust", "a medium bust", "a fairly full bust", "a large bust", "a very large bust out of proportion with her frame"][sdCi(e.chest)] || "",
     sdGlVol(["very small glutes", "small glutes", "average-sized glutes", "very large, round glutes, much bigger than average", "extremely large glutes, out of proportion with " + (sdFatWaist() ? "the waist" : "a slim waist")][e.glutes] || ""),
-    sdThighCurve() ? "full upper thighs" : ["very slim thighs", "slim thighs", "average thighs", "full thighs", "very thick thighs"][e.thighs] || "",
+    /* owner's render, 2026-11-23 (« Cuisses : Fines » slimmed the whole body): narrow, never slim, here too */
+    sdThighCurve() ? "full upper thighs" : ["very narrow thighs", "narrow thighs", "average thighs", "full thighs", "very thick thighs"][e.thighs] || "",
   ].filter(Boolean),
     ks = "Key proportions: " + kp.join(", ") + ".\n";
   /* v136 review: counted on the text as sent (sdWrap adds the adult words and the "Très tombante" landmarks after this) */
