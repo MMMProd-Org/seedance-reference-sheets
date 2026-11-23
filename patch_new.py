@@ -4667,6 +4667,26 @@ for _a, _b in [
             return "person" === e.mode && !sdChild(e);
           },
           hint: "La distance du dos au ventre, vue de profil (la largeur de face se règle dans « Cage thoracique »). Épais : un tronc profond, la taille presque aussi épaisse que la poitrine de profil. Auto : rien n'est dit.",
+        },
+        {
+          t: "chips",
+          k: "sdTorsoPooch",
+          l: "Bidon sous le nombril (retouche)",
+          show: function () {
+            /* PR #83 review: shown only where the card can use them (no source photo, the Photo style) */
+            return "seedream" === e.model && "person" === e.mode && !sdChild(e) && sdNative(e) && !sdOff(e);
+          },
+          hint: "Le même réglage que dans la carte « Retouche : ventre et torse » (colonne des prompts), qu'il fait apparaître : de profil, ce que le bidon dépasse la ligne des abdos du haut, un demi-doigt (Très léger), un doigt (Léger) ou deux doigts (Marqué). Auto : suit « Graisse : ventre ».",
+        },
+        {
+          t: "chips",
+          k: "sdTorsoDeep",
+          l: "Épaisseur de profil (retouche)",
+          show: function () {
+            /* PR #83 review: shown only where the card can use them (no source photo, the Photo style) */
+            return "seedream" === e.model && "person" === e.mode && !sdChild(e) && sdNative(e) && !sdOff(e);
+          },
+          hint: "Le même réglage que dans la carte « Retouche : ventre et torse » : le torse plus épais du dos au ventre, vu de profil, par rapport à ta planche. Auto : suit « Épaisseur du torse (de profil) ».",
         },'''),
     ('    ribcage: "auto",\n', '    ribcage: "auto",\n    torsoDepth: "auto",\n    sdTorsoPooch: "auto",\n    sdTorsoDeep: "auto",\n'),
     ('''    ribcage: [
@@ -4682,6 +4702,20 @@ for _a, _b in [
       ["auto", "Auto", ""],
       ["shallow", "Fin", ""],
       ["deep", "Épais", ""],
+    ],
+    sdTorsoPooch: [
+      ["auto", "Auto", ""],
+      ["0", "Aucun", ""],
+      ["1", "Très léger", ""],
+      ["2", "Léger", ""],
+      ["3", "Marqué", ""],
+    ],
+    sdTorsoDeep: [
+      ["auto", "Auto", ""],
+      ["0", "Aucune", ""],
+      ["10", "+10 %", ""],
+      ["20", "+20 %", ""],
+      ["33", "+33 %", ""],
     ],'''),
 ]:
     assert src.count(_a) == 1, (src.count(_a), _a[:80])
