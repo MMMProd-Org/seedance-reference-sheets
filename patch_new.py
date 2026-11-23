@@ -4560,6 +4560,49 @@ src = src.replace('''    biceps: [
     ],
     biceps: [
       ["auto", "Auto", ""],''')
+# owner, 2026-11-23 (« juste avant le poignet, celui qui sert à serrer la main », « oui fais-le »): "Avant-bras" after "Triceps" (texts and
+# sdFore in seedream_new.js), Auto by default: GPT's arm line gains a "Forearms:" line, and its two "not bulky" phrases go with big forearms
+for _a, _b in [
+    ('(sdTriSplit() ? n.push("Arms: " + sdArmSplit().join(", ")) : "auto" !== e.biceps && n.push("Arms: " + t1("biceps", e.biceps))),',
+     '(sdTriSplit() ? n.push("Arms: " + sdArmSplit().join(", ")) : "auto" !== e.biceps && n.push("Arms: " + t1("biceps", e.biceps))),\n    sdFore() && n.push("Forearms: " + SD_FORE[sdFore()]),'),
+    ('''      0 > ["big", "huge"].indexOf(sdArmTop()) &&
+      (t +=
+        "; the arms look dry''', '''      0 > ["big", "huge"].indexOf(sdArmTop()) &&
+      !sdForeBig() &&
+      (t +=
+        "; the arms look dry'''),
+    ('''      "auto" === sdArmTop() &&
+      "auto" === e.traps &&
+      !sdMusBig() &&''', '''      "auto" === sdArmTop() &&
+      !sdFore() &&
+      "auto" === e.traps &&
+      !sdMusBig() &&'''),
+    ('''          hint: "Le muscle de l'arrière du bras. Auto : comme le biceps.",
+        },''', '''          hint: "Le muscle de l'arrière du bras. Auto : comme le biceps.",
+        },
+        {
+          t: "chips",
+          k: "forearms",
+          l: "Avant-bras",
+          show: function () {
+            return "person" === e.mode && !sdChild(e);
+          },
+          hint: "Les muscles qui serrent la main (fléchisseurs des doigts, face intérieure) et le long supinateur, côté pouce. Leur volume est sous le coude, le poignet reste fin : de gros avant-bras ne font pas ressortir les tendons ni les veines du poignet. Auto : rien n'est dit.",
+        },'''),
+    ('    triceps: "auto",\n', '    triceps: "auto",\n    forearms: "auto",\n'),
+    ('''    triceps: [
+      ["auto", "Auto", ""],''', '''    forearms: [
+      ["auto", "Auto", ""],
+      ["slim", "Fins", ""],
+      ["medium", "Moyens", ""],
+      ["big", "Développés", ""],
+      ["huge", "Très développés", ""],
+    ],
+    triceps: [
+      ["auto", "Auto", ""],'''),
+]:
+    assert src.count(_a) == 1, (src.count(_a), _a[:80])
+    src = src.replace(_a, _b)
 # P157 (follow-up of v158): "Tubéreuse" (GPT's line; Seedream's in seedream_new.js), "Veines du buste" (bustVeins: Auto, Légères,
 # Visibles) before "Peau de la poitrine", the GPT bust phrase said with it
 rep('''      ["slender", "Fine et allongée", "a slender bust line: narrow at the base and longer than wide, sitting a little low and pointing slightly downward, little fullness at the top"],

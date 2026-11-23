@@ -5271,6 +5271,21 @@ var SD_TRIS = {
   big: ["well-developed triceps", " that fill out the back of the upper arms"],
   huge: ["very large triceps", ", a thick horseshoe of muscle filling the back of the upper arms, clearly visible in the side and back views"],
 };
+/* owner, 2026-11-23 (« juste avant le poignet, celui qui sert à serrer la main », « oui fais-le »): "Avant-bras", the finger flexors and
+   the brachioradialis; "Auto" by default, nothing said (prompts unchanged). Their bulk sits in the upper part of the forearm, below the
+   elbow: asked there, smooth, with slim wrists, so a strong forearm is not drawn as tendons and veins at the wrist */
+var SD_FORE = {
+  slim: "slim forearms",
+  medium: "moderate forearms",
+  big: "strong, full, smooth forearms: the muscles on the inner side and along the thumb side rounded just below the elbow, the wrists slim",
+  huge: "very thick, smooth forearms: the muscles on the inner side and along the thumb side full and rounded from the elbow to past the middle of the forearm, the wrists slim",
+};
+function sdFore() {
+  return "person" === e.mode && !sdChild(e) && SD_FORE[e.forearms] ? e.forearms : "";
+}
+function sdForeBig() {
+  return "big" === sdFore() || "huge" === sdFore();
+}
 function sdArmSplit() {
   var f = sdArmFat() >= 2 ? " under the arm fat" : "",
     t = SD_TRIS[sdTri()];
@@ -5645,7 +5660,7 @@ function sdSoft() {
 }
 /* Musculature at "Athlétique" or less, no biceps, triceps or trapezius at "Développés" or "Massifs" (the body light reads it too) */
 function sdNoBulk() {
-  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && ["big", "huge"].indexOf(e.traps) < 0;
+  return e.muscle <= 2 && ["big", "huge"].indexOf(sdArmTop()) < 0 && !sdForeBig() && ["big", "huge"].indexOf(e.traps) < 0;
 }
 /* owner, 2026-11-19 (very large deltoids next to "no muscle bulk"): the words only, neither with deltoids from "Développés" nor with
    "Pleins et lisses"; PR #76 review (Codex): kept apart from sdNoBulk, which also picks the body light */
@@ -5839,7 +5854,7 @@ function sdMus() {
         : z("defArms", {
         subtle: "softly toned arms",
         clear: "a visible groove between biceps and triceps",
-        strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 && e.muscle <= 2 ? ", not bulky" : ""),
+        strong: "very marked arms: deep grooves between biceps and triceps that hollow the upper arms, " + ("none" !== rP("defShoulders") ? "the shoulder cap clearly separated, " : "") + "every forearm muscle and tendon visible" + (["big", "huge"].indexOf(e.biceps) < 0 && !sdForeBig() && e.muscle <= 2 ? ", not bulky" : ""),
       }),
       z("defLegs", leg),
     ];
@@ -5874,6 +5889,7 @@ function sdMus() {
   sdArmFat() >= 2 && "auto" !== sdArmTop() && (p = p.filter(function (x) {
     return x.indexOf("biceps and triceps as soft shapes under the arm fat") < 0;
   }));
+  sdFore() && p.push(SD_FORE[sdFore()]);
   "auto" !== e.traps &&
     p.push({ flat: "a flat trapezius line", medium: "a moderate trapezius slope", big: "trapezius rising visibly from the neck", huge: "very large trapezius rising steeply from the skull" }[e.traps] || "");
   p = p.filter(Boolean);
@@ -5900,6 +5916,7 @@ function sdMus() {
   ("strong" === r_() || "strong" === rP("defShoulders")) &&
     e.muscle <= 2 &&
     ["big", "huge"].indexOf(sdArmTop()) < 0 &&
+    !sdForeBig() &&
     ["big", "huge"].indexOf(sdMusLv("delts")) < 0 &&
     x.push("Arm and shoulder muscles stay average-sized.");
   /* v128 review: no veins on upper arms carrying fat from "Visible" up */
@@ -8766,7 +8783,7 @@ function sdBody() {
     (e.fat <= 1 ? ("m" !== e.pres && e.chest >= 2 ? "Apart from the bust, a " + (sdMusBig() ? "lean " : "slim ") : sdMusBig() ? "A lean " : "A slim ") + (sdCurvy() ? (sdFatWaist() ? "upper body" : "upper body and waist") : "frame") + ": " + (function (a, l) {
       return a && l ? "slender arms and legs, " : a ? "slender arms, " : l ? "slender legs, " : "";
     })(
-      ["big", "huge"].indexOf(sdArmTop()) < 0 && ("auto" !== sdArmTop() || e.muscle <= 2) && sdArmFat() < 2,
+      ["big", "huge"].indexOf(sdArmTop()) < 0 && !sdForeBig() && ("auto" !== sdArmTop() || e.muscle <= 2) && sdArmFat() < 2,
       /* v139 review: never "slender legs" next to fat on the front of the thighs from "Visible" up */
       !sdCurvy() && e.thighs <= 2 && e.fatLower <= 1 && ("none" === e.saddle || "light" === e.saddle) && e.muscle <= 2 && sdFatOn("fatThighs") < 2 && sdFatOn("fatKnees") < 2 &&
         /* v157 review: never "slender legs" next to sprinter's legs, muscular front thighs or muscular calves */
