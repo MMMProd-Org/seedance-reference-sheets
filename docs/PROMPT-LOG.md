@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Seedream 5.0 · Person, body sheet: the card at « Léger » and +33 % on the 63 kg sheet (test build)
+
+**DOES NOT WORK** (owner's render: « le ventre plus gros ça fait ridicule pourtant j'ai mis léger »). On his 63 kg sheet (« Moyenne », biceps « Développés »), the card with `about a finger's width` and `about a third deeper`, measured in L (285 px): the front line 0.06 to 0.09 L forward around the navel in the left profile, up to 0.06 L in the right; the back 0.03 to 0.05 L out (left), 0.01 to 0.03 L (right). Fifth render where the depth goes mostly to the belly. **RULE** (owner: « mettre en rouge … au lieu de régler les problèmes par le delete »): the card's added depths are drawn in red with a warning (PR #86).
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Pleins et lisses » without « lean frame », at 52 kg (test build)
 
 **DOES NOT WORK** at 52 kg (owner's two renders with the change: `Apart from the bust, a slim frame: slender legs, visible collarbones.`). The body came out drier still: eight abs where four are asked, striated deltoids, veins on the forearms and hands (no vein line). The rest of the sheet still asks for definition (`Slim and toned`, `clear shadow lines`, `thick, very muscular obliques`, `a clear V-line`). **TO TEST**: « Moyenne » at 64 kg, « Veines : Aucune », obliques and V on Auto.
