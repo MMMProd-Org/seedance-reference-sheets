@@ -939,6 +939,10 @@ with sync_playwright() as p:
             slim_dry, _ = side_body(model, "fat: 1, chest: 3, delts: 'big'")
             assert "Apart from the bust, a slim frame" in slim_smooth and "hip bones" not in slim_smooth, slim_smooth
             assert "Apart from the bust, a lean frame" in slim_dry and "hip bones" in slim_dry, slim_dry
+            # PR #84 review (Copilot): « Très mince » keeps its ribs without « Pleins et lisses », drops them with it
+            thin_smooth, _ = side_body(model, "fat: 0, chest: 3, delts: 'big', musLook: 'smooth'")
+            thin_dry, _ = side_body(model, "fat: 0, chest: 3, delts: 'big'")
+            assert "the ribs showing clearly" not in thin_smooth and "the ribs showing clearly" in thin_dry, (thin_smooth, thin_dry)
         assert "full, rounded muscles under a thin" not in sharp and re.search(r"sharply|crisp shadows", sharp), (model, sharp)
         delts_only, _ = side_body(model, "fat: 1, def: 'subtle', delts: 'huge'")
         assert "no muscle bulk" not in delts_only, (model, delts_only)
