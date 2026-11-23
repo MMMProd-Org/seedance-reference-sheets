@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Seedream 5.0 · Person, « Retouche ventre » card: a red line when its pooch is « Aucun » with belly fat
+
+**RULE** (owner, 2026-11-23: « du coup on corrige on fait quoi ? », after the review of the target-B settings: belly fat « Légère », the card's pooch on « Aucun », sharp abs, the configuration of the « DOES NOT WORK » entry below). Interface text only, no prompt changes: with « Graisse : ventre » from « Légère » and the card's « Bidon sous le nombril » on « Aucun », the card says in red `Sans bidon dans cette retouche, Seedream n'en dessine presque pas : « Graisse : ventre » seule a donné 0 à 3 px de profil (2 rendus mesurés), comme sans bidon. Pour un petit bidon, mets « Très léger ».` It goes as soon as a pooch is chosen.
+
 ## 2026-11-23 · Blender agent and Seedream 5.0 · Person, "Agent 3D : fesses": the opening line
 
 **RULE** (owner, 2026-11-23, his edit of the start: « attends autre chose pour le bas, j'ai changé une partie juste le début, ça par ça, fais le changement »). The context line now breaks after the bottom (`Il porte un bas de maillot tanga ou un string.`) and the goal reads `Objectif : version enlever le bas, au repos, debout, …` instead of `Objectif : version nue des fesses, …`, his words as written; English `Goal: the version with the bottom removed, …`. **TO TEST**.
@@ -153,15 +157,11 @@ Owner's render, 2026-11-19, Seedream 5.0 (woman, 27, 163 cm, 54 kg, « Courtes �
 
 ## 2026-11-19 · GPT Image 2.5 and Seedream 5.0 · Person, body sheet: side lines of the abs, obliques, lower-belly V, serratus
 
-**TO TEST.** Owner, 2026-11-19, from a photo of a lean, fit woman (defined upper abs, side lines, obliques, a V toward the lower belly): « ajoute les obliques, lignes latérales, V etc etc », « lumière on touche pas ». Four settings after "Muscles apparents : abdos", each Auto by default (nothing said: the 31 golden prompts are unchanged): "Lignes latérales des abdos" (Visibles, Marquées), "Obliques" (Visibles, Marqués), "V du bas-ventre" (Léger, Marqué), "Dentelés" (Visibles). Both engines get one line after the abdomen, in positive words, for example `Sides of the torso: a clear, slightly curved vertical groove along each outer edge of the abs, from the lower ribs down to the hip bones; the obliques softly visible at the sides of the waist, between the lower ribs and the hip bones; a shallow V-line running from each hip bone diagonally down toward the lower belly.`
-
-They are not muscle-definition zones: the body light is unchanged (checked). Hidden and ignored where the prompt already says a soft or fat belly: "Ventre doux", "Plat, sillon au milieu", "Bas du ventre arrondi", "Dad bod", belly or flank fat from "Visible", build "Forte", a child, a body kept as in the photo. With a side-line setting, GPT's own texts no longer say the sides too (`and faint lines at the sides` of "Ligne centrale", `and a curved groove runs down each side ...` of "4 carreaux"); with every zone at "Non" and abs on Auto, Seedream no longer writes `No visible muscle definition.` next to them.
-
-With the reference outfit, a part it covers is not asked for (Sourcery, PR #75): no V under the top with bike shorts or the one-piece, no side lines or obliques under the one-piece; it stays with the triangle and tanga, the GPT shorts and swim sets (their top leaves the lower abdomen visible), the men's shorts and trunks and the user's own outfit. The near-photo settings (Mince, Légère, Fin, 4 carreaux at Présents, side lines, obliques, V, tanga, headless) give a Seedream body of 575 words, near the 600 reported. "Nombril" and "Cage thoracique" (v140) already replace the drawn navel and ribcage on both engines and every build (checked): unchanged. **TO TEST** on Seedream 5.0, one setting at a time; the 2026-10-11 entry warns that abdominal cues pushed a slim body toward an athletic one.
+**TO TEST.** Four Auto-by-default settings after the abs (side lines, obliques, lower-belly V, serratus), one positive line in both engines, hidden on a soft or fat belly and under the outfit parts that cover them. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--gpt-image-25-and-seedream-50--person-body-sheet-side-lines-of-the-abs-obliques-lower-belly-v-serratus)
 
 ## 2026-10-29 · Blender agent and Seedream 5.0 · Person, both "Agent 3D" prompts without a title or a CONTEXT heading
 
-**RULE** (owner, 2026-10-29: « pas besoin de titre ni contexte », « titre et contexte ça sert à rien »). The bust and glutes prompts no longer open with `# Prompt agent : …` and `## CONTEXTE`: the first line is the context line itself, the plain-words goal an image model reads first; the other headings stay.
+**RULE.** The two "Agent 3D" prompts open with their context line, no title or CONTEXT heading. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-29--blender-agent-and-seedream-50--person-both-agent-3d-prompts-without-a-title-or-a-context-heading)
 
 ## 2026-10-29 · GPT Image 2.5 and Seedream 5.0 · Every sheet: a neutral 18% grey backdrop
 

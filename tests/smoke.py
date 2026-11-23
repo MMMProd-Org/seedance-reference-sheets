@@ -895,6 +895,13 @@ with sync_playwright() as p:
     assert warn.count() == 1 and "adds to the pooch" in warn.inner_text(), warn.all_inner_texts()
     chips.get_by_role("radio", name="None", exact=True).last.click()
     assert tc.locator("[data-sd-depth-warn]").count() == 0
+    # owner's renders, 2026-11-23: belly fat alone, the card's pooch on « Aucun », drew 0 to 3 px; said in red, gone with a pooch
+    assert tc.locator("[data-sd-pooch-warn]").count() == 0
+    chips.get_by_role("radio", name="None", exact=True).first.click()
+    pw = tc.locator("[data-sd-pooch-warn]")
+    assert pw.count() == 1 and "0 to 3 px" in pw.inner_text() and "Very light" in pw.inner_text(), pw.all_inner_texts()
+    chips.get_by_role("radio", name="Very light", exact=True).click()
+    assert tc.locator("[data-sd-pooch-warn]").count() == 0
     chips.get_by_role("radio", name="+20 %", exact=True).click()
     chips.get_by_role("radio", name="Auto", exact=True).first.click()
     torso = [x for x in prompts(tc) if "retouch the torso only" in x]
