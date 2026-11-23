@@ -1725,9 +1725,10 @@ with sync_playwright() as p:
         pg.get_by_role("tab", name=re.compile(r"^Body")).click()
         text = pg.evaluate(A3G)
         assert f"\n- BOTTOM_TYPE = {bottom} (read from the sheet)\n" in text, (extra, model, re.findall(r"BOTTOM_TYPE = .*", text))
-        # an image model given this text as an edit prompt keeps the top; a one-piece starts from the bust prompt's result
+        # an image model given this text as an edit prompt keeps the top; a one-piece starts from the bust prompt's result; the context is
+        # its first paragraph, two lines since the owner's edit (2026-11-23)
         keep = "Only the bottom is removed: the top keeps exactly its cut, color and fabric, and everything else stays as it is."
-        assert (keep in text.split("\n")[0]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n")[0])
+        assert (keep in text.split("\n\n")[0]) == (bottom != "ONE_PIECE"), (extra, model, text.split("\n\n")[0])
         assert (bottom == "ONE_PIECE") == ("Start from the result of the bust prompt" in text), (extra, model)
         pg.close()
     agent = saved_page(glute_state)
@@ -1748,10 +1749,11 @@ with sync_playwright() as p:
         assert want in text, (want, text[:1200])
     assert not re.search(r"[àâçéèêëîïôùûüœ«»]|\b(TYPE_DE_BAS|GRADE_PTOSE_FESSIERE|FICHIER_SOURCE|nu_fesses|bande_bord|region_fessiere|À VALIDER"
                          r"|TANGA_STRING|CULOTTE_\w+|SHORT_\w+)\b", text), re.findall(r".{20}[àâçéèêëîïôùûüœ«»]", text)[:5]
-    line = text.split("\n")[0]
+    line = text.split("\n\n")[0]
     assert line.endswith(" Glutes: at their current height and in their current shape, with no sag added; the same size, the same skin and"
                          " grain; the marks left by the bottom's edges erased."), line
-    assert "the natural sag its size and muscle tone give it, never lifted." in line, line
+    assert ("a thong.\nGoal: the version with the bottom removed, at rest, standing, true to THIS character: volume unchanged, the natural"
+            " sag its size and muscle tone give it, never lifted." in line), line
     assert len(line.split()) < 600 and not re.search(r"\b[A-Z]{3,}_[A-Z_]+\b", line), line
     # every choice has its tooltip; a grade set by hand is saved, said "by hand", and its drop asked in the steps
     assert agent.evaluate("() => [...document.querySelectorAll('#sd-a3g [data-a3d]')].every((b) => b.title)")
@@ -1759,10 +1761,10 @@ with sync_playwright() as p:
     assert agent.evaluate(f"{SAVED}.a3gGrade") == "3"
     text = agent.evaluate(A3G)
     assert "\n- GLUTEAL_PTOSIS_GRADE = 3 (by hand)\n" in text and "   - b. drop, only if the base is below grade 3: " in text, text[-1500:]
-    assert "running past the middle of the back of the thigh" in text.split("\n")[0], text.split("\n")[0]
+    assert "running past the middle of the back of the thigh" in text.split("\n\n")[0], text.split("\n\n")[0]
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3G)
-    for want in ("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte un bas de maillot tanga ou un string.", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
+    for want in ("Personnage 3D féminin adulte (26 ans) pour un jeu vidéo. Il porte un bas de maillot tanga ou un string.\nObjectif : version enlever le bas, au repos", "\n- TYPE_DE_BAS = TANGA_STRING (lu sur la planche)\n",
                  "\n- GRADE_PTOSE_FESSIERE = 3 (à la main)\n", "Seul le bas est retiré : le haut garde exactement sa coupe",
                  "shape key \"nu_relache\" reste alors strictement inchangée"):
         assert want in text, (want, text[:1200])

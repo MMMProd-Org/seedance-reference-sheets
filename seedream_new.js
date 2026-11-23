@@ -7755,8 +7755,9 @@ function sdA3gText() {
     tr("Personnage 3D " + ("x" === e.pres ? "adulte androgyne" : "féminin adulte") + " (" + age + " ans) pour un jeu vidéo. Il porte ", "Adult " + ("x" === e.pres ? "androgynous" : "female") + " 3D character (" + age + " years old) for a video game. It currently wears ") +
       SD_A3G_TXT[bot][en ? 1 : 0] +
       tr(
-        ". Objectif : version nue des fesses, au repos, debout, fidèle à CE personnage : volume inchangé, la chute naturelle que lui donnent sa taille et son tonus, jamais remontées.",
-        ". Goal: a bare version of the glutes, at rest, standing, true to THIS character: volume unchanged, the natural sag its size and muscle tone give it, never lifted.",
+        /* owner, 2026-11-23 (his edit of the start, « fais le changement »): a line break after the bottom, then "version enlever le bas" */
+        ".\nObjectif : version enlever le bas, au repos, debout, fidèle à CE personnage : volume inchangé, la chute naturelle que lui donnent sa taille et son tonus, jamais remontées.",
+        ".\nGoal: the version with the bottom removed, at rest, standing, true to THIS character: volume unchanged, the natural sag its size and muscle tone give it, never lifted.",
       ) +
       (onePiece
         ? tr(" Pars du résultat du prompt poitrine, maillot déjà retiré ; tout le reste reste tel quel.", " Start from the result of the bust prompt, the swimsuit already removed; everything else stays as it is.")

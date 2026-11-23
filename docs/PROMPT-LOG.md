@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-23 · Blender agent and Seedream 5.0 · Person, "Agent 3D : fesses": the opening line
+
+**RULE** (owner, 2026-11-23, his edit of the start: « attends autre chose pour le bas, j'ai changé une partie juste le début, ça par ça, fais le changement »). The context line now breaks after the bottom (`Il porte un bas de maillot tanga ou un string.`) and the goal reads `Objectif : version enlever le bas, au repos, debout, …` instead of `Objectif : version nue des fesses, …`, his words as written; English `Goal: the version with the bottom removed, …`. **TO TEST**.
+
 ## 2026-11-23 · Seedream 5.0 · Person, body sheet: « Cuisses : Fines » says narrow thighs, only the thighs
 
 **RULE** (owner's two renders, the same settings but « Cuisses » on « Fines » then « Moyennes »: « quand je mets jambe mince ça fait mincir tout le corps »). With « Fines », the shoulders, arms and bust came out smaller as well, while the only clause that changed was `average, proportionate thighs that taper clearly to the knees, not bulky` → `slim thighs, clearly narrower than the hips`. One pair of renders: the cause may also be the draw; the 2026-10-28 entry already saw `slim` said in one place slim the whole body. On Seedream, « Fines » and « Très fines » now say `narrow thighs` and `very narrow thighs`, never `slim` or `lean`, followed by `only the thighs are narrow: the shoulders, arms, bust and waist keep the size set above`. The « Key proportions » line says `narrow thighs` and `very narrow thighs` too. GPT unchanged. **TO TEST**: the same pair again.
@@ -161,7 +165,7 @@ With the reference outfit, a part it covers is not asked for (Sourcery, PR #75):
 
 ## 2026-10-29 · GPT Image 2.5 and Seedream 5.0 · Every sheet: a neutral 18% grey backdrop
 
-**RULE** (owner, 2026-10-29: « si tu peux directement mettre les générations des images sur ce fond neutre gris 18% c mieux », « seedance à tendance à foutre la merde »). Measured on his renders: a blue backdrop (B - R +4 on the bikini sheets, +11 on the bare sheet, +20 after the step 4 pass, +23 on a rebuilt view), darker than 18% (luminance 0.07 to 0.15). Every "mid-grey" backdrop now says `neutral 18% grey` with `(about sRGB 118, 118, 118, with no blue, green or warm tint)`, the gaps `thin neutral grey gaps`, both engines, every subject; 22 of the 31 golden prompts change by these words only (15 words at most). In the view-by-view rebuild of step 4 the same words gave B - R +3 to +4 and a luminance of 0.13 to 0.19. **TO TEST**: a sheet generated from text with them. Whether Seedance itself does better on it: unknown.
+**RULE.** Every backdrop says `neutral 18% grey` (about sRGB 118, 118, 118, no tint), both engines: the renders had a blue, dark backdrop. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-10-29--gpt-image-25-and-seedream-50--every-sheet-a-neutral-18-grey-backdrop)
 
 ## 2026-10-29 · Blender agent and Seedream 5.0 · Person, "Agent 3D : fesses": the bottom removed, the natural drop of the glutes
 
