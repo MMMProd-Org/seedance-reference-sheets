@@ -871,6 +871,16 @@ with sync_playwright() as p:
     chips.get_by_role("radio", name="+20 %", exact=True).click()
     torso = [x for x in prompts(tc) if "retouch the torso only" in x]
     assert "half a finger's width" in torso[0] and "the torso about a fifth deeper" in torso[0], torso
+    # owner, 2026-11-23 (« mettre en rouge 33% pour dire que ça peut faire des trucs négatifs »): every added depth in red, and with a
+    # pooch, why: the depth goes to the belly
+    for name in ("+10 %", "+20 %", "+33 %"):
+        assert "destructive" in chips.get_by_role("radio", name=name, exact=True).get_attribute("class"), name
+    assert "destructive" not in chips.get_by_role("radio", name="None", exact=True).last.get_attribute("class")
+    warn = tc.locator("[data-sd-depth-warn]")
+    assert warn.count() == 1 and "adds to the pooch" in warn.inner_text(), warn.all_inner_texts()
+    chips.get_by_role("radio", name="None", exact=True).last.click()
+    assert tc.locator("[data-sd-depth-warn]").count() == 0
+    chips.get_by_role("radio", name="+20 %", exact=True).click()
     chips.get_by_role("radio", name="Auto", exact=True).first.click()
     torso = [x for x in prompts(tc) if "retouch the torso only" in x]
     assert "about a finger's width" in torso[0], torso

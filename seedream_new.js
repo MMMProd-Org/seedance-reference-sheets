@@ -10661,9 +10661,20 @@ function sdTorsoChips(t, g) {
       grp(
         "sdTorsoDeep",
         "Épaisseur de profil",
-        [["auto", "Auto"], ["0", "Aucune"], ["10", "+10 %"], ["20", "+20 %"], ["33", "+33 %"]],
+        /* owner, 2026-11-23 (« mettre en rouge 33% pour dire que ça peut faire des trucs négatifs »): every added depth in red, and said
+           why once one is in use (five of his renders: the depth went to the belly, on top of the pooch, the back hardly moving) */
+        [["auto", "Auto"], ["0", "Aucune"], ["10", "+10 %", void 0, "warn"], ["20", "+20 %", void 0, "warn"], ["33", "+33 %", void 0, "warn"]],
         sdT("Le torse plus épais du dos au ventre, vu de profil, par rapport à ta planche. Auto : suit « Épaisseur du torse (de profil) » (Épais : +25 %, Fin : −20 %).", "The torso deeper from back to front in profile, compared with your sheet. Auto: follows “Torso depth (in profile)” (Thick: +25%, Fine: −20%)."),
       ),
+      sdTorsoDeep() > 0 &&
+        (0, l.jsx)("p", {
+          className: "text-sm font-semibold text-destructive",
+          "data-sd-depth-warn": "",
+          children: sdT(
+            "Seedream met cette épaisseur surtout devant, sur le ventre, presque pas dans le dos (5 rendus mesurés)" + (sdTorsoPooch() > 0 ? " : elle s'ajoute au bidon, et le ventre grossit nettement. Pour un bidon seul, mets « Aucune »." : "."),
+            "Seedream puts this depth mostly at the front, on the belly, hardly in the back (5 measured renders)" + (sdTorsoPooch() > 0 ? ": it adds to the pooch, and the belly grows clearly bigger. For a pooch alone, pick “None”." : "."),
+          ),
+        }),
     ],
   });
 }
