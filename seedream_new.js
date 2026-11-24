@@ -8392,8 +8392,11 @@ function sdLetters() {
 }
 var SD_LETTER_RX = /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i;
 /* GPT audit of v1.14.1 (F04): the same lettering words in an object's description or markings (sdLetters' test, on those fields) */
+/* PR #95 review (Sourcery): a negated mention ("no text", "without any lettering") is not a request: it is removed before the test */
+var SD_LETTER_NOUN = "(?:(?:any|visible|printed|written|other|added)\\s+)*(?:text|letters?|lettering|words?|numbers?|digits?|names?|dates?|inscriptions?|initials|logos?|labels?)",
+  SD_NO_LETTER_RX = new RegExp("\\b(?:no|without|never|not|nor)\\s+" + SD_LETTER_NOUN + "(?:\\s*(?:,|or|and|nor)\\s*" + SD_LETTER_NOUN + ")*\\b", "gi");
 function sdObjLetters() {
-  return "object" === e.mode && SD_LETTER_RX.test(String(e.objMarks || "") + " " + String(e.objDesc || ""));
+  return "object" === e.mode && SD_LETTER_RX.test((String(e.objMarks || "") + " " + String(e.objDesc || "")).replace(SD_NO_LETTER_RX, " "));
 }
 var SD_LETTERS = "No captions, labels, panel numbers or watermark added to the image; the only lettering is the one the marks above describe.";
 /* clothing: the ending of a person whose clothing is taken from the source photo, whose own logos and prints stay */

@@ -944,7 +944,7 @@ rep('''                          : rt()
                             : nY))''', '''                          : rt()
                             ? "No added text, labels, numbers, watermarks or logos beyond the markings that belong on the real object."
                             : sdObjLetters()
-                              ? "No captions, labels, panel numbers or watermarks added to the image; the only lettering is the one described above."
+                              ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one described above."
                               : nY))''')
 # P53 (v94) engine not chosen by hand: the same rule live as at load (Seedream when it can, else GPT), so a reload never switches it
 rep('''      ((0, s.useEffect)(() => {
