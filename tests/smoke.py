@@ -1096,6 +1096,19 @@ with sync_playwright() as p:
     io.reload()
     assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
     io.close()
+    # PR #94 review (Sourcery): a missing headFat is filled with the face fat too; a malformed head field is dropped at import
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                " looks: 3, fat: 2, faceFat: 3, headSig: 'abc', headLooks: '', headFat: ''}))")
+    io.reload()
+    assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
+    import json, tempfile
+    bad = pathlib.Path(tempfile.mkdtemp()) / "bad.json"
+    bad.write_text(json.dumps({"app": "planches-seedance", "format": 1,
+                               "state": {"mode": "person", "looks": 2, "headLooks": "abc", "headFat": "9/9"}}))
+    io.locator("#sd-io-file").set_input_files(str(bad))
+    io.get_by_text(re.compile(r"2 values outside the possible choices")).wait_for(timeout=5000)
+    io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
         smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")

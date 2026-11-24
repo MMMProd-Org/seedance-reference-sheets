@@ -3907,7 +3907,16 @@ function sdIoDom() {
 /* GPT audit of v1.14.1 (F01, reproduced in Chromium): a GPT head copy records the beauty level and the corpulence it was made with as
    numbers, or "2/3" with the face fat (sdHeadFatNow), in fields whose default is ""; checked against the default's type, a valid export
    lost them at import, and the load filled them from the current settings: the next head prompt changed its strategy */
-var SD_IO_NUMSTR = { headLooks: 1, headFat: 1 };
+/* PR #94 review (Sourcery): only the formats a head copy writes pass: "" (no copy yet), a level 0 to 4 (headLooks, or headFat without
+   face fat), or "corpulence/face fat" ("2/3"); anything else is dropped like any value outside the choices */
+var SD_IO_NUMSTR = {
+  headLooks: function (v) {
+    return "" === v || ("number" == typeof v && v >= 0 && v <= 4 && v === Math.round(v));
+  },
+  headFat: function (v) {
+    return "" === v || ("number" == typeof v && v >= 0 && v <= 4 && v === Math.round(v)) || ("string" == typeof v && /^[0-4]\/[0-4]$/.test(v));
+  },
+};
 function sdIoClean(s, nested) {
   var o = {};
   if (!s || "object" != typeof s || Array.isArray(s)) return o;
@@ -3916,7 +3925,7 @@ function sdIoClean(s, nested) {
     if (!Object.prototype.hasOwnProperty.call(s, k) || (nested && "modeCfg" === k)) continue;
     var v = s[k],
       dm = dom[k];
-    if (!(SD_IO_NUMSTR[k] ? ("number" == typeof v && isFinite(v)) || "string" == typeof v : sdIoVal(v, tJ[k]))) {
+    if (!(SD_IO_NUMSTR[k] ? SD_IO_NUMSTR[k](v) : sdIoVal(v, tJ[k]))) {
       sdIoDrop++;
       continue;
     }
@@ -4999,6 +5008,13 @@ function sdFaceReset() {
   return "person" === e.mode && null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +a[0] !== +b[0] || +(a[1] || 0) !== +(b[1] || 0));
 }
 /* what a GPT head copy records as its fat: the corpulence, then the face fat when it is set */
+/* the same for a saved record (P38 backfill of a head copy made before headFat): its own corpulence and face fat, the loaded root's
+   when the record has none */
+function sdHeadFatOf(o, root) {
+  var f = null != o.fat ? o.fat : root.fat,
+    ff = sdChild(o) || o.photo ? 0 : Math.max(0, Math.min(4, Math.round(+(null != o.faceFat ? o.faceFat : root.faceFat) || 0)));
+  return ff ? f + "/" + ff : f;
+}
 function sdHeadFatNow() {
   var v = sdFaceFatLv();
   return v ? e.fat + "/" + v : e.fat;

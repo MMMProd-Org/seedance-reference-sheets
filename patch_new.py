@@ -569,14 +569,15 @@ for i in (34, 36):
     a = pad + 'headKind: "",\n' + pad + 'headRemovals: "",\n'
     rep(a, a + pad + 'headLooks: "",\n' + pad + 'headFat: "",\n')
 # P38 a head copy saved before P37 has no headLooks or headFat: take the current ones on load, as the loader does for headOwner;
-# each field on its own (GPT audit of v1.14.1, F01: a recorded "2/3" was overwritten when only headLooks was missing)
+# each field on its own (GPT audit of v1.14.1, F01: a recorded "2/3" was overwritten when only headLooks was missing), from the
+# record's own settings with its face fat (PR #94 review, Sourcery: a cached person took the active one's, face fat left out)
 rep('''          r(e),
           e.base && n(e.base),''', '''          r(e),
           [e].concat(Object.values(e.modeCfg || {})).forEach(function (o) {
             o &&
               o.headSig &&
-              ((null == o.headLooks || "" === o.headLooks) && (o.headLooks = e.looks),
-              (null == o.headFat || "" === o.headFat) && (o.headFat = e.fat));
+              ((null == o.headLooks || "" === o.headLooks) && (o.headLooks = null != o.looks ? o.looks : e.looks),
+              (null == o.headFat || "" === o.headFat) && (o.headFat = sdHeadFatOf(o, e)));
           }),
           e.base && n(e.base),''')
 # P39 audit v89: the signature covers the final face, a saved GPT session keeps GPT (head references on reload: P37; Seedream copy order: P11)
