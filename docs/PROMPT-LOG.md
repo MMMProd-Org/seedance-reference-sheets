@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · Blender agent · Person, "Agent 3D" (bust): an areola setting left on Auto keeps the mesh's own
+
+**RULE** (review of PR #100). With the areola size on Auto, setting only « Bord » asked a disc centred on C, and setting only « Forme » asked weight 1 inside, 0 outside: the setting left on Auto overrode the mesh's own outline or edge, although its hint says the prompt says nothing of it. The mask now reads `contour du mesh` (`the mesh's outline`) for an outline left on Auto and `bord du mesh` (`the mesh's edge`) for an edge left on Auto. With a size set, the disc and the weight 1 inside, 0 outside stay, as the size already asked them. The longest settings are unchanged (9,994 characters in French).
+
 ## 2026-11-24 · Image edit (engine not stated) · Person, "Agent 3D" (bust) as an edit prompt: « Fondu, sans anneau », two renders
 
 **WORKS** for the edge in render 2, **LEAD** overall: one render of two (owner's two renders, 2026-11-24, local build v1.15.0-pre at commit 2b44bb7, the settings of the « Net » entry with « Fondu », prompt line `aréoles pâles, presque couleur de peau ; bord fondu, sans anneau ; pas rondes : un peu ovales, mamelon décentré, les deux différentes`). Render 1: the areola on the screen's left still shows a concentric ring, a lighter band then a darker rim, like a target; the one on the right is blended, a little oval, nipple slightly off-centre. Render 2: both areolas blended into the skin with no ring or drawn rim, pale, the two different (the left fainter, the right pinker), outlines not round. Three areolas of four without a ring, against one in six with `bord fondu` alone: naming the ring helps. A render with a ring is still possible; keep the one without, or retouch the ringed side by hand.
@@ -131,7 +135,7 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the card with the front line held (v1.6.1-pre, `ventre-torse-3`)
 
-**DOES NOT WORK**, the back/front split (owner's two renders, 2026-11-19, same image 1 and settings as the entry below, no comment). Measured against the legs in both profiles, in L, at the waist: the belly 0.07 L further forward in both renders and both profiles (0.08 L and 0.05 L with the previous card), so `the chest and the belly line in front stay where they are in image 1` did nothing; the back gained 0.07 L in one profile of one render only, nothing elsewhere. Waist depth +28% and +15%; front width +5% and +6%. The belly is now as far forward below the navel as at the navel (before: fullest at the navel), a small gain from `its fullest point halfway between the navel and the bottom's waistband`. **RULE**: three wordings of the split gave the same result, so text alone has reached its ceiling; the text stays as it is, since nothing in it measured worse.
+**DOES NOT WORK / RULE.** The belly still moved forward and the back hardly gained: three wordings of the back/front split gave the same result, so text alone has reached its ceiling; the text stays. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-the-card-with-the-front-line-held-v161-pre-ventre-torse-3)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the corrected « Ventre et torse » card (v1.6.1-pre)
 

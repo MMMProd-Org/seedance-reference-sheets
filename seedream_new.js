@@ -7473,14 +7473,21 @@ function sdA3dText() {
             : ")")
         : tr("aréole du mesh inchangée, D_ar = son diamètre (relief ou vertex group ; illisible : demande)", "the mesh's areola unchanged, D_ar = its diameter (relief or vertex group; unreadable: ask)"),
     ];
-    /* the mask: its outline and its edge (owner, 2026-11-24); design choices, short: the prompt box holds 10,000 characters */
+    /* the mask: its outline and its edge (owner, 2026-11-24); design choices, short: the prompt box holds 10,000 characters. A setting
+       left on Auto keeps the mesh's own outline or edge, unless a size is set: a size already asks a disc with weight 1 inside, 0 outside */
     edg + outl !== "AUTOAUTO" &&
       tg.push(
         tr("masque areole_G, areole_D : ", "mask areole_G, areole_D: ") +
           ("IRREG" === outl
             ? tr("ellipse 0,85 au bord ondulé, décentrée, G ≠ D", "ellipse 0,85, wavy edge, off-centre, L ≠ R")
-            : tr("disque D_ar centré sur C", "a D_ar disc centred on C")) +
-          ("FONDU" === edg ? tr(", poids 1→0 de 0,85 à 1,15 r", ", weight 1→0 from 0,85 to 1,15 r") : tr(", poids 1 dedans, 0 dehors", ", weight 1 inside, 0 outside")),
+            : "AUTO" === outl && !areSet
+              ? tr("contour du mesh", "the mesh's outline")
+              : tr("disque D_ar centré sur C", "a D_ar disc centred on C")) +
+          ("FONDU" === edg
+            ? tr(", poids 1→0 de 0,85 à 1,15 r", ", weight 1→0 from 0,85 to 1,15 r")
+            : "AUTO" === edg && !areSet
+              ? tr(", bord du mesh", ", the mesh's edge")
+              : tr(", poids 1 dedans, 0 dehors", ", weight 1 inside, 0 outside")),
       );
     (nipSet || "AUTO" !== rel) && tg.push(tr("plan de l'aréole = moindres carrés des vertices entre 0,8 et 1,0 × D_ar / 2 de C", "areola plane = least squares of the vertices between 0,8 and 1,0 × D_ar / 2 from C"));
     nipSet &&

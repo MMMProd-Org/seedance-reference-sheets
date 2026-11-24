@@ -1809,6 +1809,20 @@ with sync_playwright() as p:
     for k in ("a3dTint:auto", "a3dEdge:auto", "a3dOut:auto"):
         agent.locator(f"[data-a3d='{k}']").click()
     assert agent.evaluate(A3D) == before
+    # a setting left on Auto keeps the mesh's own outline or edge (areola size on Auto); a size set asks a disc, weight 1 inside
+    for k, want in (("a3dEdge:FONDU", "mask areola_L, areola_R: the mesh's outline, weight 1→0 from 0.85 to 1.15 r"),
+                    ("a3dEdge:auto", None),
+                    ("a3dOut:IRREG", "mask areola_L, areola_R: ellipse 0.85, wavy edge, off-centre, L ≠ R, the mesh's edge"),
+                    ("a3dOut:auto", None),
+                    ("a3dAre:GRANDE", None),
+                    ("a3dEdge:NET", "mask areola_L, areola_R: a D_ar disc centred on C, weight 1 inside, 0 outside"),
+                    ("a3dEdge:auto", None),
+                    ("a3dAre:auto", None)):
+        agent.locator(f"[data-a3d='{k}']").click()
+        if want:
+            text = agent.evaluate(A3D)
+            assert want in text, (k, text[-900:])
+    assert agent.evaluate(A3D) == before
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
     for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
