@@ -3298,12 +3298,55 @@ var SD_SPECS_AGE = [
    la tête"; the glasses and the chin showed above the collarbones): on a headless body sheet, the marks written by hand that belong to
    the face or the head are left out, each part between commas or semicolons */
 var SD_FACE_MARK = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|eyebrows?|eyelids?|eyelashes|eyes?|lips?|nose|nostrils?|cheeks?|cheekbones?|chin|jaw|jawline|forehead|temples?|ears?|earlobes?|earrings?|face|facial|scalp|hairline|beard|moustache|mustache)\b/i;
+/* GPT audit of v1.14.1 (F02, reproduced in Chromium): a face word was enough to drop the whole part, so "small eye tattoo on the left
+   forearm" and the forearm tattoo of "a scar on the left cheek and a dragon tattoo on the right forearm" were lost. A part is left out
+   only when it sits on the face or head: a face word after a place word ("on the left cheek", "around the eyes"), a face-worn item
+   (glasses, earrings, beard), or a face word with no body part named; a part with a face word and "and" is split there first, when one
+   of its pieces sits on the face or is worn on it (so "a tattoo of an eye and a rose on the left forearm" stays whole). */
+var SD_FACE_WORN = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|earrings?|beard|moustache|mustache)\b/i,
+  SD_POSS = "(?:the|her|his|their|its|my|our|your|both|each|one|left|right|upper|lower|outer|inner)\\s+",
+  SD_FACE_AT = new RegExp("\\b(on|near|under|below|above|over|around|across|at|beside|between|behind|in|along)\\s+(?:" + SD_POSS + ")*" + SD_FACE_MARK.source.replace(/^\\b/, ""), "i"),
+  SD_BODY_PART = /\b(shoulders?|shoulder blades?|arms?|forearms?|upper arms?|elbows?|wrists?|hands?|fingers?|knuckles?|palms?|chest|breasts?|sternum|collarbones?|ribs?|ribcage|flanks?|belly|stomach|abdomen|navel|waist|hips?|back|spine|buttocks?|glutes?|thighs?|legs?|knees?|shins?|calf|calves|ankles?|foot|feet|toes?|heels?|soles?|torso|biceps?|triceps?)\b/i,
+  /* PR #93 reviews (Codex, Sourcery): a face word or a face-worn item as the motif of a tattoo or a drawing is not on the face; only
+     explicit motif words count ("of a" does not: "a pair of blue eyes") */
+  SD_MOTIF = /\b(tattoo\w*|motif|design|drawing|shaped|print\w*|pattern)\b/i,
+  SD_BODY_ONLY = new RegExp("^(?:" + SD_POSS + ")*" + SD_BODY_PART.source.replace(/^\\b/, "") + "$", "i");
+function sdWornOnFace(p) {
+  return SD_FACE_WORN.test(p) && !SD_MOTIF.test(p);
+}
+function sdFacePart(p) {
+  return sdWornOnFace(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p));
+}
+/* PR #93 review (Codex): a piece that is a face trait of its own ("blue eyes", "facial freckles") splits the part too */
+function sdFaceTrait(p) {
+  return sdWornOnFace(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p) && !SD_MOTIF.test(p));
+}
 function sdBodyMarks(x) {
   return String(x || "")
     .split(/\s*[;,]\s*/)
-    .filter(function (p) {
-      return p && !SD_FACE_MARK.test(p);
+    .map(function (p) {
+      if (!p || !SD_FACE_MARK.test(p)) return p;
+      /* split at "and" or "with" when a piece sits on the face; the pieces kept name a body part. PR #93 review (Sourcery): a piece
+         that is only a place ("a scar on the left cheek and right forearm") takes the mark of the face piece before it */
+      var q = p.split(/\s+(?:and|with)\s+/i);
+      if (q.length > 1 && q.some(sdFaceTrait)) {
+        var lead = "";
+        return q
+          .map(function (s) {
+            var m = SD_FACE_AT.exec(s);
+            if (sdFaceTrait(s)) {
+              m && m.index > 0 && (lead = s.slice(0, m.index).trim() + " " + m[1] + " ");
+              return "";
+            }
+            if (!SD_BODY_PART.test(s)) return "";
+            return SD_BODY_ONLY.test(s.trim()) && lead ? lead + (/^(the|her|his|their|its|my|our|your)\s/i.test(s) ? "" : "the ") + s.trim() : s;
+          })
+          .filter(Boolean)
+          .join(" and ");
+      }
+      return sdFacePart(p) ? "" : p;
     })
+    .filter(Boolean)
     .join(", ");
 }
 function sdSpecsKey() {
@@ -3884,6 +3927,16 @@ function sdIoDom() {
           "number" == typeof it.min && "number" == typeof it.max && (d[it.k] = { min: it.min, max: it.max });
           return;
         }
+        /* GPT audit of v1.14.1, follow-up (checked on the owner's own exports, 2026-11-24): the eye and nose sliders (P33) save
+           "xsmall", "medium", "xnarrow", "xwide", absent from their old chip lists, so an export dropped them at import */
+        if ("sdscale" === it.t) {
+          d[it.k] = ["auto"].concat(
+            ("eyeSize" === it.k ? SD_EYES : SD_NOSE).map(function (x) {
+              return x[0];
+            }),
+          );
+          return;
+        }
         var names = "function" == typeof it.o
           ? ["f", "m", "x"].map(function (p) {
               return rq(Object.assign({}, e, { pres: p }), it.o);
@@ -3901,6 +3954,19 @@ function sdIoDom() {
   });
   return (SD_IO_DOM = d);
 }
+/* GPT audit of v1.14.1 (F01, reproduced in Chromium): a GPT head copy records the beauty level and the corpulence it was made with as
+   numbers, or "2/3" with the face fat (sdHeadFatNow), in fields whose default is ""; checked against the default's type, a valid export
+   lost them at import, and the load filled them from the current settings: the next head prompt changed its strategy */
+/* PR #94 review (Sourcery): only the formats a head copy writes pass: "" (no copy yet), a level 0 to 4 (headLooks, or headFat without
+   face fat), or "corpulence/face fat" ("2/3"); anything else is dropped like any value outside the choices */
+var SD_IO_NUMSTR = {
+  headLooks: function (v) {
+    return "" === v || ("number" == typeof v && v >= 0 && v <= 4 && v === Math.round(v));
+  },
+  headFat: function (v) {
+    return "" === v || ("number" == typeof v && v >= 0 && v <= 4 && v === Math.round(v)) || ("string" == typeof v && /^[0-4]\/[0-4]$/.test(v));
+  },
+};
 function sdIoClean(s, nested) {
   var o = {};
   if (!s || "object" != typeof s || Array.isArray(s)) return o;
@@ -3909,7 +3975,7 @@ function sdIoClean(s, nested) {
     if (!Object.prototype.hasOwnProperty.call(s, k) || (nested && "modeCfg" === k)) continue;
     var v = s[k],
       dm = dom[k];
-    if (!sdIoVal(v, tJ[k])) {
+    if (!(SD_IO_NUMSTR[k] ? SD_IO_NUMSTR[k](v) : sdIoVal(v, tJ[k]))) {
       sdIoDrop++;
       continue;
     }
@@ -4992,6 +5058,13 @@ function sdFaceReset() {
   return "person" === e.mode && null != e.headLooks && "" !== e.headLooks && (+e.headLooks !== +e.looks || +a[0] !== +b[0] || +(a[1] || 0) !== +(b[1] || 0));
 }
 /* what a GPT head copy records as its fat: the corpulence, then the face fat when it is set */
+/* the same for a saved record (P38 backfill of a head copy made before headFat): its own corpulence and face fat, the loaded root's
+   when the record has none */
+function sdHeadFatOf(o, root) {
+  var f = null != o.fat ? o.fat : root.fat,
+    ff = sdChild(o) || o.photo ? 0 : Math.max(0, Math.min(4, Math.round(+(null != o.faceFat ? o.faceFat : root.faceFat) || 0)));
+  return ff ? f + "/" + ff : f;
+}
 function sdHeadFatNow() {
   var v = sdFaceFatLv();
   return v ? e.fat + "/" + v : e.fat;
@@ -8395,7 +8468,15 @@ function sdIterText() {
 }
 /* v94: lettering asked in the person's marks field (a tattoo reading a word, a name, a date): the general "No text" would forbid it */
 function sdLetters() {
-  return "person" === e.mode && /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i.test(String(e.marks || ""));
+  return "person" === e.mode && SD_LETTER_RX.test(String(e.marks || ""));
+}
+var SD_LETTER_RX = /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i;
+/* GPT audit of v1.14.1 (F04): the same lettering words in an object's description or markings (sdLetters' test, on those fields) */
+/* PR #95 review (Sourcery): a negated mention ("no text", "without any lettering") is not a request: it is removed before the test */
+var SD_LETTER_NOUN = "(?:(?:any|visible|printed|written|other|added)\\s+)*(?:text|letters?|lettering|words?|numbers?|digits?|names?|dates?|inscriptions?|initials|logos?|labels?)",
+  SD_NO_LETTER_RX = new RegExp("\\b(?:no|without|never|not|nor)\\s+" + SD_LETTER_NOUN + "(?:\\s*(?:,|or|and|nor)\\s*" + SD_LETTER_NOUN + ")*\\b", "gi");
+function sdObjLetters() {
+  return "object" === e.mode && SD_LETTER_RX.test((String(e.objMarks || "") + " " + String(e.objDesc || "")).replace(SD_NO_LETTER_RX, " "));
 }
 var SD_LETTERS = "No captions, labels, panel numbers or watermark added to the image; the only lettering is the one the marks above describe.";
 /* clothing: the ending of a person whose clothing is taken from the source photo, whose own logos and prints stay */
