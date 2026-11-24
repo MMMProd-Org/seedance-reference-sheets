@@ -7083,10 +7083,12 @@ var SD_A3D_LOOK = {
     ROSEE: ["aréoles rose franc", "clear pink areolas"],
     FONCEE: ["aréoles brun rosé à brun", "pinkish brown to brown areolas"],
   },
-  edge: { FONDU: ["bord fondu", "blended edge"], NET: ["bord net", "sharp edge"] },
+  /* owner's renders (2026-11-24): "bord fondu" alone left a ring at the edge (one areola in six blended); the ring forbidden by name,
+     "bord inégal" dropped from the outline to keep the prompt box under 10,000 characters */
+  edge: { FONDU: ["bord fondu, sans anneau", "blended edge, no ring"], NET: ["bord net", "sharp edge"] },
   out: {
     RONDE: ["aréoles rondes, mamelon centré", "round areolas, nipple centred"],
-    IRREG: ["pas rondes : un peu ovales, bord inégal, mamelon décentré, les deux différentes", "not round: slightly oval, uneven edge, nipple off-centre, the two different"],
+    IRREG: ["pas rondes : un peu ovales, mamelon décentré, les deux différentes", "not round: slightly oval, nipple off-centre, the two different"],
   },
 };
 function sdA3dOn(t) {

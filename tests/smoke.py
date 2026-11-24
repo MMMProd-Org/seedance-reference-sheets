@@ -1802,7 +1802,7 @@ with sync_playwright() as p:
         agent.locator(f"[data-a3d='{k}']").click()
     assert agent.evaluate(f"[{SAVED}.a3dTint, {SAVED}.a3dEdge, {SAVED}.a3dOut]") == ["PALE", "FONDU", "IRREG"]
     text = agent.evaluate(A3D)
-    assert ("visible on the areolas; pale areolas, almost skin-coloured; blended edge; not round: slightly oval, uneven edge,"
+    assert ("visible on the areolas; pale areolas, almost skin-coloured; blended edge, no ring; not round: slightly oval,"
             " nipple off-centre, the two different.\n") in text, text[:1200]
     for want in ("mask areola_L, areola_R: ellipse 0.85, wavy edge, off-centre, L ≠ R, weight 1→0 from 0.85 to 1.15 r", "outlines L ≠ R"):
         assert want in text, (want, text[-900:])
