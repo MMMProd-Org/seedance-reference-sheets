@@ -1083,6 +1083,12 @@ with sync_playwright() as p:
     bar = sv.locator("#sd-mobile-copy-bar").bounding_box()
     box = banner.bounding_box()
     assert bar and box and box["y"] + box["height"] <= bar["y"], (box, bar)
+    # PR #97 review (Sourcery): a taller copy bar, without a resize, moves the banner up too
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = '80px'")
+    sv.wait_for_timeout(300)
+    bar, box = sv.locator("#sd-mobile-copy-bar").bounding_box(), banner.bounding_box()
+    assert box["y"] + box["height"] <= bar["y"], (box, bar)
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = ''")
     sv.evaluate("window.sdBlock = false")
     sv.get_by_role("radio", name="Man", exact=True).first.click()
     banner.wait_for(state="detached", timeout=5000)
