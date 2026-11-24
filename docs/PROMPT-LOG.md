@@ -151,7 +151,7 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: third render, the lower-belly pooch not drawn, the line above the tanga
 
-**DOES NOT WORK** (owner's third render, 2026-11-19: « j'ai pas le petit bidon dont on a parlé », « j'ai toujours cette ligne en bas du nombril »; « Ligne centrale » at « Discrets », belly fat « Légère », deltoids and triceps at their top, obliques « Très marqués »). In profile the lower belly is flat; the body reads athletic all over (very large deltoids and triceps), the bulge said only in the fat line. A faint horizontal line just above the tanga shows on all three renders, under three different belly texts (loose skin, `a thin layer of soft fat below the navel`, `a small, smooth bulge ... the skin over it smooth and even`): not the word « Légère ». Common to the three: the low tanga and the V « Marqué». **TO TEST**, one render: the same settings, V on Auto. **RULE**: with belly fat « Légère », the Seedream lead also says `a small, soft pooch of fat just below the navel` (`with strong, muscular arms and glutes, and a small, soft pooch of fat just below the navel.`), as the muscular arms and legs. **TO TEST** with the same settings.
+**DOES NOT WORK / RULE.** The lower-belly pooch not drawn on a muscular body; a faint line above the tanga on all three renders; with belly fat « Légère » the Seedream lead says `a small, soft pooch of fat just below the navel`. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-third-render-the-lower-belly-pooch-not-drawn-the-line-above-the-tanga)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
 
