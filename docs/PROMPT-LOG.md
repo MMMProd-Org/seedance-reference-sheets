@@ -14,7 +14,7 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Object, vehicle: the stated state wins over the closed doors
 
-**RULE** (GPT's audit of v1.14.1, F03, reproduced in Chromium; owner: « fait ce qu'il faut en mode dev senior lead architect »). With « État du moment » `left front door open`, a car's sheet said `Current state ...: left front door open.` and then `all doors, hood and trunk closed`. With a state written, the presentation's closed openings now read `... closed unless the current state above says otherwise` (car, boat, aircraft, tracked and other vehicles); with none, unchanged. Both engines. **TO TEST** on a render: the named door open, the others closed.
+**RULE** (GPT's audit of v1.14.1, F03, reproduced in Chromium; owner: « fait ce qu'il faut en mode dev senior lead architect »). With « État du moment » `left front door open`, a car's sheet said `Current state ...: left front door open.` and then `all doors, hood and trunk closed`. With a state written, the presentation's closed openings now read `... closed, except an opening the current state above names as open; every other one stays closed` (car, boat, aircraft, tracked and other vehicles); with none, unchanged. Both engines. **TO TEST** on a render: the named door open, the others closed.
 
 ## 2026-11-24 · Seedream 5.0 · Person, « Retouche ventre » card at « Très léger » on the target-B sheet (v1.14.1)
 

@@ -677,7 +677,8 @@ function sdVehKind() {
    doors, hood and trunk closed`; the stated state wins, every opening it does not name stays closed */
 function sdVehicle() {
   var s = sdVehicleBase();
-  return rl() ? s.replace(/ closed\b/, " closed unless the current state above says otherwise") : s;
+  /* PR #96 review (Sourcery): the exception covers only what the state names; every other opening stays closed */
+  return rl() ? s.replace(/ closed\b/, " closed, except an opening the current state above names as open; every other one stays closed") : s;
 }
 function sdVehicleBase() {
   return {

@@ -561,8 +561,9 @@ with sync_playwright() as p:
             car.reload()
             sheet = next(t for t in prompts(car) if "a red sports car" in t)
             assert ("left front door open" in sheet) == opened, (model, st)
-            assert ("all doors, hood and trunk closed unless the current state above says otherwise" in sheet) == opened, (model, st, sheet)
-            assert "all doors, hood and trunk closed" in sheet, (model, st)
+            q = "all doors, hood and trunk closed, except an opening the current state above names as open; every other one stays closed"
+            # PR #96 review (Sourcery): one closing clause only, qualified when a state is written
+            assert sheet.count("all doors, hood and trunk closed") == 1 and (q in sheet) == opened, (model, st, sheet)
             car.close()
     assert not errors, errors
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
