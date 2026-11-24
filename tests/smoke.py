@@ -552,6 +552,20 @@ with sync_playwright() as p:
         if "'object'" in state:
             assert not [t for t in texts if "mannequin" in t], state
         off.close()
+    # GPT audit of v1.14.1 (F03): a vehicle's stated state wins over the closed doors of its presentation; without one they stay closed
+    for model in ("gpt", "seedream"):
+        for st, opened in (("left front door open", True), ("", False)):
+            car = clipboard_page(browser, errors)
+            car.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'object', objCat: 'vehicle', objDesc: 'a red sports car', eState: '{st}'}}))""")
+            car.reload()
+            sheet = next(t for t in prompts(car) if "a red sports car" in t)
+            assert ("left front door open" in sheet) == opened, (model, st)
+            q = "all doors, hood and trunk closed, except an opening the current state above names as open; every other one stays closed"
+            # PR #96 review (Sourcery): one closing clause only, qualified when a state is written
+            assert sheet.count("all doors, hood and trunk closed") == 1 and (q in sheet) == opened, (model, st, sheet)
+            car.close()
+
     # GPT audit of v1.14.1 (F04): lettering an original object's markings ask for is allowed, captions and watermarks still are not;
     # without lettering the object keeps "No text"
     for model in ("gpt", "seedream"):

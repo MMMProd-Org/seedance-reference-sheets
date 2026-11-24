@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Object, vehicle: the stated state wins over the closed doors
+
+**RULE** (GPT's audit of v1.14.1, F03, reproduced in Chromium; owner: « fait ce qu'il faut en mode dev senior lead architect »). With « État du moment » `left front door open`, a car's sheet said `Current state ...: left front door open.` and then `all doors, hood and trunk closed`. With a state written, the presentation's closed openings now read `... closed, except an opening the current state above names as open; every other one stays closed` (car, boat, aircraft, tracked and other vehicles); with none, unchanged. Both engines. **TO TEST** on a render: the named door open, the others closed.
+
 ## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Object without a photo or a real model: lettering it asks for is allowed
 
 **RULE** (GPT's audit of v1.14.1, F04, reproduced in Chromium; owner: « fait ce qu'il faut en mode dev senior lead architect »). An original object whose description or « Marques et détails » ask for lettering (`HELLO printed in large black letters on the front`) ended with `No text, labels, numbers, watermarks or logos anywhere in the image.`, forbidding it. With the lettering words the person's marks already use (v94: `reading`, `letters`, `text`, a quoted word...), it now ends `No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one described above.`; without them, or with them only negated (`no text`), it keeps `No text`. A photo or a real model keeps its own ending. Both engines. **TO TEST** on a render: the word drawn, no caption added.
@@ -147,7 +151,7 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: third render, the lower-belly pooch not drawn, the line above the tanga
 
-**DOES NOT WORK** (owner's third render, 2026-11-19: « j'ai pas le petit bidon dont on a parlé », « j'ai toujours cette ligne en bas du nombril »; « Ligne centrale » at « Discrets », belly fat « Légère », deltoids and triceps at their top, obliques « Très marqués »). In profile the lower belly is flat; the body reads athletic all over (very large deltoids and triceps), the bulge said only in the fat line. A faint horizontal line just above the tanga shows on all three renders, under three different belly texts (loose skin, `a thin layer of soft fat below the navel`, `a small, smooth bulge ... the skin over it smooth and even`): not the word « Légère ». Common to the three: the low tanga and the V « Marqué». **TO TEST**, one render: the same settings, V on Auto. **RULE**: with belly fat « Légère », the Seedream lead also says `a small, soft pooch of fat just below the navel` (`with strong, muscular arms and glutes, and a small, soft pooch of fat just below the navel.`), as the muscular arms and legs. **TO TEST** with the same settings.
+**DOES NOT WORK / RULE.** The lower-belly pooch not drawn on a muscular body; a faint line above the tanga on all three renders; with belly fat « Légère » the Seedream lead says `a small, soft pooch of fat just below the navel`. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-third-render-the-lower-belly-pooch-not-drawn-the-line-above-the-tanga)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
 

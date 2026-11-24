@@ -673,7 +673,14 @@ function sdVehKind() {
   });
   return best ? best.k : e.photo ? "gen" : "car";
 }
+/* GPT audit of v1.14.1 (F03, reproduced in Chromium): with « État du moment » `left front door open`, the presentation still said `all
+   doors, hood and trunk closed`; the stated state wins, every opening it does not name stays closed */
 function sdVehicle() {
+  var s = sdVehicleBase();
+  /* PR #96 review (Sourcery): the exception covers only what the state names; every other opening stays closed */
+  return rl() ? s.replace(/ closed\b/, " closed, except an opening the current state above names as open; every other one stays closed") : s;
+}
+function sdVehicleBase() {
   return {
     water: "The boat sits upright and level on a low, plain grey cradle on the seamless grey studio floor, the whole hull visible down to the keel, with a soft contact shadow; no water around it; hatches and covers closed.",
     air: "The aircraft stands level on the seamless grey studio floor on its landing gear, skids or floats, with a soft contact shadow; doors, hatches and canopy closed, rotors and propellers at rest.",

@@ -1,5 +1,9 @@
 # Prompt log archive
 
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: third render, the lower-belly pooch not drawn, the line above the tanga
+
+**DOES NOT WORK** (owner's third render, 2026-11-19: « j'ai pas le petit bidon dont on a parlé », « j'ai toujours cette ligne en bas du nombril »; « Ligne centrale » at « Discrets », belly fat « Légère », deltoids and triceps at their top, obliques « Très marqués »). In profile the lower belly is flat; the body reads athletic all over (very large deltoids and triceps), the bulge said only in the fat line. A faint horizontal line just above the tanga shows on all three renders, under three different belly texts (loose skin, `a thin layer of soft fat below the navel`, `a small, smooth bulge ... the skin over it smooth and even`): not the word « Légère ». Common to the three: the low tanga and the V « Marqué». **TO TEST**, one render: the same settings, V on Auto. **RULE**: with belly fat « Légère », the Seedream lead also says `a small, soft pooch of fat just below the navel` (`with strong, muscular arms and glutes, and a small, soft pooch of fat just below the navel.`), as the muscular arms and legs. **TO TEST** with the same settings.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
 
 **DOES NOT WORK**, the short legs (second render, made with `tapered runner's legs: lean thigh muscles`): the crotch about 44% down from the collarbones to the soles, for 48% asked, as on the first render (44%) and on 2026-10-28 (40%). Dropping "long" and "elongated" changed nothing measurable; the dropped words stay dropped (they contradicted the length). **RULE**: no more words for the leg length; the next step is a proportion guide image, as for the drop of the bust (v89).
