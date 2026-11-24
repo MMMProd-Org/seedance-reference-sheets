@@ -3291,12 +3291,55 @@ var SD_SPECS_AGE = [
    la tête"; the glasses and the chin showed above the collarbones): on a headless body sheet, the marks written by hand that belong to
    the face or the head are left out, each part between commas or semicolons */
 var SD_FACE_MARK = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|eyebrows?|eyelids?|eyelashes|eyes?|lips?|nose|nostrils?|cheeks?|cheekbones?|chin|jaw|jawline|forehead|temples?|ears?|earlobes?|earrings?|face|facial|scalp|hairline|beard|moustache|mustache)\b/i;
+/* GPT audit of v1.14.1 (F02, reproduced in Chromium): a face word was enough to drop the whole part, so "small eye tattoo on the left
+   forearm" and the forearm tattoo of "a scar on the left cheek and a dragon tattoo on the right forearm" were lost. A part is left out
+   only when it sits on the face or head: a face word after a place word ("on the left cheek", "around the eyes"), a face-worn item
+   (glasses, earrings, beard), or a face word with no body part named; a part with a face word and "and" is split there first, when one
+   of its pieces sits on the face or is worn on it (so "a tattoo of an eye and a rose on the left forearm" stays whole). */
+var SD_FACE_WORN = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|earrings?|beard|moustache|mustache)\b/i,
+  SD_POSS = "(?:the|her|his|their|its|my|our|your|both|each|one|left|right|upper|lower|outer|inner)\\s+",
+  SD_FACE_AT = new RegExp("\\b(on|near|under|below|above|over|around|across|at|beside|between|behind|in|along)\\s+(?:" + SD_POSS + ")*" + SD_FACE_MARK.source.replace(/^\\b/, ""), "i"),
+  SD_BODY_PART = /\b(shoulders?|shoulder blades?|arms?|forearms?|upper arms?|elbows?|wrists?|hands?|fingers?|knuckles?|palms?|chest|breasts?|sternum|collarbones?|ribs?|ribcage|flanks?|belly|stomach|abdomen|navel|waist|hips?|back|spine|buttocks?|glutes?|thighs?|legs?|knees?|shins?|calf|calves|ankles?|foot|feet|toes?|heels?|soles?|torso|biceps?|triceps?)\b/i,
+  /* PR #93 reviews (Codex, Sourcery): a face word or a face-worn item as the motif of a tattoo or a drawing is not on the face; only
+     explicit motif words count ("of a" does not: "a pair of blue eyes") */
+  SD_MOTIF = /\b(tattoo\w*|motif|design|drawing|shaped|print\w*|pattern)\b/i,
+  SD_BODY_ONLY = new RegExp("^(?:" + SD_POSS + ")*" + SD_BODY_PART.source.replace(/^\\b/, "") + "$", "i");
+function sdWornOnFace(p) {
+  return SD_FACE_WORN.test(p) && !SD_MOTIF.test(p);
+}
+function sdFacePart(p) {
+  return sdWornOnFace(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p));
+}
+/* PR #93 review (Codex): a piece that is a face trait of its own ("blue eyes", "facial freckles") splits the part too */
+function sdFaceTrait(p) {
+  return sdWornOnFace(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p) && !SD_MOTIF.test(p));
+}
 function sdBodyMarks(x) {
   return String(x || "")
     .split(/\s*[;,]\s*/)
-    .filter(function (p) {
-      return p && !SD_FACE_MARK.test(p);
+    .map(function (p) {
+      if (!p || !SD_FACE_MARK.test(p)) return p;
+      /* split at "and" or "with" when a piece sits on the face; the pieces kept name a body part. PR #93 review (Sourcery): a piece
+         that is only a place ("a scar on the left cheek and right forearm") takes the mark of the face piece before it */
+      var q = p.split(/\s+(?:and|with)\s+/i);
+      if (q.length > 1 && q.some(sdFaceTrait)) {
+        var lead = "";
+        return q
+          .map(function (s) {
+            var m = SD_FACE_AT.exec(s);
+            if (sdFaceTrait(s)) {
+              m && m.index > 0 && (lead = s.slice(0, m.index).trim() + " " + m[1] + " ");
+              return "";
+            }
+            if (!SD_BODY_PART.test(s)) return "";
+            return SD_BODY_ONLY.test(s.trim()) && lead ? lead + (/^(the|her|his|their|its|my|our|your)\s/i.test(s) ? "" : "the ") + s.trim() : s;
+          })
+          .filter(Boolean)
+          .join(" and ");
+      }
+      return sdFacePart(p) ? "" : p;
     })
+    .filter(Boolean)
     .join(", ");
 }
 function sdSpecsKey() {
