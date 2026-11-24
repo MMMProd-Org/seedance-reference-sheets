@@ -552,6 +552,18 @@ with sync_playwright() as p:
         if "'object'" in state:
             assert not [t for t in texts if "mannequin" in t], state
         off.close()
+    # GPT audit of v1.14.1 (F04): lettering an original object's markings ask for is allowed, captions and watermarks still are not;
+    # without lettering the object keeps "No text"
+    for model in ("gpt", "seedream"):
+        for marks, lettering in (("HELLO printed in large black letters on the front", True), ("a small chip on the rim", False)):
+            mug = clipboard_page(browser, errors)
+            mug.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'object', objCat: 'object', objDesc: 'a white ceramic mug', objMarks: '{marks}'}}))""")
+            mug.reload()
+            sheet = next(t for t in prompts(mug) if "a white ceramic mug" in t)
+            assert ("the only lettering is the one described above" in sheet) == lettering, (model, marks, sheet[-300:])
+            assert ("No text, labels, numbers, watermarks or logos anywhere in the image" in sheet) != lettering, (model, marks, sheet[-300:])
+            mug.close()
     assert not errors, errors
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):

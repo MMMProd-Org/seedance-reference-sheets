@@ -8388,7 +8388,12 @@ function sdIterText() {
 }
 /* v94: lettering asked in the person's marks field (a tattoo reading a word, a name, a date): the general "No text" would forbid it */
 function sdLetters() {
-  return "person" === e.mode && /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i.test(String(e.marks || ""));
+  return "person" === e.mode && SD_LETTER_RX.test(String(e.marks || ""));
+}
+var SD_LETTER_RX = /["\u201c\u201d\u00ab\u00bb]|\b(reading|reads|says|saying|spell\w*|letter\w*|words?|text|inscri\w*|initials|names?|dates?|numbers?|digits?|lettres?|mots?|texte|prénoms?|initiales|chiffres?|nombres?)\b|écrit/i;
+/* GPT audit of v1.14.1 (F04): the same lettering words in an object's description or markings (sdLetters' test, on those fields) */
+function sdObjLetters() {
+  return "object" === e.mode && SD_LETTER_RX.test(String(e.objMarks || "") + " " + String(e.objDesc || ""));
 }
 var SD_LETTERS = "No captions, labels, panel numbers or watermark added to the image; the only lettering is the one the marks above describe.";
 /* clothing: the ending of a person whose clothing is taken from the source photo, whose own logos and prints stay */
