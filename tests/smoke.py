@@ -1076,8 +1076,15 @@ with sync_playwright() as p:
     banner = sv.locator("#sd-save-fail[role=alert]")
     banner.wait_for(timeout=5000)
     assert "Settings not saved" in banner.inner_text() and "Export" in banner.inner_text(), banner.inner_text()
-    sv.evaluate("window.sdBlock = false")
+    # PR #97 review (Codex): on a phone the banner sits above the fixed copy bar, never over its buttons
+    sv.set_viewport_size({"width": 390, "height": 844})
     sv.get_by_role("radio", name="Woman", exact=True).first.click()
+    sv.wait_for_timeout(300)
+    bar = sv.locator("#sd-mobile-copy-bar").bounding_box()
+    box = banner.bounding_box()
+    assert bar and box and box["y"] + box["height"] <= bar["y"], (box, bar)
+    sv.evaluate("window.sdBlock = false")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
     banner.wait_for(state="detached", timeout=5000)
     sv.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"

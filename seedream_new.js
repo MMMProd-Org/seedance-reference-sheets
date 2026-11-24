@@ -12,11 +12,18 @@ function sdT(fr, en) {
 /* GPT audit of v1.14.1 (F07, reproduced by reading the save effect): a failed localStorage write (blocked storage, private window) was
    caught silently and every change was lost on reload. A visible banner says so and points to « Exporter »; it goes at the next
    successful save. Outside React: it must show even when the failure repeats on every render. */
+/* PR #97 review (Codex): on a phone the copy bar is fixed at the bottom too; the banner sits above it, never over its buttons */
+function sdSaveNoticePos() {
+  var el = document.getElementById("sd-save-fail"),
+    bar = document.getElementById("sd-mobile-copy-bar"),
+    h = bar && bar.offsetHeight ? bar.getBoundingClientRect().height : 0;
+  el && (el.style.bottom = Math.round(h + 16) + "px");
+}
 function sdSaveNotice(failed) {
   try {
     var el = document.getElementById("sd-save-fail");
     if (!failed) {
-      el && el.remove();
+      el && (el.remove(), window.removeEventListener("resize", sdSaveNoticePos));
       return;
     }
     if (!el) {
@@ -25,7 +32,9 @@ function sdSaveNotice(failed) {
       el.setAttribute("role", "alert");
       el.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:1000;max-width:min(560px,calc(100vw - 32px));padding:10px 14px;border-radius:12px;background:hsl(var(--destructive, 0 72% 46%));color:hsl(var(--destructive-foreground, 0 0% 100%));font:600 14px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25)";
       document.body.appendChild(el);
+      window.addEventListener("resize", sdSaveNoticePos);
     }
+    sdSaveNoticePos();
     el.textContent = sdT(
       "Réglages non sauvegardés : ce navigateur refuse l'enregistrement local, tout sera perdu au rechargement. Clique « Exporter » pour garder un fichier.",
       "Settings not saved: this browser refuses local storage, everything will be lost on reload. Click “Export” to keep a file.",
