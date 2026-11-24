@@ -1,5 +1,15 @@
 # Prompt log archive
 
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
+
+**DOES NOT WORK**, the short legs (second render, made with `tapered runner's legs: lean thigh muscles`): the crotch about 44% down from the collarbones to the soles, for 48% asked, as on the first render (44%) and on 2026-10-28 (40%). Dropping "long" and "elongated" changed nothing measurable; the dropped words stay dropped (they contradicted the length). **RULE**: no more words for the leg length; the next step is a proportion guide image, as for the drop of the bust (v89).
+
+**REJECTED**, the slit navel said taller than wide: the second render drew it slit-like without it; the default prompts are back to the golden set before it. **RULE**: belly fat « Légère » with « Plat, lisse » says `a firm, smooth upper stomach`, no longer `a flat, smooth stomach` next to the bulge, both engines. A local build shows `vX.Y.Z-pre`: its number is the one its merge would release, not a tag yet.
+
+## 2026-11-19 · All · One final version, its number and date at the top
+
+**RULE** (owner, 2026-11-19: « unifie, corrige tout pour une version finale et affiche moi en haut de la planche la version et la date »). Two pieces of his work had stayed out of the chain this release builds on: PR #64 (« Tubéreuse », « Basse », « Veines du buste », entry of 2026-10-28) and the 2026-10-29 « Agent 3D » prompts without a title (branch `feat/agent3d-no-headings`, no PR). Both are merged here with PRs #61 to #75 and the render audit. The header shows `vX.Y.Z · YYYY-MM-DD` on every build: CI's release version, or the one `version.py` gives a local build, and the last commit's date. No prompt changes.
+
 ## 2026-11-19 · Seedream 5.0 and GPT Image 2.5 · Person, body sheet: second render, back dimples, serratus, belly fat, arms
 
 Owner's second render, 2026-11-19, Seedream 5.0 (same body, 64 kg, « Moyenne », belly fat « Légère », arms « Développés », back dimples « Aucune », serratus left on Auto). **DOES NOT WORK**, seen on it: two dimples above the tanga (« quand on met aucune fossette au dos il y en a quand même »; « Aucune » wrote nothing); serratus ridges in the profiles (« quand on met aucun on en voit quand même »; the chip offered only Auto and Visibles); a faint horizontal crease above the tanga for `a thin layer of soft fat below the navel` (« ça ressemble à de la peau flasque ou une marque de cellulite, c'est pas du tout de la graisse »); thin arms. Owner's target, from a photo: « le haut du ventre est super musclé avec 4 carreaux ... juste en dessous du nombril on voit un petit renflement de graisse », obliques larger than « Marqués », « regarde la taille de ces triceps ils sont énormes, on devrait pouvoir choisir indépendamment les triceps ».

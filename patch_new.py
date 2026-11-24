@@ -938,6 +938,16 @@ rep('''                      (o
                         : nk()
                           ? sdNoTextGpt("No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.", 1)
                           : sdNoTextGpt(nY)))),''')
+# GPT audit of v1.14.1 (F04, reproduced in Chromium): an original object whose description or markings ask for lettering ("HELLO
+# printed in large black letters on the front") got "No text, labels, ... anywhere in the image" after it; that lettering is allowed,
+# captions, panel numbers and watermarks still are not (both engines: the Seedream object prompt is this one, converted)
+rep('''                          : rt()
+                            ? "No added text, labels, numbers, watermarks or logos beyond the markings that belong on the real object."
+                            : nY))''', '''                          : rt()
+                            ? "No added text, labels, numbers, watermarks or logos beyond the markings that belong on the real object."
+                            : sdObjLetters()
+                              ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one described above."
+                              : nY))''')
 # P53 (v94) engine not chosen by hand: the same rule live as at load (Seedream when it can, else GPT), so a reload never switches it
 rep('''      ((0, s.useEffect)(() => {
         try {
