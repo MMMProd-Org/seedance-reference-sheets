@@ -581,6 +581,14 @@ with sync_playwright() as p:
             assert ("No text, labels, numbers, watermarks or logos anywhere in the image" in sheet) != lettering, (model, marks, sheet[-300:])
             mug.close()
     assert not errors, errors
+    # GPT audit of v1.14.1 (F05): the animal sheet asks for the eyes only in the views that show them, never in every view (rear view)
+    for model in ("gpt", "seedream"):
+        an = clipboard_page(browser, errors)
+        an.evaluate(f"localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1, mode: 'animal'}}))")
+        an.reload()
+        sheet = next(t for t in prompts(an) if "identity reference" in t and "rear view" in t)
+        assert "and its eyes in the views that show them" in sheet and "with its eyes, ears and markings readable" not in sheet, model
+        an.close()
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):
         ani = clipboard_page(browser, errors)

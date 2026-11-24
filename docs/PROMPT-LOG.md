@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Animal sheet: the eyes asked only in the views that show them
+
+**RULE** (GPT's audit of v1.14.1, F05, a framing note, no render; owner: « fait ce qu'il faut en mode dev senior lead architect »). The animal sheet asked `The head is clearly visible in every view, with its eyes, ears and markings readable`, with a rear view among the four: the eyes cannot show there unless the head turns to the camera. Now `The head is clearly visible in every view, with its ears and markings readable, and its eyes in the views that show them`. Nothing new on the head's direction. Golden prompts change by these words (Animal, both engines). **TO TEST** on a render: the rear view shows the back of the head.
+
 ## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Object, vehicle: the stated state wins over the closed doors
 
 **RULE** (GPT's audit of v1.14.1, F03, reproduced in Chromium; owner: « fait ce qu'il faut en mode dev senior lead architect »). With « État du moment » `left front door open`, a car's sheet said `Current state ...: left front door open.` and then `all doors, hood and trunk closed`. With a state written, the presentation's closed openings now read `... closed, except an opening the current state above names as open; every other one stays closed` (car, boat, aircraft, tracked and other vehicles); with none, unchanged. Both engines. **TO TEST** on a render: the named door open, the others closed.
@@ -143,11 +147,11 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: fifth render, « Pleins et lisses » and the lead's pooch
 
-**LEAD** (owner's fifth render, 2026-11-19: « je suis pas totalement convaincu », « ces fossettes dans le dos toujours présentes », « ce petit bas du ventre arrondi malgré les muscles pas facile à avoir »). « Pleins et lisses »: arms and back smooth, no cuts, the soft light kept; the arms read thinner than on the fourth render. The pooch in the lead: a slight forward rounding just above the tanga in the left profile, weaker than his photo. Back dimples drawn: his prompt has no `the lower back smooth ...` line, the setting is Auto (the old « Aucune », as the 2026-11-19 entry warns): **TO TEST** with « Aucune ». Abs still cut: they keep their own level (`with clear shadow lines`), by design.
+**LEAD.** « Pleins et lisses »: smooth arms and back, no cuts, arms thinner; the lead's pooch a slight rounding above the tanga, weaker than his photo; back dimples on Auto drawn, to test with « Aucune ». [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-fifth-render--pleins-et-lisses--and-the-leads-pooch)
 
 ## 2026-11-19 · Seedream 5.0 and GPT Image 2.5 · Person, body sheet: large muscles without the cuts, « Aspect des muscles »
 
-**DOES NOT WORK** (owner's fourth render, 2026-11-19: « j'ai muscles apparents discrets et pourtant il explose au visage », « je n'arrive pas à avoir un bras large musclé mais sans avoir les muscles qui explosent »; his two photos: women with large, round deltoids and arms, smooth). « Muscles apparents : toutes les zones » at « Discrets » left the shoulders and back at their own setting (`sharply defined shoulders and back`, `defined shoulders, visible shoulder blades and spine groove`): every muscle drawn cut. **RULE**: « Aspect des muscles », Auto (nothing changes) or « Pleins et lisses »: the sizes stay; every zone at « Présents » or « Marqués » reads « Discrets » (abs apart), so no `sharply defined` and the soft light; the zones' shared phrase becomes `full, rounded muscles under a thin, even layer of soft fat that smooths their outlines into soft, continuous curves, the skin over them smooth and even, their size read by volume and soft shading` (GPT: a `Muscle surface:` line). `no muscle bulk` is no longer written next to deltoids at « Développés » or more. **TO TEST** on Seedream 5.0.
+**DOES NOT WORK / RULE.** « Discrets » on every zone still drew cut shoulders and back; new « Aspect des muscles »: « Pleins et lisses » keeps the sizes and reads every zone as « Discrets » (abs apart), full rounded muscles under a thin layer of soft fat. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50-and-gpt-image-25--person-body-sheet-large-muscles-without-the-cuts--aspect-des-muscles-)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: third render, the lower-belly pooch not drawn, the line above the tanga
 
