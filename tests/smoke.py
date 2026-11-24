@@ -552,6 +552,34 @@ with sync_playwright() as p:
         if "'object'" in state:
             assert not [t for t in texts if "mannequin" in t], state
         off.close()
+    # GPT audit of v1.14.1 (F03): a vehicle's stated state wins over the closed doors of its presentation; without one they stay closed
+    for model in ("gpt", "seedream"):
+        for st, opened in (("left front door open", True), ("", False)):
+            car = clipboard_page(browser, errors)
+            car.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'object', objCat: 'vehicle', objDesc: 'a red sports car', eState: '{st}'}}))""")
+            car.reload()
+            sheet = next(t for t in prompts(car) if "a red sports car" in t)
+            assert ("left front door open" in sheet) == opened, (model, st)
+            q = "all doors, hood and trunk closed, except an opening the current state above names as open; every other one stays closed"
+            # PR #96 review (Sourcery): one closing clause only, qualified when a state is written
+            assert sheet.count("all doors, hood and trunk closed") == 1 and (q in sheet) == opened, (model, st, sheet)
+            car.close()
+
+    # GPT audit of v1.14.1 (F04): lettering an original object's markings ask for is allowed, captions and watermarks still are not;
+    # without lettering the object keeps "No text"
+    for model in ("gpt", "seedream"):
+        # PR #95 review (Sourcery): a negated mention is not a request
+        for marks, lettering in (("HELLO printed in large black letters on the front", True), ("a small chip on the rim", False),
+                                 ("a small chip on the rim, no text or lettering anywhere", False)):
+            mug = clipboard_page(browser, errors)
+            mug.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'object', objCat: 'object', objDesc: 'a white ceramic mug', objMarks: '{marks}'}}))""")
+            mug.reload()
+            sheet = next(t for t in prompts(mug) if "a white ceramic mug" in t)
+            assert ("watermarks or logos added to the image; the only lettering is the one described above" in sheet) == lettering, (model, marks, sheet[-300:])
+            assert ("No text, labels, numbers, watermarks or logos anywhere in the image" in sheet) != lettering, (model, marks, sheet[-300:])
+            mug.close()
     assert not errors, errors
     # GPT audit of v1.14.1 (F05): the animal sheet asks for the eyes only in the views that show them, never in every view (rear view)
     for model in ("gpt", "seedream"):
@@ -1075,6 +1103,75 @@ with sync_playwright() as p:
     # and the two settings of the « Ventre et torse » card
     assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
+    # GPT audit of v1.14.1 (F07): a local save the browser refuses shows a banner pointing to Export; the next save that works removes it
+    sv = clipboard_page(browser, errors)
+    sv.evaluate("() => { window.sdBlock = true; const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) {"
+                " if (window.sdBlock && k === 'fiche-perso-seedance-v1') throw new DOMException('blocked', 'SecurityError');"
+                " return set.call(this, k, v); }; }")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
+    banner = sv.locator("#sd-save-fail[role=alert]")
+    banner.wait_for(timeout=5000)
+    assert "Settings not saved" in banner.inner_text() and "Export" in banner.inner_text(), banner.inner_text()
+    # PR #97 review (Codex): on a phone the banner sits above the fixed copy bar, never over its buttons
+    sv.set_viewport_size({"width": 390, "height": 844})
+    sv.get_by_role("radio", name="Woman", exact=True).first.click()
+    sv.wait_for_timeout(300)
+    bar = sv.locator("#sd-mobile-copy-bar").bounding_box()
+    box = banner.bounding_box()
+    assert bar and box and box["y"] + box["height"] <= bar["y"], (box, bar)
+    # PR #97 review (Sourcery): a taller copy bar, without a resize, moves the banner up too
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = '80px'")
+    sv.wait_for_timeout(300)
+    bar, box = sv.locator("#sd-mobile-copy-bar").bounding_box(), banner.bounding_box()
+    assert box["y"] + box["height"] <= bar["y"], (box, bar)
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = ''")
+    sv.evaluate("window.sdBlock = false")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
+    banner.wait_for(state="detached", timeout=5000)
+    sv.close()
+
+    # GPT audit of v1.14.1 (F01): what a GPT head copy records (numbers, or "2/3" with the face fat) and the eye and nose sliders'
+    # own values come back from an export unchanged, with no value announced as outside the choices; a head copy saved before these
+    # fields existed gets each missing one from the current settings, never overwriting one that is there
+    STORE = "JSON.parse(localStorage.getItem('fiche-perso-seedance-v1'))"
+    for head in ("headLooks: 2, headFat: 2", "headLooks: 2, headFat: '2/3'"):
+        io = clipboard_page(browser, errors)
+        io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                    f" looks: 3, fat: 2, faceFat: 3, headSig: 'abc', {head}, eyeSize: 'xsmall', noseW: 'xwide'}}))")
+        io.reload()
+        sent = io.evaluate(f"(({{headLooks, headFat, eyeSize, noseW}}) => [headLooks, headFat, eyeSize, noseW])({STORE})")
+        with io.expect_download() as dl:
+            io.get_by_role("button", name=re.compile(r"Export")).first.click()
+        saved = dl.value.path()
+        io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', looks: 1}))")
+        io.reload()
+        io.locator("#sd-io-file").set_input_files(str(saved))
+        io.get_by_role("button", name="Replace", exact=True).wait_for(timeout=5000)
+        assert "outside the possible choices" not in io.locator("body").inner_text(), head
+        io.get_by_role("button", name="Replace", exact=True).click()
+        io.wait_for_function(f"{STORE}.looks === 3", timeout=5000)
+        back = io.evaluate(f"(({{headLooks, headFat, eyeSize, noseW}}) => [headLooks, headFat, eyeSize, noseW])({STORE})")
+        assert back == sent and sent[2:] == ["xsmall", "xwide"], (head, sent, back)
+        io.close()
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                " looks: 3, fat: 2, headSig: 'abc', headLooks: '', headFat: '2/3'}))")
+    io.reload()
+    assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
+    io.close()
+    # PR #94 review (Sourcery): a missing headFat is filled with the face fat too; a malformed head field is dropped at import
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                " looks: 3, fat: 2, faceFat: 3, headSig: 'abc', headLooks: '', headFat: ''}))")
+    io.reload()
+    assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
+    import json, tempfile
+    bad = pathlib.Path(tempfile.mkdtemp()) / "bad.json"
+    bad.write_text(json.dumps({"app": "planches-seedance", "format": 1,
+                               "state": {"mode": "person", "looks": 2, "headLooks": "abc", "headFat": "9/9"}}))
+    io.locator("#sd-io-file").set_input_files(str(bad))
+    io.get_by_text(re.compile(r"2 values outside the possible choices")).wait_for(timeout=5000)
+    io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
         smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")
@@ -1506,6 +1603,30 @@ with sync_playwright() as p:
         assert ("the only lettering is the one the marks above describe, besides any logo or print on the clothing taken from"
                 " the photo.") in text, text[-300:]
     photo.close()
+    # GPT audit of v1.14.1 (F02): on a headless body sheet a mark is left out only when it sits on the face or is worn on it; a face
+    # word used as a motif, or a body mark joined by "and" to a face mark, stays; the head sheet keeps every mark as typed
+    for model in ("seedream", "gpt"):
+        for marks, kept, gone in (("small eye tattoo on the left forearm", ["small eye tattoo on the left forearm"], []),
+                                  ("a scar on the left cheek and a dragon tattoo on the right forearm",
+                                   ["a dragon tattoo on the right forearm"], ["left cheek"]),
+                                  ("wears prescription glasses; a mole under the left eye, a scar on the right knee",
+                                   ["a scar on the right knee"], ["glasses", "left eye"]),
+                                  # PR #93 review (Codex): a face trait of its own in an "and" goes, the body mark stays
+                                  ("blue eyes and a scar on the right knee", ["a scar on the right knee"], ["blue eyes"]),
+                                  ("a tattoo of an eye and a rose on the left forearm",
+                                   ["a tattoo of an eye and a rose on the left forearm"], []),
+                                  # PR #93 review (Sourcery): a worn item as a tattoo's motif stays; "my" before the face; a shared mark
+                                  ("a tattoo of sunglasses on the right forearm", ["a tattoo of sunglasses on the right forearm"], []),
+                                  ("a scar near my left eye with a tattoo on my forearm", ["a tattoo on my forearm"], ["left eye"]),
+                                  ("a scar on the left cheek and right forearm", ["a scar on the right forearm"], ["cheek"])):
+            mark = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, marks: \"{marks}\"")
+            head, body = prompts(mark)[:2]
+            for k in kept:
+                assert k in body, (model, marks, k)
+            for g in gone:
+                assert g not in body, (model, marks, g)
+            assert all(w in head for w in marks.replace(";", ",").split(", ")), (model, marks)
+            mark.close()
 
     # "Large" and "Very large" glutes keep their size but lose their profile words with a "Flat" or "Low" glute shape, which the
     # shape's hint says is independent of the volume (both engines).
