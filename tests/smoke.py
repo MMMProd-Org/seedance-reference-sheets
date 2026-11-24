@@ -1067,6 +1067,48 @@ with sync_playwright() as p:
     # and the two settings of the « Ventre et torse » card
     assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
+    # GPT audit of v1.14.1 (F01): what a GPT head copy records (numbers, or "2/3" with the face fat) and the eye and nose sliders'
+    # own values come back from an export unchanged, with no value announced as outside the choices; a head copy saved before these
+    # fields existed gets each missing one from the current settings, never overwriting one that is there
+    STORE = "JSON.parse(localStorage.getItem('fiche-perso-seedance-v1'))"
+    for head in ("headLooks: 2, headFat: 2", "headLooks: 2, headFat: '2/3'"):
+        io = clipboard_page(browser, errors)
+        io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                    f" looks: 3, fat: 2, faceFat: 3, headSig: 'abc', {head}, eyeSize: 'xsmall', noseW: 'xwide'}}))")
+        io.reload()
+        sent = io.evaluate(f"(({{headLooks, headFat, eyeSize, noseW}}) => [headLooks, headFat, eyeSize, noseW])({STORE})")
+        with io.expect_download() as dl:
+            io.get_by_role("button", name=re.compile(r"Export")).first.click()
+        saved = dl.value.path()
+        io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({mode: 'person', pres: 'f', looks: 1}))")
+        io.reload()
+        io.locator("#sd-io-file").set_input_files(str(saved))
+        io.get_by_role("button", name="Replace", exact=True).wait_for(timeout=5000)
+        assert "outside the possible choices" not in io.locator("body").inner_text(), head
+        io.get_by_role("button", name="Replace", exact=True).click()
+        io.wait_for_function(f"{STORE}.looks === 3", timeout=5000)
+        back = io.evaluate(f"(({{headLooks, headFat, eyeSize, noseW}}) => [headLooks, headFat, eyeSize, noseW])({STORE})")
+        assert back == sent and sent[2:] == ["xsmall", "xwide"], (head, sent, back)
+        io.close()
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                " looks: 3, fat: 2, headSig: 'abc', headLooks: '', headFat: '2/3'}))")
+    io.reload()
+    assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
+    io.close()
+    # PR #94 review (Sourcery): a missing headFat is filled with the face fat too; a malformed head field is dropped at import
+    io = clipboard_page(browser, errors)
+    io.evaluate("localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({model: 'gpt', modelPick: 1, mode: 'person', pres: 'f',"
+                " looks: 3, fat: 2, faceFat: 3, headSig: 'abc', headLooks: '', headFat: ''}))")
+    io.reload()
+    assert io.evaluate(f"[{STORE}.headLooks, {STORE}.headFat]") == [3, "2/3"]
+    import json, tempfile
+    bad = pathlib.Path(tempfile.mkdtemp()) / "bad.json"
+    bad.write_text(json.dumps({"app": "planches-seedance", "format": 1,
+                               "state": {"mode": "person", "looks": 2, "headLooks": "abc", "headFat": "9/9"}}))
+    io.locator("#sd-io-file").set_input_files(str(bad))
+    io.get_by_text(re.compile(r"2 values outside the possible choices")).wait_for(timeout=5000)
+    io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
         smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")
