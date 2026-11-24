@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · Blender agent · Person, "Agent 3D" (bust): V11 checks the areola mask, and a tint alone
+
+**RULE** (review of PR #100). With only « Bord » set, or only « Teinte », V11 read `par côté : .` with no criterion, and a tint alone also printed `Noms  déjà pris`. V11 now checks `masque vrai` (`mask true`) whenever an edge or outline is set, with `, G ≠ D` for « Irrégulière » (in place of `contours G ≠ D`); with a tint alone it checks `maillage des aréoles inchangé` and step M no longer names vertex groups to reserve. Import now drops an "Agent 3D" chip value outside its list. The longest settings: 9,998 characters in French.
+
 ## 2026-11-24 · Blender agent · Person, "Agent 3D" (bust): an areola setting left on Auto keeps the mesh's own
 
 **RULE** (review of PR #100). With the areola size on Auto, setting only « Bord » asked a disc centred on C, and setting only « Forme » asked weight 1 inside, 0 outside: the setting left on Auto overrode the mesh's own outline or edge, although its hint says the prompt says nothing of it. The mask now reads `contour du mesh` (`the mesh's outline`) for an outline left on Auto and `bord du mesh` (`the mesh's edge`) for an edge left on Auto. With a size set, the disc and the weight 1 inside, 0 outside stay, as the size already asked them. The longest settings are unchanged (9,994 characters in French).
@@ -131,7 +135,7 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · GPT Image 2.5 and Seedream 5.0 · Person and child, body sheets: the arm of the side views
 
-**RULE** (owner, 2026-11-19, « oui c une bonne idée »). On his renders the hanging arm sat over the back half of the torso in profile, the hand on the glute, so the back line hardly showed and the torso card could not deepen it. Every standing body sheet, adult and child, both engines, marked and light arms, now ends its arms text with `; in the side views the arms hang slightly forward, the back line clear` (twelve words: the Seedream sheet with a fitted top and a very generous bust went over its 600-word warning with a longer text). Before, nothing said where the arm hangs in profile: the Seedream adult line ran `... the hands well clear of the thighs. Neutral expression.`, GPT's `... the hands inside the panel, so the silhouette and both hands stay readable, neutral expression.`; after, the clause comes before the full stop or the semicolon (release: v1.6.1-pre). GPT's `, so the silhouette and both hands stay readable` becomes `; the silhouette ...` (no second « so »); the conical bust's `in the side views the arms hang straight down behind the bust` becomes `the arms stay behind the bust there`. **TO TEST**: the back line visible in both profiles, the belly line not hidden by the forearm.
+**RULE.** The hanging arm hid the back line in profile: every standing body sheet now ends its arms text with `; in the side views the arms hang slightly forward, the back line clear` (TO TEST). [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--gpt-image-25-and-seedream-50--person-and-child-body-sheets-the-arm-of-the-side-views)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the card with the front line held (v1.6.1-pre, `ventre-torse-3`)
 

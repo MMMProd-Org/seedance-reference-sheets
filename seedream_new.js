@@ -3955,6 +3955,14 @@ function sdIoDom() {
   /* the « Ventre et torse » card's own settings */
   d.sdTorsoPooch = ["auto", "0", "1", "2", "3"];
   d.sdTorsoDeep = ["auto", "0", "10", "20", "33"];
+  /* PR #100 review (Sourcery): the "Agent 3D" chips; a value outside its list read as Auto but stayed in the saved state */
+  [["a3dTop", SD_A3D_TOPS], ["a3dGrade", SD_A3D_GRADES], ["a3dNip", SD_A3D_NIPS], ["a3dAre", SD_A3D_AREOLAS], ["a3dRel", SD_A3D_RELIEFS],
+    ["a3dTub", SD_A3D_TUBS], ["a3dTint", SD_A3D_TINTS], ["a3dEdge", SD_A3D_EDGES], ["a3dOut", SD_A3D_OUTLINES],
+    ["a3gBottom", SD_A3G_BOTTOMS], ["a3gGrade", SD_A3G_GRADES]].forEach(function (x) {
+    d[x[0]] = x[1].map(function (o) {
+      return o[0];
+    });
+  });
   [t2, t3, t4].forEach(function (tabs) {
     (tabs || []).forEach(function (tb) {
       (tb.items || []).forEach(function (it) {
@@ -7230,7 +7238,8 @@ function sdA3dText() {
     /* the areola vertex groups (the texture mask): a size, an edge or an outline asked */
     mask = "AUTO" !== are || "AUTO" !== edg || "AUTO" !== outl,
     nac = "AUTO" !== nip || "AUTO" !== rel || "AUTO" !== tub || "AUTO" !== tint || mask,
-    taken =
+    /* tint alone draws nothing on the mesh: no name to reserve */
+    taken = !geo && !mask ? "" :
       sdT(" Noms ", " Names ") +
       [geo ? "\"mamelons\"" : "", mask ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
       sdT(" déjà pris (shape key ou vertex group) : arrête-toi et demande, ne renomme rien.", " already taken (shape key or vertex group): stop and ask, rename nothing."),
@@ -7639,7 +7648,8 @@ function sdA3dText() {
       tr("   - V11 : par côté : ", "   - V11: per side: ") +
         [
           areSet ? tr("D_ar à ± 2 mm", "D_ar within ± 2 mm") : "",
-          "IRREG" === outl ? tr("contours G ≠ D", "outlines L ≠ R") : "",
+          /* the mask's outline and edge: the targets above (review of PR #100: V11 was empty with an edge alone) */
+          mask && edg + outl !== "AUTOAUTO" ? tr("masque vrai", "mask true") + ("IRREG" === outl ? tr(", G ≠ D", ", L ≠ R") : "") : "",
           "AUTO" === nip ? "" : "OMBILIQUE" === nip ? tr("p < 0 au centre de l'aréole", "p < 0 at the centre of the areola") : tr("p à ± 1 mm, d à ± 2 mm", "p within ± 1 mm, d within ± 2 mm"),
           {
             PLATE: tr("|h_ar| ≤ 0,5 mm ; sur 8 coupes radiales passant par C, entre 0,8 et 1,2 × D_ar / 2 de C, la surface reste à ± 0,5 mm du plan de la peau autour (ni marche ni bourrelet)", "|h_ar| ≤ 0,5 mm; on 8 radial sections through C, between 0,8 and 1,2 × D_ar / 2 from C, the surface stays within ± 0,5 mm of the plane of the skin around (no step or ridge)"),
@@ -7649,6 +7659,8 @@ function sdA3dText() {
           "AUTO" !== tub ? tr("des bosses sur l'aréole, leur nombre reporté", "bumps on the areola, their count reported") : "",
           geo && "AUTO" === nip ? tr("MAMELON = AUTO : dans \"mamelons\", vertices du mamelon déplacés de 1e-6 unité de scène au plus", "MAMELON = AUTO: in \"mamelons\", nipple vertices moved by 1e-6 scene unit at most") : "",
           geo ? tr("\"mamelons\" à 0 : V1 à V10 inchangés ; dans \"mamelons\", hors des disques des aréoles, 1e-6 unité de scène au plus", "\"mamelons\" at 0: V1 to V10 unchanged; in \"mamelons\", outside the areola discs, 1e-6 scene unit at most") : "",
+          /* tint alone: nothing on the mesh to check but that */
+          geo || mask ? "" : tr("maillage des aréoles inchangé", "the areolas' mesh unchanged"),
         ]
           .filter(Boolean)
           .join(tr(" ; ", "; ")) +
