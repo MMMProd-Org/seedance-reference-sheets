@@ -568,14 +568,16 @@ for i in (34, 36):
     pad = ' ' * i
     a = pad + 'headKind: "",\n' + pad + 'headRemovals: "",\n'
     rep(a, a + pad + 'headLooks: "",\n' + pad + 'headFat: "",\n')
-# P38 a head copy saved before P37 has no headLooks or headFat: take the current ones on load, as the loader does for headOwner
+# P38 a head copy saved before P37 has no headLooks or headFat: take the current ones on load, as the loader does for headOwner;
+# each field on its own (GPT audit of v1.14.1, F01: a recorded "2/3" was overwritten when only headLooks was missing), from the
+# record's own settings with its face fat (PR #94 review, Sourcery: a cached person took the active one's, face fat left out)
 rep('''          r(e),
           e.base && n(e.base),''', '''          r(e),
           [e].concat(Object.values(e.modeCfg || {})).forEach(function (o) {
             o &&
               o.headSig &&
-              (null == o.headLooks || "" === o.headLooks) &&
-              ((o.headLooks = e.looks), (o.headFat = e.fat));
+              ((null == o.headLooks || "" === o.headLooks) && (o.headLooks = null != o.looks ? o.looks : e.looks),
+              (null == o.headFat || "" === o.headFat) && (o.headFat = sdHeadFatOf(o, e)));
           }),
           e.base && n(e.base),''')
 # P39 audit v89: the signature covers the final face, a saved GPT session keeps GPT (head references on reload: P37; Seedream copy order: P11)
@@ -936,6 +938,16 @@ rep('''                      (o
                         : nk()
                           ? sdNoTextGpt("No text, labels, numbers, watermarks or logos anywhere in the image, except any logo or print on the clothing taken from the photo.", 1)
                           : sdNoTextGpt(nY)))),''')
+# GPT audit of v1.14.1 (F04, reproduced in Chromium): an original object whose description or markings ask for lettering ("HELLO
+# printed in large black letters on the front") got "No text, labels, ... anywhere in the image" after it; that lettering is allowed,
+# captions, panel numbers and watermarks still are not (both engines: the Seedream object prompt is this one, converted)
+rep('''                          : rt()
+                            ? "No added text, labels, numbers, watermarks or logos beyond the markings that belong on the real object."
+                            : nY))''', '''                          : rt()
+                            ? "No added text, labels, numbers, watermarks or logos beyond the markings that belong on the real object."
+                            : sdObjLetters()
+                              ? "No captions, labels, panel numbers, watermarks or logos added to the image; the only lettering is the one described above."
+                              : nY))''')
 # P53 (v94) engine not chosen by hand: the same rule live as at load (Seedream when it can, else GPT), so a reload never switches it
 rep('''      ((0, s.useEffect)(() => {
         try {
