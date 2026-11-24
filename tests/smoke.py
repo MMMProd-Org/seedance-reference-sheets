@@ -1095,6 +1095,33 @@ with sync_playwright() as p:
     # and the two settings of the « Ventre et torse » card
     assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
+    # GPT audit of v1.14.1 (F07): a local save the browser refuses shows a banner pointing to Export; the next save that works removes it
+    sv = clipboard_page(browser, errors)
+    sv.evaluate("() => { window.sdBlock = true; const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) {"
+                " if (window.sdBlock && k === 'fiche-perso-seedance-v1') throw new DOMException('blocked', 'SecurityError');"
+                " return set.call(this, k, v); }; }")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
+    banner = sv.locator("#sd-save-fail[role=alert]")
+    banner.wait_for(timeout=5000)
+    assert "Settings not saved" in banner.inner_text() and "Export" in banner.inner_text(), banner.inner_text()
+    # PR #97 review (Codex): on a phone the banner sits above the fixed copy bar, never over its buttons
+    sv.set_viewport_size({"width": 390, "height": 844})
+    sv.get_by_role("radio", name="Woman", exact=True).first.click()
+    sv.wait_for_timeout(300)
+    bar = sv.locator("#sd-mobile-copy-bar").bounding_box()
+    box = banner.bounding_box()
+    assert bar and box and box["y"] + box["height"] <= bar["y"], (box, bar)
+    # PR #97 review (Sourcery): a taller copy bar, without a resize, moves the banner up too
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = '80px'")
+    sv.wait_for_timeout(300)
+    bar, box = sv.locator("#sd-mobile-copy-bar").bounding_box(), banner.bounding_box()
+    assert box["y"] + box["height"] <= bar["y"], (box, bar)
+    sv.evaluate("document.getElementById('sd-mobile-copy-bar').style.paddingTop = ''")
+    sv.evaluate("window.sdBlock = false")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
+    banner.wait_for(state="detached", timeout=5000)
+    sv.close()
+
     # GPT audit of v1.14.1 (F01): what a GPT head copy records (numbers, or "2/3" with the face fat) and the eye and nose sliders'
     # own values come back from an export unchanged, with no value announced as outside the choices; a head copy saved before these
     # fields existed gets each missing one from the current settings, never overwriting one that is there
