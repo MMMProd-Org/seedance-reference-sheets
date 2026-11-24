@@ -3877,6 +3877,16 @@ function sdIoDom() {
           "number" == typeof it.min && "number" == typeof it.max && (d[it.k] = { min: it.min, max: it.max });
           return;
         }
+        /* GPT audit of v1.14.1, follow-up (checked on the owner's own exports, 2026-11-24): the eye and nose sliders (P33) save
+           "xsmall", "medium", "xnarrow", "xwide", absent from their old chip lists, so an export dropped them at import */
+        if ("sdscale" === it.t) {
+          d[it.k] = ["auto"].concat(
+            ("eyeSize" === it.k ? SD_EYES : SD_NOSE).map(function (x) {
+              return x[0];
+            }),
+          );
+          return;
+        }
         var names = "function" == typeof it.o
           ? ["f", "m", "x"].map(function (p) {
               return rq(Object.assign({}, e, { pres: p }), it.o);
@@ -3894,6 +3904,10 @@ function sdIoDom() {
   });
   return (SD_IO_DOM = d);
 }
+/* GPT audit of v1.14.1 (F01, reproduced in Chromium): a GPT head copy records the beauty level and the corpulence it was made with as
+   numbers, or "2/3" with the face fat (sdHeadFatNow), in fields whose default is ""; checked against the default's type, a valid export
+   lost them at import, and the load filled them from the current settings: the next head prompt changed its strategy */
+var SD_IO_NUMSTR = { headLooks: 1, headFat: 1 };
 function sdIoClean(s, nested) {
   var o = {};
   if (!s || "object" != typeof s || Array.isArray(s)) return o;
@@ -3902,7 +3916,7 @@ function sdIoClean(s, nested) {
     if (!Object.prototype.hasOwnProperty.call(s, k) || (nested && "modeCfg" === k)) continue;
     var v = s[k],
       dm = dom[k];
-    if (!sdIoVal(v, tJ[k])) {
+    if (!(SD_IO_NUMSTR[k] ? ("number" == typeof v && isFinite(v)) || "string" == typeof v : sdIoVal(v, tJ[k]))) {
       sdIoDrop++;
       continue;
     }
