@@ -4450,6 +4450,8 @@ rep('''          if ("sdbust" === r.t) return sdBustChips(t, n, r.hint);''', '''
 # "Agent 3D : fesses", a closed panel at the end of "Hanches", before "Jambes" (sdAgent3g), its choices in the state (a3gBottom, a3gGrade;
 # Auto by default)
 rep('''    a3dTub: "auto",\n''', '''    a3dTub: "auto",\n    a3gBottom: "auto",\n    a3gGrade: "auto",\n''')
+# owner (2026-11-24): the areola's tint, edge and outline (sdA3dTint, sdA3dEdge, sdA3dOutline), Auto by default
+rep('''    a3gGrade: "auto",\n''', '''    a3gGrade: "auto",\n    a3dTint: "auto",\n    a3dEdge: "auto",\n    a3dOut: "auto",\n''')
 rep('''        { t: "sdsec", id: "jambes",''', '''        { t: "sdagent3g", show: function () { return sdA3gOn(e); } },
         { t: "sdsec", id: "jambes",''')
 rep('''          if ("sdagent3d" === r.t) return sdAgent3d(t, n);''', '''          if ("sdagent3d" === r.t) return sdAgent3d(t, n);

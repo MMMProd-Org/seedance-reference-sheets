@@ -1171,6 +1171,16 @@ with sync_playwright() as p:
                                "state": {"mode": "person", "looks": 2, "headLooks": "abc", "headFat": "9/9"}}))
     io.locator("#sd-io-file").set_input_files(str(bad))
     io.get_by_text(re.compile(r"2 values outside the possible choices")).wait_for(timeout=5000)
+    # PR #100 review: an "Agent 3D" chip value outside its list is dropped at import, a listed one kept
+    bad.write_text(json.dumps({"app": "planches-seedance", "format": 1,
+                               "state": {"mode": "person", "a3dEdge": "BOGUS", "a3dTint": "PALE", "a3gGrade": "nope"}}))
+    io.reload()
+    io.locator("#sd-io-file").set_input_files(str(bad))
+    io.get_by_text(re.compile(r"2 values outside the possible choices")).wait_for(timeout=5000)
+    io.get_by_role("button", name="Replace", exact=True).click()
+    io.wait_for_function(f"{STORE}.a3dTint === 'PALE'", timeout=5000)
+    back = io.evaluate(f"(({{a3dEdge, a3dTint, a3gGrade}}) => [a3dEdge, a3dTint, a3gGrade])({STORE})")
+    assert back[1] == "PALE" and back[0] != "BOGUS" and back[2] != "nope", back
     io.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
@@ -1795,6 +1805,40 @@ with sync_playwright() as p:
     text = agent.evaluate(A3D)
     assert "on 8 radial sections through C, between 0.8 and 1.2 × D_ar / 2 from C" in text and "(no step or ridge)" in text, text[-800:]
     agent.locator("[data-a3d='a3dRel:HERNIEE']").click()
+    # owner (2026-11-24, a photo: a pale areola, its edge blending in, not a perfect circle): tint, edge and outline, Auto by default;
+    # the image model reads them in the context line, the agent draws edge and outline in the areola mask; back on Auto, nothing changes
+    before = agent.evaluate(A3D)
+    for k in ("a3dTint:PALE", "a3dEdge:FONDU", "a3dOut:IRREG"):
+        agent.locator(f"[data-a3d='{k}']").click()
+    assert agent.evaluate(f"[{SAVED}.a3dTint, {SAVED}.a3dEdge, {SAVED}.a3dOut]") == ["PALE", "FONDU", "IRREG"]
+    text = agent.evaluate(A3D)
+    assert ("visible on the areolas; pale areolas, almost skin-coloured; blended edge, no ring; not round: slightly oval,"
+            " nipple off-centre, the two different.\n") in text, text[:1200]
+    for want in ("mask areola_L, areola_R: ellipse 0.85, wavy edge, off-centre, L ≠ R, weight 1→0 from 0.85 to 1.15 r", "mask true, L ≠ R"):
+        assert want in text, (want, text[-900:])
+    for k in ("a3dTint:auto", "a3dEdge:auto", "a3dOut:auto"):
+        agent.locator(f"[data-a3d='{k}']").click()
+    assert agent.evaluate(A3D) == before
+    # a setting left on Auto keeps the mesh's own outline or edge (areola size on Auto); a size set asks a disc, weight 1 inside
+    for k, want in (("a3dEdge:FONDU", "mask areola_L, areola_R: the mesh's outline, weight 1→0 from 0.85 to 1.15 r"),
+                    ("a3dEdge:auto", None),
+                    ("a3dOut:IRREG", "mask areola_L, areola_R: ellipse 0.85, wavy edge, off-centre, L ≠ R, the mesh's edge"),
+                    ("a3dOut:auto", None),
+                    ("a3dAre:GRANDE", None),
+                    ("a3dEdge:NET", "mask areola_L, areola_R: a D_ar disc centred on C, weight 1 inside, 0 outside"),
+                    ("a3dEdge:auto", None),
+                    ("a3dAre:auto", None),
+                    ("a3dRel:auto", None),
+                    ("a3dTub:auto", None),
+                    ("a3dTint:PALE", "   - V11: per side: the areolas' mesh unchanged."),
+                    ("a3dTint:auto", None),
+                    ("a3dRel:HERNIEE", None),
+                    ("a3dTub:VISIBLES", None)):
+        agent.locator(f"[data-a3d='{k}']").click()
+        if want:
+            text = agent.evaluate(A3D)
+            assert want in text and "Names  already" not in text, (k, text[-900:])
+    assert agent.evaluate(A3D) == before
     set_lang(agent, "Français", "fr")
     text = agent.evaluate(A3D)
     for want in ("\n- RELIEF_AREOLE = HERNIEE\n", "\n- TUBERCULES = VISIBLES\n", "aréole HERNIEE : h_ar > 0", "tubercules VISIBLES : petites bosses arrondies"):
@@ -1821,7 +1865,7 @@ with sync_playwright() as p:
     # each line break twice in case the box counts it as CRLF, on the longest settings, in both languages.
     longest = ("pres: 'x', age: 26, fat: 1, chest: 3, bodyRef: true, refCover: 'tanga', headless: true, height: 160, bustShape: 'slender',"
                " bustHigh: 'vhigh', bustWide: 'out', bustAsym: 'yes', bustSkin: 'loose', a3dNip: 'OMBILIQUE', a3dAre: 'GRANDE',"
-               " a3dRel: 'HERNIEE', a3dTub: 'VISIBLES'")
+               " a3dRel: 'HERNIEE', a3dTub: 'VISIBLES', a3dTint: 'PALE', a3dEdge: 'FONDU', a3dOut: 'IRREG'")
     for extra in ("a3dTop: 'HAUT_AJUSTE'", "a3dTop: 'UNE_PIECE_AJUSTEE', a3dGrade: 'III'", "a3dTop: 'COQUES_FINES', chest: 2",
                   "a3dNip: 'MOYEN', a3dAre: 'PETITE', a3dRel: 'PLATEAU'", "a3dNip: 'SAILLANT', a3dRel: 'PLATE', bustShape: 'conical'"):
         pg = saved_page(longest + ", " + extra)
