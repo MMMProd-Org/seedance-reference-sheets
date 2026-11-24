@@ -1498,6 +1498,22 @@ with sync_playwright() as p:
         assert ("the only lettering is the one the marks above describe, besides any logo or print on the clothing taken from"
                 " the photo.") in text, text[-300:]
     photo.close()
+    # GPT audit of v1.14.1 (F02): on a headless body sheet a mark is left out only when it sits on the face or is worn on it; a face
+    # word used as a motif, or a body mark joined by "and" to a face mark, stays; the head sheet keeps every mark as typed
+    for model in ("seedream", "gpt"):
+        for marks, kept, gone in (("small eye tattoo on the left forearm", ["small eye tattoo on the left forearm"], []),
+                                  ("a scar on the left cheek and a dragon tattoo on the right forearm",
+                                   ["a dragon tattoo on the right forearm"], ["left cheek"]),
+                                  ("wears prescription glasses; a mole under the left eye, a scar on the right knee",
+                                   ["a scar on the right knee"], ["glasses", "left eye"])):
+            mark = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, marks: \"{marks}\"")
+            head, body = prompts(mark)[:2]
+            for k in kept:
+                assert k in body, (model, marks, k)
+            for g in gone:
+                assert g not in body, (model, marks, g)
+            assert all(w in head for w in marks.replace(";", ",").split(", ")), (model, marks)
+            mark.close()
 
     # "Large" and "Very large" glutes keep their size but lose their profile words with a "Flat" or "Low" glute shape, which the
     # shape's hint says is independent of the volume (both engines).
