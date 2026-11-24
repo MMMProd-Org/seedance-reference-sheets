@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · Image edit (engine not stated) · Person, "Agent 3D" (bust) as an edit prompt: « Fondu », two renders
+
+**DOES NOT WORK** for the edge (owner's two renders, 2026-11-24, local build v1.15.0-pre, the settings of the entry below with « Fondu » in place of « Net », as asked). Render 1: the areola on the screen's left still ringed by a thin darker line inside its edge, the one on the right soft-edged and a little irregular, as with « Net ». Render 2: both areolas larger (about 0.4 of the breast's width), round, each with a sharp, darker rim and a grainy inside, the rim showing as a drawn circle in both profiles. Across the three renders, one areola in six has the blended edge of the owner's photo; `bord fondu` (two words, the prompt box being full) did not remove the ring.
+
 ## 2026-11-24 · Image edit (engine not stated) · Person, "Agent 3D" (bust) as an edit prompt: tint, edge and outline, first render
 
 **LEAD** (owner's render, 2026-11-24, local build v1.15.0-pre, his body sheet edited with the agent prompt; « Grandes », « Plate », « Pâles », « Net », « Irrégulière », nipples Auto). Pale pink areolas, about a third of the breast's width in the front view (about 37 px for 107 px, read on the enlarged crop), flush. The two differ: the one on the screen's right a little irregular, softer at the edge, the nipple slightly off its centre; the one on the screen's left a regular disc ringed by a thin, sharp darker line, the nipple centred. « Net » gave that drawn ring, unlike the owner's photo (edge blended in). **TO TEST**: the same with « Fondu ».
