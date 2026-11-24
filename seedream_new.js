@@ -7010,6 +7010,37 @@ var SD_A3D_TUBS = [
   ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne touche pas aux petites bosses de l'aréole.", "The prompt leaves the small bumps of the areola as they are."],
   ["VISIBLES", "Visibles", "Visible", "Petites bosses arrondies des glandes aréolaires (Montgomery) ; nombre et taille libres, aucun chiffre fiable lu.", "Small round bumps of the areolar (Montgomery) glands; count and size free, no reliable figure read."],
 ];
+/* owner (2026-11-24, a photo of a real bust: "est ce que le HTML peut prévoir ce genre d'aréole ?", "l'aréole n'est pas parfaite elle est
+   un peu tordue"): a pale areola, barely darker than the skin, its edge blending in, slightly oval with an uneven edge and the nipple off
+   its centre. Three settings, Auto by default (the prompt unchanged): "Teinte de l'aréole", "Bord de l'aréole", "Forme de l'aréole". The
+   image model reads them in the context line; the Blender agent draws the edge and the shape in the areola vertex groups (the mask the
+   texture is painted through) and records the tint, the painting itself staying out of its scope. No published data read on an areola's
+   tint against the skin, its edge or its outline: every value is a design choice, marked "À VALIDER". */
+var SD_A3D_TINTS = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne dit rien de la couleur des aréoles.", "The prompt says nothing about the areolas' color."],
+  ["PALE", "Pâles", "Pale", "À peine plus foncées que la peau, d'un rose beige léger, peu de contraste.", "Barely darker than the skin, a light pinkish beige, little contrast."],
+  ["ROSEE", "Rosées", "Pink", "Rose franc, un contraste moyen avec la peau.", "A clear pink, a medium contrast with the skin."],
+  ["FONCEE", "Foncées", "Dark", "Brun rosé à brun, nettement plus foncées que la peau.", "Pinkish brown to brown, clearly darker than the skin."],
+];
+var SD_A3D_EDGES = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne dit rien du bord des aréoles.", "The prompt says nothing about the areolas' edge."],
+  ["FONDU", "Fondu", "Blended", "Le bord se fond dans la peau, sans contour net.", "The edge blends into the skin, with no sharp outline."],
+  ["NET", "Net", "Sharp", "Un contour net entre l'aréole et la peau.", "A sharp outline between the areola and the skin."],
+];
+var SD_A3D_OUTLINES = [
+  ["auto", "Auto (maillage)", "Auto (mesh)", "Le prompt ne dit rien de la forme des aréoles.", "The prompt says nothing about the areolas' outline."],
+  ["RONDE", "Ronde", "Round", "Un disque régulier, le mamelon au centre.", "A regular disc, the nipple at its centre."],
+  ["IRREG", "Irrégulière", "Irregular", "Légèrement ovale, bord inégal, mamelon un peu décentré, les deux aréoles un peu différentes.", "Slightly oval, an uneven edge, the nipple a little off-centre, the two areolas slightly different."],
+];
+function sdA3dTint() {
+  return sdA3dManual("a3dTint", SD_A3D_TINTS) ? e.a3dTint : "AUTO";
+}
+function sdA3dEdge() {
+  return sdA3dManual("a3dEdge", SD_A3D_EDGES) ? e.a3dEdge : "AUTO";
+}
+function sdA3dOutline() {
+  return sdA3dManual("a3dOut", SD_A3D_OUTLINES) ? e.a3dOut : "AUTO";
+}
 function sdA3dRel() {
   return sdA3dManual("a3dRel", SD_A3D_RELIEFS) ? e.a3dRel : "AUTO";
 }
@@ -7047,6 +7078,16 @@ var SD_A3D_LOOK = {
     ],
   },
   tub: { VISIBLES: ["petites bosses arrondies (tubercules de Montgomery) visibles sur les aréoles", "small round bumps (Montgomery tubercles) visible on the areolas"] },
+  tint: {
+    PALE: ["aréoles pâles, presque couleur de peau", "pale areolas, almost skin-coloured"],
+    ROSEE: ["aréoles rose franc", "clear pink areolas"],
+    FONCEE: ["aréoles brun rosé à brun", "pinkish brown to brown areolas"],
+  },
+  edge: { FONDU: ["bord fondu", "blended edge"], NET: ["bord net", "sharp edge"] },
+  out: {
+    RONDE: ["aréoles rondes, mamelon centré", "round areolas, nipple centred"],
+    IRREG: ["pas rondes : un peu ovales, bord inégal, mamelon décentré, les deux différentes", "not round: slightly oval, uneven edge, nipple off-centre, the two different"],
+  },
 };
 function sdA3dOn(t) {
   return "person" === t.mode && !sdChild(t) && "m" !== t.pres && t.chest >= 1 && !t.photo && sdRevealOk(t);
@@ -7179,12 +7220,17 @@ function sdA3dText() {
     are = sdA3dAre(),
     rel = sdA3dRel(),
     tub = sdA3dTub(),
+    tint = sdA3dTint(),
+    edg = sdA3dEdge(),
+    outl = sdA3dOutline(),
     /* a geometry asked: the nipple, the relief of the areola or its tubercles, in the "mamelons" shape key */
     geo = "AUTO" !== nip || "AUTO" !== rel || "AUTO" !== tub,
-    nac = "AUTO" !== nip || "AUTO" !== are || "AUTO" !== rel || "AUTO" !== tub,
+    /* the areola vertex groups (the texture mask): a size, an edge or an outline asked */
+    mask = "AUTO" !== are || "AUTO" !== edg || "AUTO" !== outl,
+    nac = "AUTO" !== nip || "AUTO" !== rel || "AUTO" !== tub || "AUTO" !== tint || mask,
     taken =
       sdT(" Noms ", " Names ") +
-      [geo ? "\"mamelons\"" : "", "AUTO" !== are ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
+      [geo ? "\"mamelons\"" : "", mask ? sdT("\"areole_G\" ou \"areole_D\"", "\"areole_G\" or \"areole_D\"") : ""].filter(Boolean).join(", ") +
       sdT(" déjà pris (shape key ou vertex group) : arrête-toi et demande, ne renomme rien.", " already taken (shape key or vertex group): stop and ask, rename nothing."),
     pd = "AUTO" === nip ? "" : "OMBILIQUE" === nip ? ", p" : sdT(", p et d", ", p and d"),
     hcm = Math.round(+e.height || 170),
@@ -7295,7 +7341,7 @@ function sdA3dText() {
       (onePiece ? "" : tr(" Seul le haut est retiré : le bas garde exactement sa coupe, sa couleur et son tissu, et tout le reste reste tel quel.", " Only the top is removed: the bottom keeps exactly its cut, color and fabric, and everything else stays as it is.")) +
       (nac
         ? tr(" Mamelons et aréoles : ", " Nipples and areolas: ") +
-          [SD_A3D_LOOK.nip[nip], SD_A3D_LOOK.are[are], SD_A3D_LOOK.rel[rel], SD_A3D_LOOK.tub[tub]]
+          [SD_A3D_LOOK.nip[nip], SD_A3D_LOOK.are[are], SD_A3D_LOOK.rel[rel], SD_A3D_LOOK.tub[tub], SD_A3D_LOOK.tint[tint], SD_A3D_LOOK.edge[edg], SD_A3D_LOOK.out[outl]]
             .filter(Boolean)
             .map(function (x) {
               return tr(x[0], x[1]);
@@ -7420,9 +7466,20 @@ function sdA3dText() {
           SD_A3D_ARE_MM[are] +
           tr(" mm (Lee et al. 2008 : 30,93 ± 10,07 mm, ", " mm (Lee et al. 2008: 30,93 ± 10,07 mm, ") +
           { PETITE: tr("moyenne moins un écart-type", "mean minus one SD"), MOYENNE: tr("moyenne", "mean"), GRANDE: tr("moyenne plus un écart-type ; Sanuki et al. 2009 : 40 mm", "mean plus one SD; Sanuki et al. 2009: 40 mm") }[are] +
-          tr("), disque géodésique centré sur C, vertex groups \"areole_G\" et \"areole_D\" (poids 1 dedans, 0 dehors)", "), a geodesic disc centred on C, vertex groups \"areole_G\" and \"areole_D\" (weight 1 inside, 0 outside)")
+          (edg + outl === "AUTOAUTO"
+            ? tr("), disque géodésique centré sur C, vertex groups \"areole_G\" et \"areole_D\" (poids 1 dedans, 0 dehors)", "), a geodesic disc centred on C, vertex groups \"areole_G\" and \"areole_D\" (weight 1 inside, 0 outside)")
+            : ")")
         : tr("aréole du mesh inchangée, D_ar = son diamètre (relief ou vertex group ; illisible : demande)", "the mesh's areola unchanged, D_ar = its diameter (relief or vertex group; unreadable: ask)"),
     ];
+    /* the mask: its outline and its edge (owner, 2026-11-24); design choices, short: the prompt box holds 10,000 characters */
+    edg + outl !== "AUTOAUTO" &&
+      tg.push(
+        tr("masque areole_G, areole_D : ", "mask areole_G, areole_D: ") +
+          ("IRREG" === outl
+            ? tr("ellipse 0,85 au bord ondulé, décentrée, G ≠ D", "ellipse 0,85, wavy edge, off-centre, L ≠ R")
+            : tr("disque D_ar centré sur C", "a D_ar disc centred on C")) +
+          ("FONDU" === edg ? tr(", poids 1→0 de 0,85 à 1,15 r", ", weight 1→0 from 0,85 to 1,15 r") : tr(", poids 1 dedans, 0 dehors", ", weight 1 inside, 0 outside")),
+      );
     (nipSet || "AUTO" !== rel) && tg.push(tr("plan de l'aréole = moindres carrés des vertices entre 0,8 et 1,0 × D_ar / 2 de C", "areola plane = least squares of the vertices between 0,8 and 1,0 × D_ar / 2 from C"));
     nipSet &&
       tg.push(
@@ -7461,7 +7518,7 @@ function sdA3dText() {
     (nac
       ? geo
         ? tr("Shape keys \"nu_relache\" et \"mamelons\" sur le corps ; à 1,0, V1 à V11 OK", "Shape keys \"nu_relache\" and \"mamelons\" on the body; at 1,0, V1 to V11 OK")
-        : tr("Shape key \"nu_relache\" et vertex groups des aréoles sur le corps ; à 1,0, V1 à V11 OK", "Shape key \"nu_relache\" and the areola vertex groups on the body; at 1,0, V1 to V11 OK")
+        : tr("Shape key \"nu_relache\"" + (mask ? " et vertex groups des aréoles" : "") + " sur le corps ; à 1,0, V1 à V11 OK", "Shape key \"nu_relache\"" + (mask ? " and the areola vertex groups" : "") + " on the body; at 1,0, V1 to V11 OK")
       : tr("Shape key \"nu_relache\" sur le corps ; à 1,0, V1 à V10 OK", "Shape key \"nu_relache\" on the body; at 1,0, V1 to V10 OK")) +
       tr(" ; FICHIER_SOURCE intact ; rapport livré.", "; FICHIER_SOURCE untouched; report delivered."),
     "",
@@ -7478,8 +7535,8 @@ function sdA3dText() {
     tr("5. Aucune hypothèse silencieuse : vérifie axes avant et vertical, unité, objet corps, côtés, sillon ; ambiguïté : demande.", "5. No silent assumption: check the forward and vertical axes, unit, body object, sides, fold; ambiguity: ask."),
     nac
       ? tr(
-          "6. Hors périmètre : textures et UV (couleur et grain de l'aréole compris), jiggle, rig, autres zones ; mamelons et aréoles : seulement leurs quatre entrées. Signale les problèmes sans les corriger.",
-          "6. Out of scope: textures and UVs (the areola's color and grain included), jiggle, rig, other areas; nipples and areolas: only their four inputs. Report problems without fixing them.",
+          "6. Hors périmètre : textures et UV (couleur et grain de l'aréole compris), jiggle, rig, autres zones ; mamelons et aréoles : seulement leurs " + ("AUTO" === tint && edg + outl === "AUTOAUTO" ? "quatre " : "") + "entrées. Signale les problèmes sans les corriger.",
+          "6. Out of scope: textures and UVs (the areola's color and grain included), jiggle, rig, other areas; nipples and areolas: only their " + ("AUTO" === tint && edg + outl === "AUTOAUTO" ? "four " : "") + "inputs. Report problems without fixing them.",
         )
       : tr("6. Hors périmètre : textures et UV, aréoles et mamelons, jiggle, rig, autres zones. Signale les problèmes sans les corriger.", "6. Out of scope: textures and UVs, areolas and nipples, jiggle, rig, other areas. Report problems without fixing them."),
     tr("7. Même état de mesure avant et après (Rest Position, Subdivision et lissages coupés, shape keys à leur valeur) ; Mirror : édite la moitié réelle, mesure le mesh évalué.", "7. The same measuring state before and after (Rest Position, Subdivision and smoothing off, shape keys at their value); Mirror: edit the real half, measure the evaluated mesh."),
@@ -7542,10 +7599,14 @@ function sdA3dText() {
             ]
               .filter(Boolean)
               .join(tr(" ; ", "; ")) +
-            (areSet ? tr(" ; vertex groups des aréoles", "; areola vertex groups") : "") +
+            (mask ? tr(" ; vertex groups des aréoles", "; areola vertex groups") : "") +
             tr(" ; seul le disque de l'aréole bouge. Moins de 3 anneaux d'arêtes dans d (À VALIDER) : arrête-toi et signale, ne subdivise pas.", "; only the areola disc moves. Fewer than 3 edge rings across d (TO VALIDATE): stop and report, do not subdivide.") +
             taken
-        : tr("   - M (aréoles) : vertex groups des aréoles au diamètre D_ar sur \"nu_relache\" à 1,0 ; aucune déformation, pas de shape key \"mamelons\" (la taille se verra par la texture peinte plus tard, hors périmètre).", "   - M (areolas): areola vertex groups at the diameter D_ar on \"nu_relache\" at 1,0; no deformation, no \"mamelons\" shape key (the size will show through the texture painted later, out of scope).") + taken,
+        : (mask
+            ? tr("   - M (aréoles) : vertex groups des aréoles au diamètre D_ar sur \"nu_relache\" à 1,0", "   - M (areolas): areola vertex groups at the diameter D_ar on \"nu_relache\" at 1,0") + (edg + outl === "AUTOAUTO" ? "" : tr(", masque ci-dessus", ", the mask above"))
+            : tr("   - M (aréoles) : rien sur le maillage, la teinte est pour la texture", "   - M (areolas): nothing on the mesh, the tint is for the texture")) +
+          tr(" ; aucune déformation, pas de shape key \"mamelons\" (la taille se verra par la texture peinte plus tard, hors périmètre).", "; no deformation, no \"mamelons\" shape key (the size will show through the texture painted later, out of scope).") +
+          taken,
     );
   L.push(
     tr("8. Mesures APRÈS : celles de l'étape 6, BP", "8. Measures AFTER: those of step 6, BP") +
@@ -7569,6 +7630,7 @@ function sdA3dText() {
       tr("   - V11 : par côté : ", "   - V11: per side: ") +
         [
           areSet ? tr("D_ar à ± 2 mm", "D_ar within ± 2 mm") : "",
+          "IRREG" === outl ? tr("contours G ≠ D", "outlines L ≠ R") : "",
           "AUTO" === nip ? "" : "OMBILIQUE" === nip ? tr("p < 0 au centre de l'aréole", "p < 0 at the centre of the areola") : tr("p à ± 1 mm, d à ± 2 mm", "p within ± 1 mm, d within ± 2 mm"),
           {
             PLATE: tr("|h_ar| ≤ 0,5 mm ; sur 8 coupes radiales passant par C, entre 0,8 et 1,2 × D_ar / 2 de C, la surface reste à ± 0,5 mm du plan de la peau autour (ni marche ni bourrelet)", "|h_ar| ≤ 0,5 mm; on 8 radial sections through C, between 0,8 and 1,2 × D_ar / 2 from C, the surface stays within ± 0,5 mm of the plane of the skin around (no step or ridge)"),
@@ -7685,6 +7747,12 @@ function sdAgent3d(t, set) {
       sdA3dChips(t, set, "a3dRel", SD_A3D_RELIEFS),
       (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Tubercules de Montgomery", "Montgomery tubercles") }),
       sdA3dChips(t, set, "a3dTub", SD_A3D_TUBS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Teinte de l'aréole", "Areola tint") }),
+      sdA3dChips(t, set, "a3dTint", SD_A3D_TINTS),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Bord de l'aréole", "Areola edge") }),
+      sdA3dChips(t, set, "a3dEdge", SD_A3D_EDGES),
+      (0, l.jsx)("p", { className: "mt-2 font-semibold", children: sdT("Forme de l'aréole", "Areola outline") }),
+      sdA3dChips(t, set, "a3dOut", SD_A3D_OUTLINES),
       (0, l.jsx)("textarea", { readOnly: !0, value: txt, rows: 8, className: "mt-2 w-full rounded-md border bg-card p-2 font-mono text-xs", "aria-label": sdT("Prompt de l'agent 3D", "3D agent prompt") }),
       (0, l.jsx)("button", {
         type: "button",
