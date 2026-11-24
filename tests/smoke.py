@@ -1067,6 +1067,19 @@ with sync_playwright() as p:
     # and the two settings of the « Ventre et torse » card
     assert io.evaluate("[JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoPooch, JSON.parse(localStorage.getItem('fiche-perso-seedance-v1')).sdTorsoDeep]") == ["1", "33"]
     io.close()
+    # GPT audit of v1.14.1 (F07): a local save the browser refuses shows a banner pointing to Export; the next save that works removes it
+    sv = clipboard_page(browser, errors)
+    sv.evaluate("() => { window.sdBlock = true; const set = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) {"
+                " if (window.sdBlock && k === 'fiche-perso-seedance-v1') throw new DOMException('blocked', 'SecurityError');"
+                " return set.call(this, k, v); }; }")
+    sv.get_by_role("radio", name="Man", exact=True).first.click()
+    banner = sv.locator("#sd-save-fail[role=alert]")
+    banner.wait_for(timeout=5000)
+    assert "Settings not saved" in banner.inner_text() and "Export" in banner.inner_text(), banner.inner_text()
+    sv.evaluate("window.sdBlock = false")
+    sv.get_by_role("radio", name="Woman", exact=True).first.click()
+    banner.wait_for(state="detached", timeout=5000)
+    sv.close()
     SMOOTH_BACK = "the lower back smooth and evenly filled just above the glutes"
     for model in ("GPT Image 2.5", "Seedream 5.0"):
         smooth, _ = side_body(model, "fat: 1, backDimples: 'smooth'")

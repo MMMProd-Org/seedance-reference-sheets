@@ -948,7 +948,10 @@ rep('''      ((0, s.useEffect)(() => {
         }
         try {
           localStorage.setItem(au, JSON.stringify(t));
-        } catch {}
+          sdSaveNotice(!1);
+        } catch {
+          sdSaveNotice(!0);
+        }
       }, [t]),''')
 # P39 (v96) "Forte": a fat, heavy build (was "heavy-set"), the body fat described in GPT too, slim body details swapped, slider hint
 rep('''    "heavy-set, large and soft build",
