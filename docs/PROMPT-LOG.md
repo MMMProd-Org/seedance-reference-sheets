@@ -12,6 +12,10 @@ Read it before any change (`AGENTS.md`).
 - Do not try again what is marked **DOES NOT WORK** or **REJECTED** without a new reason, written in a new entry.
 - Keep this file under 50,000 bytes and 2,000 lines, each line under 2,000 characters, so that one Read returns it whole (`tests/test_prompt_log_gate.py` checks it). Past that, move the oldest entries, whole, to `docs/PROMPT-LOG-ARCHIVE.md`, and leave one line for each here: its title, its status and its lesson.
 
+## 2026-11-24 · Blender agent and Seedream 5.0 · Person, "Agent 3D" (bust): the areola's tint, edge and outline
+
+**RULE** (owner, 2026-11-24, a photo of a real bust: « est ce que le HTML peut prévoir ce genre d'areole ? », « l'aréole n'est pas parfaite elle est un peu tordu »; « oui envoie le html ensuite pas besoin d'envoyer sur github avant la validation »). Three settings in the « Agent 3D » card, Auto by default (the prompt unchanged): « Teinte de l'aréole » (Pâles, Rosées, Foncées), « Bord de l'aréole » (Fondu, Net), « Forme de l'aréole » (Ronde, Irrégulière). The context line, read by an image model, adds e.g. `pale areolas, almost skin-coloured; blended edge; not round: slightly oval, uneven edge, nipple off-centre, the two different`. The Blender agent draws the edge and the outline in the areola vertex groups (`mask areole_G, areole_D: ellipse 0.85, wavy edge, off-centre, L ≠ R, weight 1→0 from 0.85 to 1.15 r`), checks `outlines L ≠ R`; the tint stays texture work, out of its scope. No published data read on an areola's tint, edge or outline: design choices. The longest agent prompt stays under 10,000 characters (9,994 in French). **TO TEST** on a render, local build only (not pushed, owner's validation first).
+
 ## 2026-11-24 · GPT Image 2.5 and Seedream 5.0 · Animal sheet: the eyes asked only in the views that show them
 
 **RULE** (GPT's audit of v1.14.1, F05, a framing note, no render; owner: « fait ce qu'il faut en mode dev senior lead architect »). The animal sheet asked `The head is clearly visible in every view, with its eyes, ears and markings readable`, with a rear view among the four: the eyes cannot show there unless the head turns to the camera. Now `The head is clearly visible in every view, with its ears and markings readable, and its eyes in the views that show them`. Nothing new on the head's direction. Golden prompts change by these words (Animal, both engines). **TO TEST** on a render: the rear view shows the back of the head.
@@ -135,15 +139,15 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · GPT Image 2.5 and Seedream 5.0 · Person, body sheet: « Épaisseur du torse »
 
-**RULE** (owner, 2026-11-19, a photo of the same fit woman: « elle est très large entre le dos et le ventre, du moins de profil »). « Épaisseur du torse (de profil) » after « Cage thoracique »: Auto (nothing said), Fin `a shallow torso in profile: the ribcage and the waist thin from back to front`, Épais `a deep torso in profile: the ribcage and the waist thick from back to front, the side views showing a solid, deep trunk, the waist in profile nearly as deep as the chest`, among the body details, both engines. **TO TEST**.
+**RULE.** « Épaisseur du torse (de profil) »: Auto, Fin (a shallow torso in profile) or Épais (a deep trunk, the waist nearly as deep as the chest), both engines. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--gpt-image-25-and-seedream-50--person-body-sheet--épaisseur-du-torse-)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the pooch by a free retouch of the sheet
 
-**WORKS**, a little too much (owner, 2026-11-19: « ça marche mais un peu trop sur le profil mais on y est »). « Retouche libre » on his best sheet with `in all four views, just below the navel, a small, soft, rounded pooch of lower-belly fat that pushes the lower belly slightly forward in profile, as on a fit woman whose upper abs stay sharp`: a clear pooch in both profiles, the upper abs, the arms and the rest kept. In the profiles it bulges more than his photo. **TO TEST**: the same retouch on that result, `in the side views, the lower-belly pooch about half as deep, the front view unchanged`.
+**WORKS**, a little too much: « Retouche libre » on his best sheet drew a clear pooch in both profiles, more than his photo; next, the same retouch at half depth. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-the-pooch-by-a-free-retouch-of-the-sheet)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: sixth and seventh renders, the pooch, « 4 carreaux + ligne centrale »
 
-**DOES NOT WORK** (owner, 2026-11-19: « toujours pas de petit bidon »; belly fat « Visible » tried too: « le ventre ne bouge plus mis à part les muscles qui disparaissent », the bust larger and the glutes with cellulite). Three texts (« Légère », « Légère » in the lead, « Visible ») drew no lower-belly pooch on a muscular body. **RULE**: no more words for it; the owner's own lesson (Seedream enlarges in an edit of a sheet already made what a description does not draw) points to the free retouch of the sheet. **RULE**: a new abs style « 4 carreaux + ligne centrale » (« cette fille a aussi une ligne centrale et 4 carreaux au-dessus mais le html ne permet pas de le faire »): `four segments above the navel, split by a vertical groove down the middle that runs on below the navel`, both engines. **TO TEST**.
+**DOES NOT WORK / RULE.** Three belly-fat texts drew no pooch on a muscular body: no more words, the retouch of the sheet instead; new abs style « 4 carreaux + ligne centrale », both engines. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-sixth-and-seventh-renders-the-pooch--4-carreaux--ligne-centrale-)
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: fifth render, « Pleins et lisses » and the lead's pooch
 

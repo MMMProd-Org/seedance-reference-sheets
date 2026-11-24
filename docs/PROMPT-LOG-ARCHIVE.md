@@ -1,5 +1,17 @@
 # Prompt log archive
 
+## 2026-11-19 · GPT Image 2.5 and Seedream 5.0 · Person, body sheet: « Épaisseur du torse »
+
+**RULE** (owner, 2026-11-19, a photo of the same fit woman: « elle est très large entre le dos et le ventre, du moins de profil »). « Épaisseur du torse (de profil) » after « Cage thoracique »: Auto (nothing said), Fin `a shallow torso in profile: the ribcage and the waist thin from back to front`, Épais `a deep torso in profile: the ribcage and the waist thick from back to front, the side views showing a solid, deep trunk, the waist in profile nearly as deep as the chest`, among the body details, both engines. **TO TEST**.
+
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: the pooch by a free retouch of the sheet
+
+**WORKS**, a little too much (owner, 2026-11-19: « ça marche mais un peu trop sur le profil mais on y est »). « Retouche libre » on his best sheet with `in all four views, just below the navel, a small, soft, rounded pooch of lower-belly fat that pushes the lower belly slightly forward in profile, as on a fit woman whose upper abs stay sharp`: a clear pooch in both profiles, the upper abs, the arms and the rest kept. In the profiles it bulges more than his photo. **TO TEST**: the same retouch on that result, `in the side views, the lower-belly pooch about half as deep, the front view unchanged`.
+
+## 2026-11-19 · Seedream 5.0 · Person, body sheet: sixth and seventh renders, the pooch, « 4 carreaux + ligne centrale »
+
+**DOES NOT WORK** (owner, 2026-11-19: « toujours pas de petit bidon »; belly fat « Visible » tried too: « le ventre ne bouge plus mis à part les muscles qui disparaissent », the bust larger and the glutes with cellulite). Three texts (« Légère », « Légère » in the lead, « Visible ») drew no lower-belly pooch on a muscular body. **RULE**: no more words for it; the owner's own lesson (Seedream enlarges in an edit of a sheet already made what a description does not draw) points to the free retouch of the sheet. **RULE**: a new abs style « 4 carreaux + ligne centrale » (« cette fille a aussi une ligne centrale et 4 carreaux au-dessus mais le html ne permet pas de le faire »): `four segments above the navel, split by a vertical groove down the middle that runs on below the navel`, both engines. **TO TEST**.
+
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: fifth render, « Pleins et lisses » and the lead's pooch
 
 **LEAD** (owner's fifth render, 2026-11-19: « je suis pas totalement convaincu », « ces fossettes dans le dos toujours présentes », « ce petit bas du ventre arrondi malgré les muscles pas facile à avoir »). « Pleins et lisses »: arms and back smooth, no cuts, the soft light kept; the arms read thinner than on the fourth render. The pooch in the lead: a slight forward rounding just above the tanga in the left profile, weaker than his photo. Back dimples drawn: his prompt has no `the lower back smooth ...` line, the setting is Auto (the old « Aucune », as the 2026-11-19 entry warns): **TO TEST** with « Aucune ». Abs still cut: they keep their own level (`with clear shadow lines`), by design.
