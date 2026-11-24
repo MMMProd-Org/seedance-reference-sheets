@@ -1505,7 +1505,11 @@ with sync_playwright() as p:
                                   ("a scar on the left cheek and a dragon tattoo on the right forearm",
                                    ["a dragon tattoo on the right forearm"], ["left cheek"]),
                                   ("wears prescription glasses; a mole under the left eye, a scar on the right knee",
-                                   ["a scar on the right knee"], ["glasses", "left eye"])):
+                                   ["a scar on the right knee"], ["glasses", "left eye"]),
+                                  # PR #93 review (Codex): a face trait of its own in an "and" goes, the body mark stays
+                                  ("blue eyes and a scar on the right knee", ["a scar on the right knee"], ["blue eyes"]),
+                                  ("a tattoo of an eye and a rose on the left forearm",
+                                   ["a tattoo of an eye and a rose on the left forearm"], [])):
             mark = saved_page(f"model: '{model}', pres: 'f', age: 30, headless: true, marks: \"{marks}\"")
             head, body = prompts(mark)[:2]
             for k in kept:

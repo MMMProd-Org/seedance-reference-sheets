@@ -3302,21 +3302,22 @@ var SD_FACE_WORN = /\b(glasses|spectacles|eyeglasses|sunglasses|monocle|earrings
 function sdFacePart(p) {
   return SD_FACE_WORN.test(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p));
 }
+/* PR #93 review (Codex): a piece of an "and" that is a face trait of its own ("blue eyes", "facial freckles") splits the part too; a
+   face word as a tattoo's or a drawing's motif ("a tattoo of an eye") is not one */
+var SD_MOTIF = /\b(tattoo\w*|of an?|motif|design|drawing|shaped|print\w*|pattern)\b/i;
+function sdFaceTrait(p) {
+  return SD_FACE_WORN.test(p) || SD_FACE_AT.test(p) || (SD_FACE_MARK.test(p) && !SD_BODY_PART.test(p) && !SD_MOTIF.test(p));
+}
 function sdBodyMarks(x) {
   return String(x || "")
     .split(/\s*[;,]\s*/)
     .map(function (p) {
       if (!p || !SD_FACE_MARK.test(p)) return p;
       var q = p.split(/\s+and\s+/i);
-      if (
-        q.length > 1 &&
-        q.some(function (s) {
-          return SD_FACE_WORN.test(s) || SD_FACE_AT.test(s);
-        })
-      )
+      if (q.length > 1 && q.some(sdFaceTrait))
         return q
           .filter(function (s) {
-            return !sdFacePart(s);
+            return !sdFaceTrait(s);
           })
           .join(" and ");
       return sdFacePart(p) ? "" : p;
