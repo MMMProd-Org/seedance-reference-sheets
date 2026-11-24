@@ -151,13 +151,11 @@ Read it before any change (`AGENTS.md`).
 
 ## 2026-11-19 · Seedream 5.0 · Person, body sheet: the second render measured, and the self-review's fixes
 
-**DOES NOT WORK**, the short legs (second render, made with `tapered runner's legs: lean thigh muscles`): the crotch about 44% down from the collarbones to the soles, for 48% asked, as on the first render (44%) and on 2026-10-28 (40%). Dropping "long" and "elongated" changed nothing measurable; the dropped words stay dropped (they contradicted the length). **RULE**: no more words for the leg length; the next step is a proportion guide image, as for the drop of the bust (v89).
-
-**REJECTED**, the slit navel said taller than wide: the second render drew it slit-like without it; the default prompts are back to the golden set before it. **RULE**: belly fat « Légère » with « Plat, lisse » says `a firm, smooth upper stomach`, no longer `a flat, smooth stomach` next to the bulge, both engines. A local build shows `vX.Y.Z-pre`: its number is the one its merge would release, not a tag yet.
+**DOES NOT WORK / REJECTED / RULE.** Short legs still at about 44% for 48% asked: no more words for leg length, a proportion guide next; the taller slit navel rejected; belly fat « Légère » with « Plat, lisse » says a firm, smooth upper stomach. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--seedream-50--person-body-sheet-the-second-render-measured-and-the-self-reviews-fixes)
 
 ## 2026-11-19 · All · One final version, its number and date at the top
 
-**RULE** (owner, 2026-11-19: « unifie, corrige tout pour une version finale et affiche moi en haut de la planche la version et la date »). Two pieces of his work had stayed out of the chain this release builds on: PR #64 (« Tubéreuse », « Basse », « Veines du buste », entry of 2026-10-28) and the 2026-10-29 « Agent 3D » prompts without a title (branch `feat/agent3d-no-headings`, no PR). Both are merged here with PRs #61 to #75 and the render audit. The header shows `vX.Y.Z · YYYY-MM-DD` on every build: CI's release version, or the one `version.py` gives a local build, and the last commit's date. No prompt changes.
+**RULE.** PR #64 and the untitled « Agent 3D » prompts merged into one release; the header shows `vX.Y.Z · YYYY-MM-DD` on every build. No prompt changes. [Full entry, unchanged](PROMPT-LOG-ARCHIVE.md#2026-11-19--all--one-final-version-its-number-and-date-at-the-top)
 
 ## 2026-11-19 · Seedream 5.0 and GPT Image 2.5 · Person, body sheet: second render, back dimples, serratus, belly fat, arms
 
