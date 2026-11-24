@@ -552,6 +552,18 @@ with sync_playwright() as p:
         if "'object'" in state:
             assert not [t for t in texts if "mannequin" in t], state
         off.close()
+    # GPT audit of v1.14.1 (F03): a vehicle's stated state wins over the closed doors of its presentation; without one they stay closed
+    for model in ("gpt", "seedream"):
+        for st, opened in (("left front door open", True), ("", False)):
+            car = clipboard_page(browser, errors)
+            car.evaluate(f"""localStorage.setItem('fiche-perso-seedance-v1', JSON.stringify({{model: '{model}', modelPick: 1,
+                mode: 'object', objCat: 'vehicle', objDesc: 'a red sports car', eState: '{st}'}}))""")
+            car.reload()
+            sheet = next(t for t in prompts(car) if "a red sports car" in t)
+            assert ("left front door open" in sheet) == opened, (model, st)
+            assert ("all doors, hood and trunk closed unless the current state above says otherwise" in sheet) == opened, (model, st, sheet)
+            assert "all doors, hood and trunk closed" in sheet, (model, st)
+            car.close()
     assert not errors, errors
     # An animal's head close-ups with a source photo are made from the photo alone: they do not ask for the animal sheet.
     for only in (False, True):
