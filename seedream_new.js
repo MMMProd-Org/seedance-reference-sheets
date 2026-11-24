@@ -9666,7 +9666,9 @@ function sdAnimalSplit(t, m) {
       /\nREFERENCE:\n[\s\S]*?\n\n/,
       "\nSUBJECT:\n" +
         subj.replace(", the same in every panel)", ", the same in every view)") +
-        "\nThe head is clearly visible in every view, with its eyes, ears and markings readable: this sheet is the animal's identity reference.\n\n",
+        /* GPT audit of v1.14.1 (F05): "eyes readable in every view" pushed the rear view to turn the head toward the camera; the eyes are
+           asked only in the views that show them; nothing new about the head's direction (the audit's advice) */
+        "\nThe head is clearly visible in every view, with its ears and markings readable, and its eyes in the views that show them: this sheet is the animal's identity reference.\n\n",
     )
     .replace(/ \(the same breed or type as on the head sheet\)/g, " (the breed or type described above)")
     .replace(" Every new attempt keeps the face and identity exactly as in the head sheet: only fix what was missed.", " Every new attempt keeps the animal's identity: only fix what was missed.");
